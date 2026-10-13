@@ -33,7 +33,18 @@
 
 - 跑吧：`corre/?class=<班級碼>`，可加 `&bank=<句庫碼>`
 - 色數：`pop-colores-numeros/?c=<設定碼>&class=<班級碼>`（只有 `?class=` 不會進班級模式，一定要帶設定碼）
-- 比比看：`compara-y-adivina/?class=<班級碼>`
+- 比比看：`compara-y-adivina/?class=<班級碼>`（一般模式）或 `compara-y-adivina/?r=<範圍碼>&class=<班級碼>`（老師範圍）
+- 比比看練習連結（不收成績）：`compara-y-adivina/?r=<範圍碼>`
+
+## 比比看練習範圍（步驟 2）
+
+在「遊戲設定」建立、命名、修改、刪除；免費 3 組、訂閱 15 組（到期後超過的仍可改／刪，不能新增）。
+
+- `bbk_sets/{uid}` = `{ items:[{id, name, lv, d, t, n, sid?}], updatedAt }`（d／t 空陣列 = 全部）
+- `shared_bbk/{sid}` = `{ owner, name, th, lv, d, t, n, updatedAt }`：學生連結讀這份；按「練習連結」或班級頁「產生連結」才建立
+- 有範圍碼的設定一改，`shared_bbk` 跟著改 → 已發出去的連結用新範圍；刪除設定 → 連結退回一般模式
+- 特徵與題型清單在 `js/bbk.js`，要跟遊戲（`themes/people.js` 的 dims、`index.html` 的 POOL）一致
+- 規則：`firestore-rules-step2.txt`（要手動貼到 Firebase 主控台）
 
 ## 檔案
 
@@ -41,7 +52,8 @@
 index.html        外殼
 css/style.css     無印風格咖啡色、膠囊按鈕
 js/i18n.js        四語詞條（每個詞條 = [繁, 简, es, en]）
-js/data.js        Firebase：登入、方案、班級、成績
+js/data.js        Firebase：登入、方案、班級、成績、比比看範圍
+js/bbk.js         比比看的特徵／題型清單與範圍草稿
 js/books.js       成績簿表格與比比看常錯統計（只產生 HTML）
 js/app.js         畫面與操作
 js/qrcode.js      qrcode-generator 1.4.4（MIT，Kazuhiko Arase）
@@ -55,6 +67,6 @@ npm i -D playwright && npx playwright install chromium   # 第一次
 node tests/test_center.js [截圖資料夾]
 ```
 
-測試用 `tests/firebase-mock.js` 取代 Firebase，涵蓋：四語、免費／訂閱／到期、建班／改名／排行榜／刪班（含連帶刪成績）、三款連結與 QR、三款成績簿、常錯統計、CSV、詞條完整性、手機寬度不橫向捲動。
+測試用 `tests/firebase-mock.js` 取代 Firebase，涵蓋：四語、免費／訂閱／到期、建班／改名／排行榜／刪班（含連帶刪成績）、三款連結與 QR、比比看範圍（新增／編輯／刪除／額度／範圍碼）、三款成績簿、常錯統計、CSV、詞條完整性、手機寬度不橫向捲動。
 
-**沒有涵蓋：** Firestore 安全規則（模擬器不驗規則）。請用非管理員的 Gmail 在實機測一次：建班、改名、刪班、色數「產生連結」。
+**沒有涵蓋：** Firestore 安全規則（模擬器不驗規則）。請用非管理員的 Gmail 在實機測一次：建班、改名、刪班、色數「產生連結」、比比看範圍「儲存」「練習連結」，並用另一支手機（沒登入）打開範圍連結。

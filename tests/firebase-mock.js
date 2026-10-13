@@ -16,6 +16,21 @@
   const NOW = () => Date.now();
   function stamp(d){ const o = {}; for(const k in d) o[k] = (d[k] && d[k].__ts) ? NOW() : d[k]; return o; }
   function checkWrite(pid, c, id, data, user){
+    // 比比看範圍：照 firestore-rules-step2.txt 的規則模擬（額度：免費 3、訂閱 15；到期後只能變少或不變）
+    if(c === 'bbk_sets'){
+      if(!user || user.uid !== id) deny();
+      const p = col(pid, 'site_plans')[id], pro = !!(p && p.expiresAt > NOW()), n = data.items.length;
+      const before = col(pid, c)[id] ? col(pid, c)[id].items.length : -1;
+      if(!(n <= 3 || (pro && n <= 15) || (before >= 0 && n <= before))) deny();
+      return;
+    }
+    if(c === 'shared_bbk'){
+      if(!user || data.owner !== user.uid) deny();
+      const old = col(pid, c)[id]; if(old && old.owner !== user.uid) deny();
+      const keys = Object.keys(data).sort().join();
+      if(keys !== ['d','lv','n','name','owner','t','th','updatedAt'].join()) deny();
+      return;
+    }
     if(c !== 'class_plays') return;
     const d = data, keys = Object.keys(d).sort().join();
     if(keys !== ['at','cid','game','h','lv','max','nick','owner','qs','rg','score','th'].sort().join()) deny();

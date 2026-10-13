@@ -19,7 +19,7 @@ const TEACH = { uid: 'u1', email: 'teacher@example.com', displayName: 'T', isAno
 const hx = n => ('0000000000000000' + n.toString(16)).slice(-16);
 const day = 86400000;
 function qs(n, firstOk){ return Array.from({ length: n }, (_, i) => ({ t: ['pick', 'tf', 'decode'][i % 3], d: ['height', 'age', 'hair'][i % 3], f: ['BI', 'MEI', 'SAME'][i % 3], p: i % 2 ? -1 : 1, ok: true, f1: i < firstOk, ids: ['P01', 'P02'], tv: i % 2 === 0 })); }
-function seed({ pro = true, expired = false, nocls = false } = {}){
+function seed({ pro = true, expired = false, nocls = false, bbk = null } = {}){
   const s = { [T]: {
     classes: nocls ? {} : { [CID]: { owner: 'u1', slot: 0, name: '週三班', showBoard: false, updatedAt: 1 }, [CID2]: { owner: 'u1', slot: 1, name: '週五班', showBoard: true, updatedAt: 1 } },
     teacher_classes: nocls ? {} : { u1: { slots: { '0': CID, '1': CID2 }, updatedAt: 1 } },
@@ -44,6 +44,7 @@ function seed({ pro = true, expired = false, nocls = false } = {}){
     },
     site_members: {}, site_plans: {} } };
   if(pro) s[T].site_plans.u1 = { plan: 'year', expiresAt: Date.now() + (expired ? -1 : 1) * 30 * day };
+  if(bbk) s[T].bbk_sets = { u1: { items: bbk, updatedAt: 1 } };
   return s;
 }
 async function open(browser, { seedOpt, user = TEACH, ls = {}, hash = '' } = {}){
@@ -263,6 +264,100 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page)).includes('特征与形容词') && (await text(page)).includes('常错统计') && !(await text(page)).includes('特徵與形容詞'), '簡體版常錯統計');
     await shot(page, 'g3_errors_sc');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[I] 比比看：練習範圍（新增、編輯、改名、刪除、額度、連結）');
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('#bbkCard');
+    ok((await text(page, '#bbkCard')).includes('已存 0 / 15 組'), '訂閱老師：0 / 15');
+    await page.click('[data-act=bbknew]'); await page.waitForSelector('.editor');
+    let chips = await page.$$eval('.editor [data-act=bbkd]', e => e.map(x => x.dataset.k));
+    ok(chips.join() === 'height,age,build,hair,eyes,nose', '第 1 關只列第 1 關的特徵', chips);
+    ok((await page.$$eval('.editor [data-act=bbkt]', e => e.map(x => x.dataset.k))).join() === 'decode,tf,pick,more', '第 1 關的題型');
+    await page.fill('#bbkName', '身高和年齡');
+    await page.click('[data-act=bbkall][data-k=d0]');
+    ok(await page.$eval('[data-act=bbksave]', b => b.disabled), '特徵全清：不能儲存');
+    await page.click('[data-act=bbkd][data-k=height]'); await page.click('[data-act=bbkd][data-k=age]');
+    await page.click('[data-act=bbkt][data-k=tf]');   // 取消對錯題
+    await page.click('[data-act=bbkn][data-k="15"]');
+    ok((await page.$eval('#bbkName', i => i.value)) === '身高和年齡', '點選其他東西時名稱不會消失');
+    await shot(page, 'i1_editor');
+    await page.click('[data-act=bbksave]'); await page.waitForSelector('.setrow');
+    let d = await db(page), it = d.bbk_sets.u1.items[0];
+    ok(it.name === '身高和年齡' && it.lv === 1 && it.d.join() === 'height,age' && it.t.join() === 'decode,pick,more' && it.n === 15 && !it.sid, '存進 bbk_sets（還沒有連結碼）', it);
+    ok((await text(page, '#bbkCard')).includes('第 1 關 · 15 題 · 身高、年齡 · 看句子找人、看圖選句子、誰比較…'), '列表摘要', await text(page, '#bbkCard'));
+    // 第二組：全選＋第 3 關
+    await page.click('[data-act=bbknew]'); await page.click('[data-act=bbklv][data-k="3"]');
+    ok((await page.$$eval('.editor [data-act=bbkd].on', e => e.length)) === 9, '換到第 3 關：全選時跟著變成 9 個特徵');
+    await page.click('[data-act=bbksave]'); await page.waitForFunction(() => document.querySelectorAll('.setrow').length === 2);
+    d = await db(page); it = d.bbk_sets.u1.items[1];
+    ok(it.name === '範圍 2' && it.lv === 3 && it.d.length === 0 && it.t.length === 0 && it.n === 10, '沒取名用預設名稱；全選存成空陣列（＝全部）', it);
+    // 練習連結：產生連結碼並複製
+    await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async t => { window.__copied = t; }; });
+    await page.click('[data-act=bbkpractice][data-k="0"]'); await page.waitForFunction(() => window.__copied);
+    d = await db(page); it = d.bbk_sets.u1.items[0];
+    const sid = it.sid, sh = d.shared_bbk && d.shared_bbk[sid];
+    ok(/^[a-z0-9]{12}$/.test(sid) && sh && sh.owner === 'u1' && sh.name === '身高和年齡' && sh.th === 'people' && sh.d.join() === 'height,age' && sh.n === 15, '產生連結碼：寫入 shared_bbk', sh);
+    ok((await page.evaluate(() => window.__copied)) === 'https://wangchiapin.github.io/compara-y-adivina/?r=' + sid, '複製練習連結 ?r=代碼');
+    ok(await page.$('.setrow a[href*="?r=' + sid + '"]') !== null, '出現「試玩」');
+    // 編輯＋改名：shared_bbk 跟著改，連結碼不變
+    await page.click('[data-act=bbkedit][data-k="0"]'); await page.fill('#bbkName', '身高年齡（改）'); await page.click('[data-act=bbklv][data-k="2"]');
+    await page.click('[data-act=bbkd][data-k=muscle]');
+    await page.click('[data-act=bbksave]'); await page.waitForFunction(() => !document.querySelector('.editor'));
+    d = await db(page); it = d.bbk_sets.u1.items[0];
+    ok(it.sid === sid && it.name === '身高年齡（改）' && it.lv === 2 && it.d.join() === 'height,age,muscle', '編輯後連結碼不變', it);
+    ok(d.shared_bbk[sid].name === '身高年齡（改）' && d.shared_bbk[sid].lv === 2 && d.shared_bbk[sid].d.join() === 'height,age,muscle', '已發出的連結跟著改（shared_bbk 更新）', d.shared_bbk[sid]);
+    ok(it.t.join() === 'decode,pick', '換關卡時題型只留新關卡有的', it.t);
+    // 取消編輯不存
+    await page.click('[data-act=bbkedit][data-k="1"]'); await page.fill('#bbkName', '不要存'); await page.click('[data-act=bbkcancel]');
+    ok((await db(page)).bbk_sets.u1.items[1].name === '範圍 2', '取消：不存');
+    await shot(page, 'i2_list');
+    // 首頁用量
+    await page.click('[data-act=nav][data-r=home]'); await page.waitForSelector('.kv');
+    ok((await text(page)).includes('比比看：設定存檔\n2 / 15') || (await text(page)).replace(/\s+/g, ' ').includes('比比看：設定存檔 2 / 15'), '首頁用量 2 / 15');
+    // 班級頁：選範圍 → 連結 ?r=&class=
+    await page.evaluate(() => __profesor.go('class', 0)); await page.waitForSelector('[data-sel=bbksel]');
+    const bbkUrl = () => page.$eval('.url[data-url=bbk]', e => e.textContent);
+    ok((await bbkUrl()) === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID, '預設一般模式');
+    await page.selectOption('[data-sel=bbksel]', '0');
+    ok((await bbkUrl()) === 'https://wangchiapin.github.io/compara-y-adivina/?r=' + sid + '&class=' + CID, '選範圍：?r=代碼&class=班級碼', await bbkUrl());
+    await page.selectOption('[data-sel=bbksel]', '1');
+    ok(await page.$('[data-act=bbkmake]') !== null && await page.$('.url[data-url=bbk]') === null, '還沒有連結碼的範圍：顯示「產生連結」');
+    await page.click('[data-act=bbkmake]'); await page.waitForSelector('.url[data-url=bbk]');
+    const sid2 = (await db(page)).bbk_sets.u1.items[1].sid;
+    ok(/^[a-z0-9]{12}$/.test(sid2) && (await bbkUrl()).endsWith('?r=' + sid2 + '&class=' + CID), '產生後出現連結');
+    await shot(page, 'i3_class_link');
+    // 刪除：shared_bbk 一起刪
+    await page.click('[data-act=nav][data-r=settings]'); await page.waitForSelector('#bbkCard .setrow');
+    await page.click('[data-act=bbkdel][data-k="0"]'); await page.waitForFunction(() => document.querySelectorAll('.setrow').length === 1);
+    d = await db(page);
+    ok(d.bbk_sets.u1.items.length === 1 && d.bbk_sets.u1.items[0].sid === sid2 && !d.shared_bbk[sid] && !!d.shared_bbk[sid2], '刪除：清單與 shared_bbk 一起刪，其他組不動');
+    ok(await noOverflow(page), '手機寬度沒有橫向捲動');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const three = [1, 2, 3].map(i => ({ id: 'x' + i, name: 'R' + i, lv: 1, d: [], t: [], n: 10 }));
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false, bbk: three }, ls: { profesorLang: 'es' }, hash: '#/settings' });
+    await page.waitForSelector('#bbkCard .setrow');
+    ok((await text(page, '#bbkCard')).includes('3 / 3 guardados') && await page.$('[data-act=bbknew]') === null, '免費：3 / 3，不能再新增（西文）');
+    ok((await text(page, '#bbkCard')).includes('hasta 15'), '提示訂閱可存 15 組');
+    await page.click('[data-act=bbkedit][data-k="2"]'); await page.fill('#bbkName', 'Nuevo nombre'); await page.click('[data-act=bbksave]');
+    await page.waitForFunction(() => !document.querySelector('.editor'));
+    ok((await db(page)).bbk_sets.u1.items[2].name === 'Nuevo nombre', '免費滿額仍可改名');
+    await shot(page, 'i4_free_es');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const five = [1, 2, 3, 4, 5].map(i => ({ id: 'x' + i, name: 'R' + i, lv: 1, d: [], t: [], n: 10 }));
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true, expired: true, bbk: five }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('#bbkCard .setrow');
+    ok((await text(page, '#bbkCard')).includes('已存 5 / 3 組') && await page.$('[data-act=bbknew]') === null, '到期：超過額度的仍看得到，但不能新增');
+    await page.click('[data-act=bbkdel][data-k="4"]'); await page.waitForFunction(() => document.querySelectorAll('.setrow').length === 4);
+    ok((await db(page)).bbk_sets.u1.items.length === 4, '到期仍可刪除');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/settings' });
+    await page.waitForSelector('#bbkCard'); await page.click('[data-act=bbknew]');
+    // 畫面以為還在訂閱中，但其實已到期：規則（模擬）不准存第 4 組
+    await page.evaluate(() => { __profesor.S.a.bbk = [1, 2, 3].map(i => ({ id: 'y' + i, name: 'R' + i, lv: 1, d: [], t: [], n: 10 })); });
+    await page.evaluate(t => { window.__DB[t].site_plans = {}; }, T);
+    await page.click('[data-act=bbksave]'); await page.waitForSelector('.editor .err');
+    ok((await text(page, '.editor')).includes('Permission denied'), '規則拒絕時顯示錯誤、草稿還在');
+    ok(errors.every(e => /insufficient permissions/.test(e)), '只有預期中的權限錯誤', errors); await ctx.close(); }
 
   console.log('\n[H] 詞條完整性');
   { const { page, ctx } = await open(browser, { user: null });

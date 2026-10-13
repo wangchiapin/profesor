@@ -13,7 +13,8 @@ const S = {
   route: 'home', cur: null,
   game: 'corre', days: 0, tab: 'stu', sel: null,
   scores: [], scoresState: '', plays: [], playsState: '', msg2: '',
-  correBank: '', colCfg: '', busy: false
+  correBank: '', colCfg: '', bbkSel: '', busy: false,
+  bbkEdit: null, bbkMsg: ''                                        // bbkEdit = { i（-1 = 新增）, dr 草稿 }
 };
 
 // ---- 小工具 ----
@@ -43,11 +44,12 @@ function go(route, cur){ location.hash = '#/' + route + (cur != null ? '/' + cur
 async function onRoute(){
   const r = parseHash(); S.route = r.route; S.cur = r.cur;
   if(S.route === 'class'){
-    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.msg2 = ''; S.correBank = ''; S.colCfg = '';
+    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.msg2 = ''; S.correBank = ''; S.colCfg = ''; S.bbkSel = '';
     render(); window.scrollTo(0, 0);
     if(S.acct === 'ok' && classOf(S.cur)) await loadBook();
     return;
   }
+  if(S.route !== 'settings'){ S.bbkEdit = null; S.bbkMsg = ''; }
   render(); window.scrollTo(0, 0);
 }
 
@@ -104,7 +106,7 @@ function homeHtml(){
     '<div class="kv"><span>' + esc(T('usageClasses')) + '</span><b>' + nCls + ' / ' + DATA.MAX_CLASSES + '</b></div>' +
     '<div class="kv"><span>' + esc(T('usageCorre')) + '</span><b>' + (A.extrasReady ? A.banks.length + ' / ' + banksMax : '–') + '</b></div>' +
     '<div class="kv"><span>' + esc(T('usageColores')) + '</span><b>' + (A.extrasReady ? A.configs.length + ' / ' + cfgMax : '–') + '</b></div>' +
-    '<div class="kv"><span>' + esc(T('usageBbk')) + '</span><span class="mut">' + esc(T('soon')) + '</span></div></div>';
+    '<div class="kv"><span>' + esc(T('usageBbk')) + '</span><b>' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–') + '</b></div></div>';
   const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3>' + GAMES.map(g =>
     '<div class="kv" style="align-items:center"><span><b>' + esc(T(GAME_KEY[g])) + '</b><br><small>' + esc(T(GAME_DESC[g])) + '</small></span>' +
     '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>').join('') + '</div>';
@@ -144,7 +146,18 @@ function linkCardHtml(game){
     if(!it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="colmake">🔗 ' + esc(T('makeLink')) + '</button></div></div>';
     url = DATA.linkColores(c.cid, it.sid);
   }else{
-    url = DATA.linkBbk(c.cid);
+    if(!A.bbkReady) h += '<p class="hint">' + esc(T('bbkUnavailable')) + '</p>';
+    else if(!A.bbk.length) h += '<p class="hint">' + esc(T('bbkNoSets')) + '</p>';
+    else{
+      h += '<div class="field"><label>' + esc(T('bbkRangeLabel')) + '</label><select data-sel="bbksel"><option value="">' + esc(T('bbkRangeNormal')) + '</option>' +
+        A.bbk.map((it, i) => '<option value="' + i + '" ' + (S.bbkSel === String(i) ? 'selected' : '') + '>📐 ' + esc(it.name) + '</option>').join('') + '</select></div>';
+    }
+    const it = S.bbkSel !== '' ? A.bbk[+S.bbkSel] : null;
+    if(it){
+      h += '<p class="hint">' + esc(bbkSummary(it)) + '</p>';
+      if(!it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="bbkmake">🔗 ' + esc(T('makeLink')) + '</button></div>' + (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
+    }
+    url = DATA.linkBbk(c.cid, it ? it.sid : '');
   }
   h += '<div class="url" data-url="' + esc(game) + '">' + esc(url) + '</div><div class="row">' +
     '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
@@ -188,9 +201,61 @@ function classHtml(){
   h += '<div class="card">' + bookHtml() + '</div>';
   return h;
 }
+// ---- 比比看：練習範圍 ----
+const listSep = () => (I18N.getLang() === 'es' || I18N.getLang() === 'en') ? ', ' : '、';
+function bbkSummary(it){
+  const d = it.d.length ? it.d.map(k => T('d_' + k)).join(listSep()) : T('allDims');
+  const t = it.t.length ? it.t.map(k => T('t_' + k)).join(listSep()) : T('allTypes');
+  return T('levelN', { n: it.lv }) + ' · ' + T('nQuestions', { n: it.n }) + ' · ' + d + ' · ' + t;
+}
+function chip(on, label, act, k){
+  return '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '" data-k="' + k + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
+}
+function bbkEditorHtml(){
+  const E = S.bbkEdit, dr = E.dr;
+  let h = '<div class="editor">' +
+    '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="bbkName" maxlength="40" placeholder="' + esc(T('bbkNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
+    '<div class="field"><label>' + esc(T('bbkLevel')) + '</label><div class="row" style="margin-top:0">' +
+    [1, 2, 3].map(n => '<button class="pill sm ' + (dr.lv === n ? 'on' : '') + '" data-act="bbklv" data-k="' + n + '">' + n + '</button>').join('') + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bbkDims')) + '</label><div class="row" style="margin-top:0">' +
+    BBK.dimsOf(dr.lv).map(k => chip(dr.d.indexOf(k) >= 0, T('d_' + k), 'bbkd', k)).join('') + '</div>' +
+    '<div class="row" style="margin-top:0"><button class="link-btn" data-act="bbkall" data-k="d1">' + esc(T('selectAll')) + '</button><button class="link-btn" data-act="bbkall" data-k="d0">' + esc(T('clearAll')) + '</button></div></div>' +
+    '<div class="field"><label>' + esc(T('bbkTypes')) + '</label><div class="row" style="margin-top:0">' +
+    BBK.typesOf(dr.lv).map(k => chip(dr.t.indexOf(k) >= 0, T('t_' + k), 'bbkt', k)).join('') + '</div>' +
+    '<div class="row" style="margin-top:0"><button class="link-btn" data-act="bbkall" data-k="t1">' + esc(T('selectAll')) + '</button><button class="link-btn" data-act="bbkall" data-k="t0">' + esc(T('clearAll')) + '</button></div></div>' +
+    '<div class="field"><label>' + esc(T('bbkCount')) + '</label><div class="row" style="margin-top:0">' +
+    BBK.NS.map(n => '<button class="pill sm ' + (dr.n === n ? 'on' : '') + '" data-act="bbkn" data-k="' + n + '">' + n + '</button>').join('') + '</div></div>';
+  h += BBK.valid(dr) ? '<p class="hint">' + esc(T('bbkFeasNote')) + '</p>' : '<div class="err">' + esc(T('bbkNeedPick')) + '</div>';
+  if(S.bbkMsg) h += '<div class="err">' + esc(S.bbkMsg) + '</div>';
+  h += '<div class="row"><button class="pill fill sm" data-act="bbksave" ' + (BBK.valid(dr) ? '' : 'disabled') + '>' + esc(T('save')) + '</button><button class="pill sm" data-act="bbkcancel">' + esc(T('cancel')) + '</button></div></div>';
+  return h;
+}
+function bbkCardHtml(){
+  const A = S.a, max = DATA.bbkMax(A.plan), E = S.bbkEdit;
+  let h = '<div class="card" id="bbkCard"><h3>' + esc(T('bbkSetsTitle')) + '</h3><p class="hint">' + esc(T('bbkSetsHint')) + '</p>';
+  if(!A.bbkReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  h += '<p class="hint"><b>' + esc(T('bbkQuota', { n: A.bbk.length, max })) + '</b></p>';
+  if(!A.bbk.length && !(E && E.i < 0)) h += '<p class="hint">' + esc(T('bbkEmpty')) + '</p>';
+  A.bbk.forEach((it, i) => {
+    if(E && E.i === i){ h += bbkEditorHtml(); return; }
+    h += '<div class="setrow"><div><b>📐 ' + esc(it.name) + '</b><small>' + esc(bbkSummary(it)) + '</small></div><div class="row">' +
+      '<button class="pill sm" data-act="bbkedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
+      '<button class="pill sm" data-act="bbkpractice" data-k="' + i + '">🔗 ' + esc(T('bbkPractice')) + '</button>' +
+      (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkBbkPractice(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '') +
+      '<button class="pill sm" data-act="bbkdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+  });
+  if(E && E.i < 0) h += bbkEditorHtml();
+  else if(!E){
+    if(A.bbk.length < max) h += '<div class="row"><button class="pill fill sm" data-act="bbknew">＋ ' + esc(T('bbkNew')) + '</button></div>';
+    else h += '<div class="notice">' + esc(T(A.plan.active ? 'bbkFullPro' : 'bbkFullFree')) + (A.plan.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
+  }
+  if(S.bbkMsg && !E) h += '<div class="err">' + esc(S.bbkMsg) + '</div>';
+  h += '<p class="hint">' + esc(T('bbkPracticeHint')) + '</p>';
+  return h + '</div>';
+}
 function settingsHtml(){
-  const rows = [['corre', 'settingsCorre'], ['colores', 'settingsColores'], ['bbk', 'settingsBbk']];
-  return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' + rows.map(r =>
+  const rows = [['corre', 'settingsCorre'], ['colores', 'settingsColores']];
+  return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' + bbkCardHtml() + rows.map(r =>
     '<div class="card"><h3>' + esc(T(GAME_KEY[r[0]])) + '</h3><p class="hint">' + esc(T(r[1])) + '</p><div class="row"><a class="pill sm" href="' + DATA.TEACHER_URL[r[0]] + '" target="_blank" rel="noopener">' + esc(T('openSettingsPage')) + '</a></div></div>').join('');
 }
 function printHtml(){
@@ -246,6 +311,7 @@ function showQr(url, game){
 }
 
 // ---- 操作 ----
+function toggleIn(arr, k){ const i = arr.indexOf(k); if(i < 0) arr.push(k); else arr.splice(i, 1); }
 async function run(fn){
   if(S.busy) return; S.busy = true;
   try{ await fn(); }catch(e){ console.error(e); S.msg = err(e); render(); }
@@ -281,6 +347,44 @@ const actions = {
   }); },
   copy(el){ return copyText(el.dataset.url); },
   qr(el){ showQr(el.dataset.url, el.dataset.game); },
+  // ---- 比比看範圍 ----
+  bbknew(){ S.bbkEdit = { i: -1, dr: BBK.draftFrom(null) }; S.bbkMsg = ''; render(); const el = document.getElementById('bbkName'); if(el) el.focus(); },
+  bbkedit(el){ S.bbkEdit = { i: +el.dataset.k, dr: BBK.draftFrom(S.a.bbk[+el.dataset.k]) }; S.bbkMsg = ''; render(); },
+  bbkcancel(){ S.bbkEdit = null; S.bbkMsg = ''; render(); },
+  bbklv(el){ S.bbkEdit.dr = BBK.changeLevel(S.bbkEdit.dr, +el.dataset.k); render(); },
+  bbkn(el){ S.bbkEdit.dr.n = +el.dataset.k; render(); },
+  bbkd(el){ toggleIn(S.bbkEdit.dr.d, el.dataset.k); render(); },
+  bbkt(el){ toggleIn(S.bbkEdit.dr.t, el.dataset.k); render(); },
+  bbkall(el){ const dr = S.bbkEdit.dr, k = el.dataset.k;
+    if(k[0] === 'd') dr.d = k[1] === '1' ? BBK.dimsOf(dr.lv) : []; else dr.t = k[1] === '1' ? BBK.typesOf(dr.lv) : [];
+    render(); },
+  bbksave(){ return run(async () => {
+    const E = S.bbkEdit; if(!E || !BBK.valid(E.dr)) return;
+    const name = (E.dr.name || '').trim() || T('bbkDefaultName', { n: E.i < 0 ? S.a.bbk.length + 1 : E.i + 1 });
+    if(E.i < 0 && S.a.bbk.length >= DATA.bbkMax(S.a.plan)){ S.bbkMsg = T(S.a.plan.active ? 'bbkFullPro' : 'bbkFullFree'); render(); return; }
+    try{
+      S.a.bbk = await DATA.saveBbkSet(S.a.bbk, E.i, Object.assign(BBK.toSet(E.dr), { name: name.slice(0, 40) }));
+      S.bbkEdit = null; S.bbkMsg = ''; render(); toast(T('saved'));
+    }catch(e){ console.error(e); S.bbkMsg = err(e); render(); }
+  }); },
+  bbkdel(el){ return run(async () => {
+    const i = +el.dataset.k, it = S.a.bbk[i]; if(!it || !confirm(T('bbkConfirmDel', { name: it.name }))) return;
+    try{ S.a.bbk = await DATA.deleteBbkSet(S.a.bbk, i); S.bbkMsg = ''; }
+    catch(e){ console.error(e); S.bbkMsg = err(e); }
+    render();
+  }); },
+  bbkpractice(el){ return run(async () => {
+    const i = +el.dataset.k;
+    try{
+      S.a.bbk = await DATA.ensureBbkSid(S.a.bbk, i); S.bbkMsg = ''; render();
+      await copyText(DATA.linkBbkPractice(S.a.bbk[i].sid));
+    }catch(e){ console.error(e); S.bbkMsg = T('configFail', { m: err(e) }); render(); }
+  }); },
+  bbkmake(){ return run(async () => {
+    try{ S.a.bbk = await DATA.ensureBbkSid(S.a.bbk, +S.bbkSel); S.msg = ''; }
+    catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
+    render();
+  }); },
   colmake(){ return run(async () => {
     try{
       const r = await DATA.ensureColoresSid(S.a.configs, +S.colCfg); S.a.configs = r.items; S.msg = '';
@@ -322,7 +426,11 @@ document.addEventListener('change', e => {
   const s = e.target.closest('[data-sel]'); if(!s) return;
   if(s.dataset.sel === 'correbank') S.correBank = s.value;
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
+  if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
   render();
+});
+document.addEventListener('input', e => {
+  if(e.target.id === 'bbkName' && S.bbkEdit) S.bbkEdit.dr.name = e.target.value;
 });
 window.addEventListener('hashchange', onRoute);
 

@@ -60,7 +60,7 @@ async function loadAccount(user){
   const d = p.exists ? p.data() : {};
   const plan = { plan: d.plan || 'free', expiresAt: tsMs(d.expiresAt) };
   plan.active = planActive(plan);
-  const acct = { plan, cslots: {}, classes: {}, clsReady: true, banks: [], configs: [], extrasReady: true };
+  const acct = { plan, cslots: {}, classes: {}, clsReady: true, banks: [], configs: [], extrasReady: true, bbk: [], bbkReady: true };
   try{
     const ix = await db.collection('teacher_classes').doc(user.uid).get();
     acct.cslots = ix.exists ? (ix.data().slots || {}) : {};
@@ -83,6 +83,10 @@ async function loadAccount(user){
     const cx = await db.collection('teacher_configs').doc(user.uid).get();
     acct.configs = cx.exists ? (cx.data().items || []) : [];
   }catch(e){ console.warn('configs unavailable', e); acct.extrasReady = false; }
+  try{
+    const bx = await db.collection('bbk_sets').doc(user.uid).get();
+    acct.bbk = bx.exists ? (bx.data().items || []).filter(validBbk) : [];
+  }catch(e){ console.warn('bbk sets unavailable', e); acct.bbkReady = false; }
   return acct;
 }
 
@@ -147,10 +151,49 @@ async function ensureColoresSid(items, i){
   return { sid, items: next };
 }
 
+// ---- 比比看：老師存的範圍設定 ----
+// bbk_sets/{uid} = { items:[{id, name, lv, d, t, n, sid?}], updatedAt }   d／t 空陣列 = 全部
+// shared_bbk/{sid} = { owner, name, th, lv, d, t, n, updatedAt }          學生連結 ?r=<sid> 讀這份（任何人可讀）
+// 有連結碼（sid）的設定一改，shared_bbk 跟著改，已發出去的連結就會用新的範圍。
+const BBK_FREE = 3, BBK_PRO = 15;
+const bbkMax = plan => plan && plan.active ? BBK_PRO : BBK_FREE;
+function validBbk(x){ return x && typeof x.id === 'string' && [1, 2, 3].indexOf(x.lv) >= 0 && Array.isArray(x.d) && Array.isArray(x.t) && typeof x.n === 'number'; }
+const bbkItem = x => { const o = { id: x.id, name: x.name, lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n }; if(x.sid) o.sid = x.sid; return o; };
+const bbkShared = x => ({ owner: uid(), name: x.name, th: 'people', lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n, updatedAt: serverTs() });
+async function writeBbkList(items){
+  const clean = items.map(bbkItem);
+  await db.collection('bbk_sets').doc(uid()).set({ items: clean, updatedAt: serverTs() });
+  return clean;
+}
+// 新增（i < 0）或修改第 i 組
+async function saveBbkSet(items, i, set){
+  const next = items.slice();
+  if(i < 0) next.push(Object.assign({ id: newId(8) }, set));
+  else next[i] = Object.assign({}, items[i], set, { id: items[i].id, sid: items[i].sid });
+  const it = next[i < 0 ? next.length - 1 : i];
+  if(it.sid) await db.collection('shared_bbk').doc(it.sid).set(bbkShared(it));
+  return writeBbkList(next);
+}
+async function deleteBbkSet(items, i){
+  const it = items[i]; if(!it) return items;
+  if(it.sid){ try{ await db.collection('shared_bbk').doc(it.sid).delete(); }catch(e){ console.warn('shared_bbk delete failed', e); } }
+  return writeBbkList(items.filter((_, k) => k !== i));
+}
+// 確保這組有連結碼；沒有就產生一個
+async function ensureBbkSid(items, i){
+  const it = items[i]; if(!it) return items;
+  if(it.sid) return items;
+  const sid = newId(12);
+  const next = items.map((x, k) => k === i ? Object.assign({}, x, { sid }) : x);
+  await db.collection('shared_bbk').doc(sid).set(bbkShared(next[i]));
+  return writeBbkList(next);
+}
+
 // ---- 學生連結 ----
 function linkCorre(cid, bankSid){ return GAME_URL.corre + '?class=' + cid + (bankSid ? '&bank=' + bankSid : ''); }
 function linkColores(cid, sid){ return GAME_URL.colores + '?c=' + sid + '&class=' + cid; }
-function linkBbk(cid){ return GAME_URL.bbk + '?class=' + cid; }
+function linkBbk(cid, sid){ return GAME_URL.bbk + '?' + (sid ? 'r=' + sid + '&' : '') + 'class=' + cid; }
+function linkBbkPractice(sid){ return GAME_URL.bbk + '?r=' + sid; }
 
 function explain(e, t){
   const c = e && e.code;
@@ -160,5 +203,5 @@ function explain(e, t){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs,
-  ensureColoresSid, linkCorre, linkColores, linkBbk, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, linkCorre, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

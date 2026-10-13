@@ -27,6 +27,40 @@ const D = {
   permDenied: ['沒有權限。請確認已登入，而且方案還有效。', '没有权限。请确认已登录，而且方案还有效。', 'Sin permiso. Comprueba que has iniciado sesión y que tu suscripción está activa.', 'Permission denied. Check that you are signed in and your plan is active.'],
   network: ['連線失敗，請稍後再試。', '连线失败，请稍后再试。', 'Fallo de conexión. Inténtalo de nuevo más tarde.', 'Connection failed. Please try again later.'],
 
+  // ---- 比比看：練習範圍（步驟 2）----
+  bbkSetsTitle: ['比比看：練習範圍', '比比看：练习范围', 'Compara y Adivina: rangos de práctica', 'Compare & Guess: practice ranges'],
+  bbkSetsHint: ['把常用的出題範圍存起來、取個名字。在班級頁選它就能做學生連結。之後改了範圍，已經發出去的連結也會跟著改。', '把常用的出题范围存起来、取个名字。在班级页选它就能做学生链接。之后改了范围，已经发出去的链接也会跟着改。', 'Guarda los rangos que más usas con un nombre. En la página de la clase puedes elegirlos para el enlace de alumnos. Si cambias un rango, los enlaces ya enviados también cambian.', 'Save the ranges you use often under a name. Pick one on the class page to make a student link. If you edit a range later, links already sent change too.'],
+  bbkQuota: ['已存 {n} / {max} 組', '已存 {n} / {max} 组', '{n} / {max} guardados', '{n} / {max} saved'],
+  bbkEmpty: ['還沒有存任何範圍。', '还没有存任何范围。', 'Aún no hay rangos guardados.', 'No saved ranges yet.'],
+  bbkNew: ['新增範圍', '新增范围', 'Nuevo rango', 'New range'],
+  bbkFullFree: ['免費方案最多存 3 組；訂閱可以存 15 組。', '免费方案最多存 3 组；订阅可以存 15 组。', 'El plan gratis guarda hasta 3; con suscripción, hasta 15.', 'The free plan saves up to 3; with a subscription, up to 15.'],
+  bbkFullPro: ['已經存滿 15 組。要新增請先刪掉一組。', '已经存满 15 组。要新增请先删掉一组。', 'Ya tienes 15 guardados. Borra uno para añadir otro.', 'You already have 15. Delete one to add another.'],
+  bbkDefaultName: ['範圍 {n}', '范围 {n}', 'Rango {n}', 'Range {n}'],
+  bbkName: ['名稱', '名称', 'Nombre', 'Name'],
+  bbkNamePh: ['例如：身高和年齡', '例如：身高和年龄', 'Ej.: estatura y edad', 'e.g. height and age'],
+  bbkLevel: ['關卡', '关卡', 'Nivel', 'Level'],
+  bbkDims: ['要考的特徵', '要考的特征', 'Rasgos a practicar', 'Features to practice'],
+  bbkTypes: ['題型', '题型', 'Tipos de pregunta', 'Question types'],
+  bbkCount: ['題數', '题数', 'Número de preguntas', 'Number of questions'],
+  selectAll: ['全選', '全选', 'Todo', 'All'],
+  clearAll: ['清除', '清除', 'Ninguno', 'None'],
+  save: ['儲存', '保存', 'Guardar', 'Save'],
+  cancel: ['取消', '取消', 'Cancelar', 'Cancel'],
+  edit: ['編輯', '编辑', 'Editar', 'Edit'],
+  saved: ['已儲存', '已保存', 'Guardado', 'Saved'],
+  nQuestions: ['{n} 題', '{n} 题', '{n} preguntas', '{n} questions'],
+  allDims: ['全部特徵', '全部特征', 'Todos los rasgos', 'All features'],
+  allTypes: ['全部題型', '全部题型', 'Todos los tipos', 'All types'],
+  bbkNeedPick: ['請至少各選一個特徵和題型。', '请至少各选一个特征和题型。', 'Elige al menos un rasgo y un tipo de pregunta.', 'Pick at least one feature and one question type.'],
+  bbkFeasNote: ['提醒：特徵選太少時，有些題型可能湊不出題目。存好後可以按「試玩」看看。', '提醒：特征选太少时，有些题型可能凑不出题目。存好后可以按「试玩」看看。', 'Ojo: con pocos rasgos, algunos tipos de pregunta quizá no tengan suficientes preguntas. Después de guardar, pulsa «Probar».', 'Note: with few features, some question types may not have enough questions. After saving, press "Try it".'],
+  bbkConfirmDel: ['確定刪除「{name}」？用這組範圍發出去的連結，學生打開會變回一般模式。', '确定删除「{name}」？用这组范围发出去的链接，学生打开会变回一般模式。', '¿Borrar «{name}»? Los enlaces enviados con este rango pasarán al modo normal.', 'Delete "{name}"? Links sent with this range will open in normal mode.'],
+  bbkPractice: ['練習連結', '练习链接', 'Enlace de práctica', 'Practice link'],
+  bbkPracticeHint: ['「練習連結」不用班級：學生打開直接練這個範圍，成績不會回傳。要收成績請到班級頁做連結。', '「练习链接」不用班级：学生打开直接练这个范围，成绩不会回传。要收成绩请到班级页做链接。', 'El «enlace de práctica» no necesita clase: el alumno practica este rango, pero las notas no se envían. Para recibir notas, crea el enlace en la página de la clase.', 'A "practice link" needs no class: students practice this range, but scores are not sent. To collect scores, make the link on the class page.'],
+  bbkRangeLabel: ['出題範圍', '出题范围', 'Rango de preguntas', 'Question range'],
+  bbkRangeNormal: ['一般模式（學生自己選關卡）', '一般模式（学生自己选关卡）', 'Modo normal (el alumno elige el nivel)', 'Normal mode (students pick the level)'],
+  bbkNoSets: ['還沒有存範圍。可以到「遊戲設定」建立。', '还没有存范围。可以到「游戏设置」建立。', 'Aún no hay rangos. Puedes crearlos en «Ajustes de juegos».', 'No ranges yet. You can create them in "Game settings".'],
+  bbkUnavailable: ['範圍設定暫時讀不到，請稍後重新載入。', '范围设置暂时读不到，请稍后重新载入。', 'No se pudieron cargar los rangos. Recarga más tarde.', 'Could not load the ranges. Please reload later.'],
+
   // ---- 登入 ----
   loginHint: ['每位老師用自己的 Google 帳號登入，只看得到自己的班級與成績。', '每位老师用自己的 Google 帐号登录，只看得到自己的班级与成绩。', 'Cada profesor entra con su cuenta de Google y solo ve sus propias clases y notas.', 'Each teacher signs in with their own Google account and sees only their own classes and scores.'],
   login: ['用 Google 登入', '用 Google 登录', 'Entrar con Google', 'Sign in with Google'],
@@ -92,7 +126,7 @@ const D = {
   makeLink: ['產生連結', '生成链接', 'Generar enlace', 'Create link'],
   configNeedPick: ['請先選一組設定', '请先选一组设置', 'Elige primero una configuración', 'Choose a setup first'],
   configFail: ['產生連結失敗：{m}', '产生链接失败：{m}', 'No se pudo crear el enlace: {m}', 'Could not create the link: {m}'],
-  bbkLinkNote: ['一般模式：學生自己選關卡。老師自選範圍的連結，目前請到比比看的「老師設定」產生。', '一般模式：学生自己选关卡。老师自选范围的链接，目前请到比比看的「老师设置」产生。', 'Modo normal: el alumno elige el nivel. Para un enlace con rango propio, usa por ahora «Ajustes del profesor» dentro del juego.', 'Normal mode: students pick the level. For a link with your own range, use the in-game teacher settings for now.'],
+  bbkLinkNote: ['選一組範圍，學生打開就直接練那個範圍；改了範圍，這個連結也會跟著改。', '选一组范围，学生打开就直接练那个范围；改了范围，这个链接也会跟着改。', 'Con un rango, el alumno practica directamente ese rango; si lo editas, el enlace también cambia.', 'With a range, students go straight to that range; if you edit it, the link changes too.'],
 
   // ---- 成績 ----
   resultsTitle: ['成績', '成绩', 'Notas', 'Scores'],
@@ -146,7 +180,7 @@ const D = {
 
   // ---- 遊戲設定 ----
   settingsTitle: ['遊戲設定', '游戏设置', 'Ajustes de juegos', 'Game settings'],
-  settingsHint: ['目前先連到各遊戲原本的設定頁；之後會一款一款搬進這裡。', '目前先连到各游戏原本的设置页；之后会一款一款搬进这里。', 'Por ahora enlaza a la pantalla de ajustes original de cada juego; luego se irán trasladando aquí.', 'For now these link to each game\'s original settings page; they will be moved here one by one.'],
+  settingsHint: ['比比看的練習範圍已經搬進這裡；跑吧和色數目前先連到原本的設定頁，之後一款一款搬進來。', '比比看的练习范围已经搬进这里；跑吧和色数目前先连到原本的设置页，之后一款一款搬进来。', 'Los rangos de Compara y Adivina ya están aquí; Corre y Pop Colores enlazan por ahora a su página original y se irán trasladando.', 'Compare & Guess ranges now live here; Run Hanzi and Pop Colors still link to their original pages and will move here one by one.'],
   settingsCorre: ['句庫與學習單在「跑吧！漢字」教師頁。', '句库与学习单在「跑吧！汉字」教师页。', 'Los bancos de frases y las hojas están en la página docente de Corre Hanzi.', 'Sentence banks and worksheets are on the Run Hanzi teacher page.'],
   settingsColores: ['設定組在遊戲主選單最下面的「教師版」。', '设置组在游戏主选单最下面的「教师版」。', 'Las configuraciones están en «Versión docente», al final del menú del juego.', 'Setups are under "Teacher version" at the bottom of the game menu.'],
   settingsBbk: ['自選範圍在遊戲主選單最下面的「老師設定」。', '自选范围在游戏主选单最下面的「老师设置」。', 'El rango propio está en «Ajustes del profesor», al final del menú del juego.', 'Your own range is under "Teacher settings" at the bottom of the game menu.'],
