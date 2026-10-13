@@ -1,0 +1,100 @@
+/* 老師管理中心：無印風格咖啡色。按鈕全部是膠囊形：實心咖啡＝主要動作，咖啡色框＝次要動作。 */
+:root{
+  --bg:#f6f2eb; --card:#fffdf9; --ink:#3d3229; --mut:#8b7d70; --line:#e2d9cc;
+  --brown:#7b5b44; --brown-d:#654832; --brown-l:#efe6da;
+  --ok:#5e7d4f; --err:#9a3f30; --warn:#fbf1dc;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","PingFang SC","Noto Sans TC","Noto Sans SC","Microsoft JhengHei",sans-serif;line-height:1.55}
+body{min-height:100vh}
+#app{max-width:760px;margin:0 auto;padding:12px 16px 56px}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:.02em}
+h1{font-size:1.5rem}h2{font-size:1.25rem}h3{font-size:1.05rem}
+a{color:var(--brown)}
+small,.mut{color:var(--mut)}
+.hint{color:var(--mut);font-size:.9rem;margin:6px 0}
+[hidden]{display:none!important}
+
+/* 頂部 */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:6px 0 10px}
+.brand{display:flex;flex-direction:column}
+.brand b{font-size:1.2rem}.brand span{font-size:.78rem;color:var(--mut)}
+.langs{display:flex;gap:6px}
+.langs button{min-width:42px}
+.who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.9rem;color:var(--mut);margin:0 0 8px;word-break:break-all}
+.nav{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin:0 -4px;-webkit-overflow-scrolling:touch}
+.nav .pill{flex:0 0 auto}
+
+/* 按鈕：全部膠囊形 */
+.pill,button.pill,a.pill{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;padding:8px 18px;border-radius:999px;border:1.5px solid var(--brown);
+  background:transparent;color:var(--brown);font:inherit;font-size:.95rem;font-weight:600;
+  cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s;
+}
+.pill:hover{background:var(--brown-l)}
+.pill.on,.pill.fill{background:var(--brown);color:#fff}
+.pill.fill:hover,.pill.on:hover{background:var(--brown-d)}
+.pill.sm{min-height:36px;padding:4px 14px;font-size:.88rem}
+.pill.block{display:flex;width:100%}
+.pill[disabled]{opacity:.45;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.row.end{justify-content:flex-end}
+
+/* 卡片 */
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:12px 0}
+.card h2,.card h3{margin-bottom:6px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border-bottom:0}
+.badge{display:inline-block;border-radius:999px;padding:2px 12px;font-size:.85rem;font-weight:700;background:var(--brown-l);color:var(--brown)}
+.badge.pro{background:var(--brown);color:#fff}
+.notice{background:var(--warn);border:1px solid #ecd9ae;border-radius:14px;padding:10px 14px;margin:10px 0;font-size:.92rem}
+.err{color:var(--err);font-size:.92rem;margin:6px 0;white-space:pre-wrap}
+.ok{color:var(--ok)}
+.center{text-align:center}
+
+/* 表單 */
+input[type=text],select{
+  width:100%;min-height:44px;border:1.5px solid var(--line);border-radius:999px;padding:8px 16px;
+  background:#fff;color:var(--ink);font:inherit;font-size:1rem;
+}
+input[type=text]:focus,select:focus{outline:2px solid var(--brown-l);border-color:var(--brown)}
+.field{margin:10px 0}
+.field label{display:block;font-size:.85rem;color:var(--mut);margin:0 0 4px 6px}
+.inline{display:flex;gap:8px;align-items:center}
+.inline input{flex:1;min-width:0}
+
+/* 班級列表 */
+.slot{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:12px 14px;margin:8px 0}
+.slot.empty{border-style:dashed;background:transparent}
+.slot b{font-size:1.05rem;word-break:break-all}
+
+/* 連結卡 */
+.link{border:1px solid var(--line);border-radius:16px;padding:12px;margin:10px 0;background:#fff}
+.link h3{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.link .url{font-size:.82rem;word-break:break-all;color:var(--mut);background:var(--bg);border-radius:12px;padding:8px 12px;margin:8px 0}
+
+/* 表格 */
+.tablewrap{overflow-x:auto;margin:8px 0}
+table.t{width:100%;border-collapse:collapse;font-size:.92rem}
+table.t th{text-align:left;font-size:.8rem;color:var(--mut);font-weight:600;padding:6px 8px 6px 0;border-bottom:1.5px solid var(--line);white-space:nowrap}
+table.t td{padding:9px 8px 9px 0;border-bottom:1px solid var(--line);vertical-align:middle}
+table.t td small{display:block}
+table.t.nw td{white-space:nowrap}
+table.t tr.few td{color:#b3a79a}
+table.t.click tr:not(:first-child){cursor:pointer}
+table.t.click tr:not(:first-child):hover td{background:#faf5ec}
+.bar{position:relative;background:var(--brown-l);border-radius:999px;height:22px;min-width:96px;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;background:var(--brown);opacity:.55}
+.bar span{position:relative;display:block;padding-left:10px;font-size:.82rem;line-height:22px;font-weight:700}
+.sec{margin:16px 0 4px;font-weight:700}
+.x{border:0;background:transparent;color:var(--brown);font-size:1.1rem;cursor:pointer;min-width:36px;min-height:36px;border-radius:999px}
+.x:hover{background:var(--brown-l)}
+
+/* QR 視窗 */
+.modal{position:fixed;inset:0;background:rgba(61,50,41,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal .box{background:var(--card);border-radius:20px;padding:20px;max-width:360px;width:100%;text-align:center}
+.modal canvas{max-width:100%;height:auto;border-radius:12px;margin:10px 0}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--brown);color:#fff;padding:8px 20px;border-radius:999px;font-size:.92rem;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+@media print{.nav,.top .langs,.pill{display:none!important}}
