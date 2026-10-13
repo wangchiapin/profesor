@@ -97,10 +97,19 @@ function planNoticeHtml(){
   const expired = !!P.expiresAt;
   return '<div class="notice">' + esc(T(expired ? 'planExpiredNote' : 'planFreeNote')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
 }
+// 方案名稱：免費／試用（剩 N 天）／月訂閱／年訂閱；到期的顯示「xx（已到期）」
+function planLabel(P){
+  const known = ['month', 'year', 'trial', 'pro'].indexOf(P.plan) >= 0;
+  if(!known) return T('planFree');
+  const name = T('plan_' + P.plan);
+  if(!P.active) return T('planWasExpired', { plan: name });
+  if(P.plan === 'trial' && P.expiresAt) return name + '・' + T('planDaysLeft', { n: Math.max(1, Math.ceil((P.expiresAt - Date.now()) / 86400000)) });
+  return name;
+}
 function homeHtml(){
   const A = S.a, P = A.plan, nCls = Object.keys(A.classes).length;
   const banksMax = P.active ? 5 : 1, cfgMax = P.active ? 15 : 3;
-  const plan = '<div class="card"><h3>' + esc(T('planTitle')) + '</h3><div class="kv"><span><span class="badge ' + (P.active ? 'pro' : '') + '">' + esc(T(P.active ? 'planPro' : 'planFree')) + '</span></span><span class="mut">' +
+  const plan = '<div class="card"><h3>' + esc(T('planTitle')) + '</h3><div class="kv"><span><span class="badge ' + (P.active ? 'pro' : '') + '">' + esc(planLabel(P)) + '</span></span><span class="mut">' +
     (P.expiresAt ? esc(T(P.active ? 'planUntil' : 'planExpired', { date: fdate(P.expiresAt) })) : '') + '</span></div>' + planNoticeHtml() + '</div>';
   const usage = '<div class="card"><h3>' + esc(T('usageTitle')) + '</h3>' +
     '<div class="kv"><span>' + esc(T('usageClasses')) + '</span><b>' + nCls + ' / ' + DATA.MAX_CLASSES + '</b></div>' +

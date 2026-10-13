@@ -19,7 +19,7 @@ const TEACH = { uid: 'u1', email: 'teacher@example.com', displayName: 'T', isAno
 const hx = n => ('0000000000000000' + n.toString(16)).slice(-16);
 const day = 86400000;
 function qs(n, firstOk){ return Array.from({ length: n }, (_, i) => ({ t: ['pick', 'tf', 'decode'][i % 3], d: ['height', 'age', 'hair'][i % 3], f: ['BI', 'MEI', 'SAME'][i % 3], p: i % 2 ? -1 : 1, ok: true, f1: i < firstOk, ids: ['P01', 'P02'], tv: i % 2 === 0 })); }
-function seed({ pro = true, expired = false, nocls = false, bbk = null } = {}){
+function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = null } = {}){
   const s = { [T]: {
     classes: nocls ? {} : { [CID]: { owner: 'u1', slot: 0, name: '週三班', showBoard: false, updatedAt: 1 }, [CID2]: { owner: 'u1', slot: 1, name: '週五班', showBoard: true, updatedAt: 1 } },
     teacher_classes: nocls ? {} : { u1: { slots: { '0': CID, '1': CID2 }, updatedAt: 1 } },
@@ -44,6 +44,7 @@ function seed({ pro = true, expired = false, nocls = false, bbk = null } = {}){
     },
     site_members: {}, site_plans: {} } };
   if(pro) s[T].site_plans.u1 = { plan: 'year', expiresAt: Date.now() + (expired ? -1 : 1) * 30 * day };
+  if(plan) s[T].site_plans.u1 = { plan: plan[0], expiresAt: Date.now() + plan[1] };
   if(bbk) s[T].bbk_sets = { u1: { items: bbk, updatedAt: 1 } };
   return s;
 }
@@ -358,6 +359,15 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=bbksave]'); await page.waitForSelector('.editor .err');
     ok((await text(page, '.editor')).includes('Permission denied'), '規則拒絕時顯示錯誤、草稿還在');
     ok(errors.every(e => /insufficient permissions/.test(e)), '只有預期中的權限錯誤', errors); await ctx.close(); }
+
+  console.log('\n[J] 方案名稱');
+  for(const [plan, want] of [[['trial', 5 * day + 60000], '試用・剩 6 天'], [['month', 20 * day], '月訂閱'], [['year', 200 * day], '年訂閱'], [['trial', -day], '試用（已到期）'], [null, '免費']]){
+    const { page, ctx } = await open(browser, { seedOpt: { pro: false, plan }, ls: { profesorLang: 'tc' } });
+    await page.waitForSelector('.badge');
+    const b = await page.$eval('.badge', e => e.textContent);
+    ok(b === want, '方案顯示：' + want, b);
+    await ctx.close();
+  }
 
   console.log('\n[H] 詞條完整性');
   { const { page, ctx } = await open(browser, { user: null });
