@@ -258,6 +258,15 @@ function explain(e, t){
   return (e && e.message) || String(e);
 }
 
-window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs,
+// ---- 意見回饋：老師寫給 Ben（只有管理員讀得到；規則見 firestore-rules-step5-1.txt）----
+function sendFeedback(f){
+  const u = auth.currentUser;
+  return db.collection('center_feedback').add({
+    uid: u.uid, email: u.email || '', type: f.type, message: f.message, lang: f.lang, page: f.page,
+    done: false, createdAt: serverTs()
+  });
+}
+
+window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
   ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

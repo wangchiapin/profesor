@@ -205,3 +205,15 @@ label.sent.pick input{width:22px;height:22px;margin-top:4px;accent-color:var(--b
 .savebar .st{margin:0}
 .dirty{color:var(--err);font-size:.88rem;font-weight:700}
 #cwsCard .chip{white-space:normal}
+
+/* ---- 步驟 5-1：快速跳轉、建議訂閱、意見回饋、干擾字 ---- */
+.jump{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;background:var(--bg);padding:8px 0;margin:4px 0}
+.jump .pill{flex:0 0 auto}
+#correCard,#bbkCard,#colCard,#cwsCard,#wsCard,#bbkWsCard{scroll-margin-top:60px}
+.lockbtn{border-style:dashed}
+.slot .lockbtn{flex:0 0 auto}
+.modal .box.left{text-align:left;max-width:420px}
+.modal .box.left h3{margin-bottom:4px}
+.sublist{margin:6px 0 14px;padding-left:20px;line-height:1.7}
+.decoy-field.locked input{background:var(--brown-l);cursor:pointer}
+.sent .dc{font-size:.85rem;color:var(--brown)}

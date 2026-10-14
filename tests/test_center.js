@@ -76,6 +76,7 @@ async function open(browser, { seedOpt, user = TEACH, ls = {}, hash = '' } = {})
 }
 const db = page => page.evaluate(t => window.__DB[t], T);
 const shot = async (page, name) => { if(SHOT) await page.screenshot({ path: path.join(SHOT, name + '.png'), fullPage: true }); };
+const vshot = async (page, name) => { if(SHOT) await page.screenshot({ path: path.join(SHOT, name + '.png') }); };
 const text = (page, sel = '#app') => page.$eval(sel, e => e.innerText);
 const noOverflow = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 let BASE;
@@ -430,8 +431,11 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('#colCard .setrow');
     await page.click('#colCard [data-act=colnew]'); await page.waitForSelector('#colCard .editor');
     await page.click('[data-act=colcadd]');
-    ok(await page.$('[data-cc="0"]') === null, '免費：不能加自訂顏色');
+    ok(await page.$('[data-cc="0"]') === null && await page.$('.modal.sub') !== null, '免費：不能加自訂顏色（跳出建議訂閱）');
+    await page.click('.modal.sub [data-m=close]');
     await page.click('[data-act=colnmode][data-k=list]');
+    ok(await page.$('.modal.sub') !== null, '免費：自訂數字也跳出建議訂閱');
+    await page.click('.modal.sub [data-m=close]');
     ok(await page.$('#colList') === null && (await text(page, '#colCard')).includes('requieren suscripción'), '免費：不能用自訂數字（西文提示）');
     await page.click('[data-act=colsave]'); await page.waitForFunction(() => !document.querySelector('#colCard .editor'));
     ok((await db(page)).teacher_configs.u1.items.length === 3 && await page.$('#colCard [data-act=colnew]') === null, '免費：存到第 3 組就不能再新增');
@@ -609,7 +613,7 @@ server.listen(0, 'localhost', async () => {
     const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
     await page.waitForSelector('#correCard');
     const t = await text(page, '#correCard');
-    ok(t.includes('已用 1 / 1 個句庫') && (t.match(/🔒/g) || []).length === 4 && t.includes('2 / 50 句'), '免費：1 / 1，其他 4 格上鎖，每庫 50 句');
+    ok(t.includes('已用 1 / 1 個句庫') && (t.match(/🔒/g) || []).length === 8 && (await page.$$('#correCard [data-act=needsub]')).length === 4 && t.includes('2 / 50 句'), '免費：1 / 1，其他 4 格上鎖（各有建議訂閱按鈕），每庫 50 句');
     await page.goto(BASE + '/index.html#/bank/2'); await page.waitForSelector('.notice');
     ok((await text(page)).includes('需要訂閱') && !(await page.$('#ce-sent')), '免費老師直接開 #/bank/2：顯示需要訂閱');
     await page.goto(BASE + '/index.html#/bank/0'); await page.waitForSelector('#ce-sent');
@@ -639,6 +643,81 @@ server.listen(0, 'localhost', async () => {
     const r = await page.evaluate(u => { const X = window.CORRE_TX; return u.filter(k => ['zh', 'cn', 'es', 'en'].some(l => !X[l][k])); }, [...used].filter(k => !['on', 'off'].includes(k) || true));
     ok(r.length === 0, '句庫編輯器詞條齊全', r);
     await ctx.close(); }
+
+  console.log('\n[N] 步驟 5-1：學習單改名、快速跳轉、建議訂閱、意見回饋、干擾字');
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('#correCard'); await vshot(page, 'n0a_settings_top');
+    ok((await text(page, '.nav')).includes('學習單') && !(await text(page, '.nav')).includes('列印'), '上方選單：「列印」改名「學習單」');
+    const jb = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k + ':' + x.innerText));
+    ok(jb.join('|') === 'correCard:📚 跑吧句庫|bbkCard:📐 比比看範圍|colCard:🎨 色數設定', '遊戲設定頁：三個快速按鈕', jb);
+    await page.click('.jump [data-k=colCard]'); await page.waitForTimeout(700);
+    ok(await page.evaluate(() => { const t = document.getElementById('colCard').getBoundingClientRect().top; return window.scrollY > 0 && t >= 0 && t < window.innerHeight / 2; }), '按「色數設定」捲到色數卡片');
+    await vshot(page, 'n0b_settings_jumped');
+    await page.evaluate(() => window.__profesor.go('print')); await page.waitForSelector('#wsCard');
+    const jp = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k));
+    ok(jp.join() === 'cwsCard,wsCard,bbkWsCard' && await page.$('#bbkWsCard') !== null, '學習單頁：三個快速按鈕', jp);
+    ok((await text(page, 'h2')) === '學習單', '學習單頁標題');
+    // 意見回饋
+    await page.click('[data-act=feedback]'); await page.waitForSelector('.modal.fb');
+    ok((await text(page, '.modal.fb')).includes('teacher@example.com') || (await text(page, '.modal.fb')).includes('@'), '回饋視窗顯示 email');
+    await page.click('.modal.fb [data-m=send]');
+    ok((await text(page, '#fbSt')).includes('請先寫內容'), '沒寫內容不能送');
+    await page.click('.modal.fb [data-t=bug]'); await page.fill('#fbText', '學習單按鈕太小'); await vshot(page, 'n2_feedback');
+    await page.click('.modal.fb [data-m=send]'); await page.waitForFunction(() => !document.querySelector('.modal.fb'));
+    const fb = Object.values((await db(page)).center_feedback || {});
+    ok(fb.length === 1 && fb[0].type === 'bug' && fb[0].message === '學習單按鈕太小' && fb[0].lang === 'tc' && fb[0].page === '#/print' && fb[0].done === false && fb[0].uid && fb[0].email,
+      '回饋存進 center_feedback（類型、內容、語言、頁面、email）', fb);
+    ok(Object.keys(fb[0]).sort().join() === 'createdAt,done,email,lang,message,page,type,uid', '回饋欄位跟規則一致', Object.keys(fb[0]));
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 免費老師：按到訂閱功能跳出建議訂閱
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'es' }, hash: '#/classes' });
+    await page.waitForSelector('.slot');
+    ok((await page.$$('.slot [data-act=needsub]')).length >= 1, '班級：上鎖的位置有按鈕');
+    await page.click('.slot [data-act=needsub]'); await page.waitForSelector('.modal.sub');
+    const m = await text(page, '.modal.sub');
+    ok(m.includes('Función de suscripción') && m.includes('5 bancos de Corre') && (await page.$eval('.modal.sub a[data-m=go]', a => a.href)).includes('cadadiaunosminutos-share-zone'), '建議訂閱視窗：西文、列出訂閱內容、連到入口網站', m);
+    await shot(page, 'n1_needsub');
+    await page.click('.modal.sub [data-m=close]'); ok(await page.$('.modal.sub') === null, '「之後再說」關掉視窗');
+    await page.evaluate(() => window.__profesor.go('print')); await page.waitForSelector('#wsCard');
+    ok((await page.$$('#cwsCard [data-act=needsub], #wsCard [data-act=needsub]')).length === 2, '學習單：未訂閱有上鎖的「產生」按鈕');
+    await page.click('#wsCard [data-act=needsub]'); ok(await page.$('.modal.sub') !== null, '按了跳出建議訂閱'); await page.click('.modal.sub [data-m=close]');
+    ok((await text(page, '.nav')).includes('Hojas de trabajo'), '西文：Hojas de trabajo');
+    await page.evaluate(() => window.__profesor.go('bank', '0')); await page.waitForSelector('#ce-decoy', { state: 'attached' });
+    ok(await page.$eval('#ce-decoy', i => i.readOnly) && (await text(page, '#ce-decoyBox')).includes('requieren suscripción'), '免費：干擾字欄位上鎖');
+    await page.evaluate(() => { document.getElementById('ce-preview').hidden = false; });
+    await page.click('#ce-decoy'); ok(await page.$('.modal.sub') !== null, '免費：按干擾字跳出建議訂閱'); await page.click('.modal.sub [data-m=close]');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 訂閱老師：干擾字
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/bank/1' });
+    await page.waitForSelector('#ce-decoy', { state: 'attached' });
+    ok(!(await page.$eval('#ce-decoy', i => i.readOnly)), '訂閱：干擾字可以輸入');
+    await page.evaluate(() => { document.getElementById('ce-preview').hidden = false; });
+    await page.click('#ce-addTok'); await page.click('#ce-addTok');
+    const ins = await page.$$('#ce-tokens input');
+    await ins[0].fill('自己'); await ins[1].fill('自己'); await ins[2].fill('zì jǐ');
+    await ins[3].fill('來'); await ins[4].fill('来'); await ins[5].fill('lái');
+    await page.fill('#ce-es', 'Uno mismo viene');
+    await page.fill('#ce-decoy', '己 已 巳 已經 來 abc');
+    await page.click('#ce-addSent'); await page.waitForTimeout(100);
+    ok((await text(page, '#ce-addSt')).includes('只能是中文字') && (await text(page, '#ce-addSt')).includes('abc'), '干擾字：非中文字擋下');
+    await page.fill('#ce-decoy', '己 已 巳 已經 來 自 他');
+    await page.click('#ce-addSent'); await page.waitForTimeout(100);
+    ok((await text(page, '#ce-addSt')).includes('最多 5 個'), '干擾字：超過 5 個擋下（句子本身的「來」不算）');
+    await page.fill('#ce-decoy', '己 已 巳 來 已');
+    await page.click('#ce-addSent'); await page.waitForFunction(() => document.querySelector('#ce-sents .sent'), null, { timeout: 15000 });
+    const card = await text(page, '#ce-sents');
+    await page.click('#ce-sents .acts .x'); await page.$eval('#ce-decoyBox', e => e.scrollIntoView({ block: 'center' })); await vshot(page, 'n3_decoy_field');
+    await page.click('#ce-cancelEdit'); await page.$eval('#ce-sents', e => e.scrollIntoView({ block: 'center' })); await vshot(page, 'n4_decoy_card');
+    ok(card.includes('干擾字：己・已・巳'), '句子卡片顯示干擾字（去掉重複和句子本身的詞）', card);
+    // 編輯會帶回干擾字
+    await page.click('#ce-sents .acts .x'); ok(await page.inputValue('#ce-decoy') === '己 已 巳', '修改句子時帶回干擾字');
+    await page.click('#ce-cancelEdit');
+    await page.click('#ce-save'); await page.waitForFunction(() => /已上傳|儲存|Guard|saved/i.test(document.getElementById('ce-saveSt').innerText), null, { timeout: 15000 });
+    const d = await db(page), sh = Object.values(d.shared_banks).find(b => b.slot === 1);
+    const s0 = sh && sh.sentences[0];
+    ok(s0 && s0.decoy.join() === '己,已,巳' && Array.isArray(s0.decoySimp) && s0.decoySimp.length === 3, '儲存：sentences[].decoy 與 decoySimp', s0);
+    if(LIBS) ok(s0.decoySimp.join() === '己,已,巳', '簡體自動轉換');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[H] 詞條完整性');
   { const { page, ctx } = await open(browser, { user: null });

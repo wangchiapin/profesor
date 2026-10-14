@@ -26,6 +26,33 @@ const D = {
   soon: ['之後開放', '之后开放', 'Próximamente', 'Coming soon'],
   permDenied: ['沒有權限。請確認已登入，而且方案還有效。', '没有权限。请确认已登录，而且方案还有效。', 'Sin permiso. Comprueba que has iniciado sesión y que tu suscripción está activa.', 'Permission denied. Check that you are signed in and your plan is active.'],
   network: ['連線失敗，請稍後再試。', '连线失败，请稍后再试。', 'Fallo de conexión. Inténtalo de nuevo más tarde.', 'Connection failed. Please try again later.'],
+  // ---- 跳轉、訂閱提醒、意見回饋（步驟 5-1）----
+  jumpTo: ['跳到', '跳到', 'Ir a', 'Jump to'],
+  jumpCorre: ['📚 跑吧句庫', '📚 跑吧句库', '📚 Bancos de Corre', '📚 Run Hanzi banks'],
+  jumpBbk: ['📐 比比看範圍', '📐 比比看范围', '📐 Rangos de Compara', '📐 Compare ranges'],
+  jumpColores: ['🎨 色數設定', '🎨 色数设置', '🎨 Ajustes de Pop Colores', '🎨 Pop Colors sets'],
+  jumpCorreWs: ['📚 跑吧', '📚 跑吧', '📚 Corre', '📚 Run Hanzi'],
+  jumpColoresWs: ['🎨 色數', '🎨 色数', '🎨 Pop Colores', '🎨 Pop Colors'],
+  jumpBbkWs: ['📐 比比看', '📐 比比看', '📐 Compara', '📐 Compare'],
+  subTitle: ['🔒 這是訂閱功能', '🔒 这是订阅功能', '🔒 Función de suscripción', '🔒 Subscriber feature'],
+  subWhy: ['訂閱後可以使用：', '订阅后可以使用：', 'Con la suscripción puedes usar:', 'With a subscription you get:'],
+  subList: ['建立班級和成績簿（最多 3 班）\n跑吧句庫 5 個、每庫 80 句、自訂干擾字\n色數設定 15 組、自訂顏色與數字\n比比看範圍 15 組\n三款遊戲的學習單', '建立班级和成绩簿（最多 3 班）\n跑吧句库 5 个、每库 80 句、自定干扰字\n色数设置 15 组、自定颜色与数字\n比比看范围 15 组\n三款游戏的学习单', 'Clases y libro de notas (hasta 3)\n5 bancos de Corre, 80 frases cada uno, distractores propios\n15 ajustes de Pop Colores, colores y números propios\n15 rangos de Compara\nHojas de trabajo de los tres juegos', 'Classes and gradebooks (up to 3)\n5 Run Hanzi banks, 80 sentences each, custom decoys\n15 Pop Colors sets, custom colors and numbers\n15 Compare ranges\nWorksheets for all three games'],
+  subGo: ['了解訂閱 →', '了解订阅 →', 'Ver la suscripción →', 'See the subscription →'],
+  subLater: ['之後再說', '之后再说', 'Ahora no', 'Not now'],
+  fbBtn: ['💬 意見回饋', '💬 意见反馈', '💬 Comentarios', '💬 Feedback'],
+  fbTitle: ['意見回饋', '意见反馈', 'Comentarios', 'Feedback'],
+  fbHint: ['有建議或遇到問題，直接寫給我。', '有建议或遇到问题，直接写给我。', '¿Una idea o un problema? Escríbeme aquí.', 'An idea or a problem? Write to me here.'],
+  fbType: ['類型', '类型', 'Tipo', 'Type'],
+  fbIdea: ['建議', '建议', 'Sugerencia', 'Idea'],
+  fbBug: ['問題', '问题', 'Problema', 'Problem'],
+  fbOther: ['其他', '其他', 'Otro', 'Other'],
+  fbMsg: ['內容', '内容', 'Mensaje', 'Message'],
+  fbPh: ['請盡量寫清楚：在哪一頁、做了什麼、看到什麼。', '请尽量写清楚：在哪一页、做了什么、看到什么。', 'Cuéntame en qué página estabas, qué hiciste y qué viste.', 'Tell me which page, what you did and what you saw.'],
+  fbFrom: ['會一起送出你的 email：{email}', '会一起送出你的 email：{email}', 'Se enviará también tu correo: {email}', 'Your email will be sent too: {email}'],
+  fbSend: ['送出', '送出', 'Enviar', 'Send'],
+  fbNeed: ['請先寫內容。', '请先写内容。', 'Escribe el mensaje primero.', 'Please write a message first.'],
+  fbThanks: ['謝謝！已送出。', '谢谢！已送出。', '¡Gracias! Enviado.', 'Thanks! Sent.'],
+  fbSending: ['送出中…', '送出中…', 'Enviando…', 'Sending…'],
 
   // ---- 跑吧！漢字：句庫（步驟 4）----
   correBanksTitle: ['跑吧！漢字：句庫', '跑吧！汉字：句库', 'Corre Hanzi: bancos de frases', 'Run Hanzi: sentence banks'],
@@ -150,7 +177,7 @@ const D = {
   navHome: ['首頁', '首页', 'Inicio', 'Home'],
   navClasses: ['班級', '班级', 'Clases', 'Classes'],
   navSettings: ['遊戲設定', '游戏设置', 'Ajustes de juegos', 'Game settings'],
-  navPrint: ['列印', '打印', 'Imprimir', 'Print'],
+  navPrint: ['學習單', '学习单', 'Hojas de trabajo', 'Worksheets'],
 
   // ---- 首頁 ----
   planTitle: ['方案', '方案', 'Plan', 'Plan'],
@@ -164,7 +191,7 @@ const D = {
   planWasExpired: ['{plan}（已到期）', '{plan}（已到期）', '{plan} (vencida)', '{plan} (expired)'],
   planUntil: ['到期日 {date}', '到期日 {date}', 'Vence el {date}', 'Valid until {date}'],
   planExpired: ['已於 {date} 到期', '已于 {date} 到期', 'Venció el {date}', 'Expired on {date}'],
-  planFreeNote: ['建立班級、成績簿、列印需要訂閱。', '建立班级、成绩簿、打印需要订阅。', 'Crear clases, ver notas e imprimir requiere suscripción.', 'Creating classes, gradebooks and printing need a subscription.'],
+  planFreeNote: ['建立班級、成績簿、學習單需要訂閱。', '建立班级、成绩簿、学习单需要订阅。', 'Crear clases, ver notas y hacer hojas de trabajo requiere suscripción.', 'Creating classes, gradebooks and worksheets need a subscription.'],
   planExpiredNote: ['訂閱已到期：學生的新成績傳不進來，舊的班級與成績仍可查看、匯出、刪除。', '订阅已到期：学生的新成绩传不进来，旧的班级与成绩仍可查看、导出、删除。', 'Suscripción vencida: no llegan notas nuevas; puedes ver, exportar y borrar las anteriores.', 'Subscription expired: new scores cannot come in; existing classes and scores can still be viewed, exported and deleted.'],
   subscribe: ['了解訂閱', '了解订阅', 'Ver suscripción', 'About subscribing'],
   usageTitle: ['用量', '用量', 'Uso', 'Usage'],
@@ -269,9 +296,9 @@ const D = {
   settingsColores: ['設定組在遊戲主選單最下面的「教師版」。', '设置组在游戏主选单最下面的「教师版」。', 'Las configuraciones están en «Versión docente», al final del menú del juego.', 'Setups are under "Teacher version" at the bottom of the game menu.'],
   settingsBbk: ['自選範圍在遊戲主選單最下面的「老師設定」。', '自选范围在游戏主选单最下面的「老师设置」。', 'El rango propio está en «Ajustes del profesor», al final del menú del juego.', 'Your own range is under "Teacher settings" at the bottom of the game menu.'],
 
-  // ---- 列印 ----
-  printTitle: ['列印', '打印', 'Imprimir', 'Print'],
-  printHint: ['跑吧和色數的學習單在這裡產生；比比看的練習紙目前仍在遊戲裡，之後會集中到這裡。', '跑吧和色数的学习单在这里生成；比比看的练习纸目前仍在游戏里，之后会集中到这里。', 'Las hojas de Corre y Pop Colores se crean aquí; la de Compara y Adivina sigue dentro del juego por ahora.', 'Run Hanzi and Pop Colors worksheets are made here; the Compare & Guess sheet is still inside the game for now.'],
+  // ---- 學習單（網址仍是 #/print）----
+  printTitle: ['學習單', '学习单', 'Hojas de trabajo', 'Worksheets'],
+  printHint: ['學習單都是訂閱功能。跑吧和色數的學習單在這裡產生；比比看的練習紙目前仍在遊戲裡，之後會搬到這裡。', '学习单都是订阅功能。跑吧和色数的学习单在这里生成；比比看的练习纸目前仍在游戏里，之后会搬到这里。', 'Las hojas de trabajo requieren suscripción. Las de Corre y Pop Colores se crean aquí; la de Compara y Adivina sigue dentro del juego por ahora.', 'Worksheets need a subscription. Run Hanzi and Pop Colors worksheets are made here; the Compare & Guess sheet is still inside the game for now.'],
   printColores: ['學習單：即將新增（聽讀找色、看色寫數、著色版）。', '学习单：即将新增（听读找色、看色写数、着色版）。', 'Hojas de trabajo: próximamente (oír y buscar color, ver color y escribir número, colorear).', 'Worksheets: coming soon (listen and find color, see color and write number, coloring).'],
   printBbk: ['練習紙：在遊戲主選單的「老師設定」裡按「練習紙」。', '练习纸：在游戏主选单的「老师设置」里按「练习纸」。', 'Hoja de práctica: en «Ajustes del profesor» del juego, pulsa «Hoja de práctica».', 'Practice sheet: press "Practice sheet" in the in-game teacher settings.'],
 

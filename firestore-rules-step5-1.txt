@@ -1,0 +1,30 @@
+    // ===================================================================
+    // ===== 步驟 5-1：老師管理中心「意見回饋」=====
+    // 貼在中心專案 subscription-48d3c 的規則裡：步驟 2 那段（shared_bbk）之後、最後兩個 } 之前。
+    // 依賴既有函式：realUser() / isAdmin()（跟前面幾段用的同一組）
+    //
+    // center_feedback/{id}  老師從中心送出的回饋
+    //   { uid, email, type(idea|bug|other), message(1–1000 字), lang(tc|sc|es|en), page, done:false, createdAt }
+    //   - 已登入的老師只能「新增」，而且 uid、email 必須是自己的
+    //   - 只有管理員（你）能讀、標記已處理、刪除（stats 頁「訂閱 → 老師管理中心回饋」）
+    // ===================================================================
+    match /center_feedback/{id} {
+      function okFeedback() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['uid','email','type','message','lang','page','done','createdAt'])
+          && d.keys().hasAll(['uid','email','type','message','lang','page','done','createdAt'])
+          && d.uid == request.auth.uid
+          && d.email == request.auth.token.email
+          && d.type in ['idea','bug','other']
+          && d.message is string && d.message.size() >= 1 && d.message.size() <= 1000
+          && d.lang in ['tc','sc','es','en']
+          && d.page is string && d.page.size() <= 40
+          && d.done == false
+          && d.createdAt == request.time;
+      }
+      allow create: if realUser() && okFeedback();
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done'])
+        && request.resource.data.done is bool;
+    }

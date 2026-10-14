@@ -17,6 +17,7 @@ function setSt(el, msg, cls){ if(!el) return; el.textContent = msg || ''; el.cla
 const explainError = e => DATA.explain(e, k => tr(k));
 
 const MAX_CHARS = 20, FREE_SENT = 50, PRO_SENT = 80, FREE_SLOTS = 1, PRO_SLOTS = 5;
+const MAX_DECOY = 5, DECOY_LEN = 4;   // 每句干擾字：最多 5 個，每個 1～4 個字（訂閱功能）
 
 // ================= 繁簡轉換與拼音（台灣讀音）：兩個函式庫只在編輯器裡用到，第一次用時才載入 =================
 const LIBS = ['https://cdn.jsdelivr.net/npm/opencc-js@1.4.1/dist/umd/full.js', 'https://cdn.jsdelivr.net/npm/pinyin-pro@3.20.0/dist/index.js'];
@@ -183,6 +184,9 @@ function shellHtml(){
       '<div id="ce-tokens"></div><div class="row"><button class="pill sm" id="ce-addTok">' + esc(tr('addCell')) + '</button></div>' +
       '<div class="field"><label for="ce-es">' + esc(tr('esLabel')) + '</label><textarea id="ce-es" rows="2"></textarea></div>' +
       '<div class="field"><label for="ce-en">' + esc(tr('enLabel')) + '</label><textarea id="ce-en" rows="2"></textarea></div>' +
+      '<div class="field decoy-field' + (planOn() ? '' : ' locked') + '" id="ce-decoyBox"><label for="ce-decoy">' + esc(tr('decoyLabel')) + '</label>' +
+        '<input type="text" id="ce-decoy" maxlength="40" placeholder="' + esc(tr('decoyPh')) + '"' + (planOn() ? '' : ' readonly') + '>' +
+        '<p class="hint">' + esc(planOn() ? tr('decoyHint', { n: MAX_DECOY, len: DECOY_LEN }) : tr('decoyLocked')) + '</p></div>' +
       '<div class="row"><button class="pill fill" id="ce-addSent"></button><button class="pill" id="ce-cancelEdit" hidden>' + esc(tr('cancelEdit')) + '</button></div>' +
       '<div class="st" id="ce-addSt"></div></div>' +
     '<div class="card"><h3>' + esc(tr('bulk')) + '</h3><p class="hint">' + esc(tr('bulkHint')) + '</p>' +
@@ -231,6 +235,7 @@ function renderSents(){
     info.appendChild(mk('div', 'py', phText((s.pinyin || []).join('  '), ED.phonetic)));
     info.appendChild(mk('div', 'tl', s.es || ''));
     info.appendChild(mk('div', 'tl mut', s.en || tr('noEn')));
+    if(s.decoy && s.decoy.length) info.appendChild(mk('div', 'dc', tr('decoyShow', { w: (ED.script === 'simp' && s.decoySimp ? s.decoySimp : s.decoy).join('・') })));
     info.appendChild(mk('small', null, tr('sentCount', { n: countHan(s.trad) })));
     const acts = mk('div', 'acts');
     const e = mk('button', 'x', '✏️'); e.title = tr('updSent'); e.addEventListener('click', () => startEdit(i));
@@ -266,7 +271,7 @@ function collect(){
 }
 function resetForm(){
   editingIdx = -1;
-  ['sent', 'esTop', 'enTop', 'es', 'en'].forEach(k => { $(k).value = ''; });
+  ['sent', 'esTop', 'enTop', 'es', 'en', 'decoy'].forEach(k => { $(k).value = ''; });
   $('tokens').textContent = ''; $('preview').hidden = true;
   setSt($('genSt'), ''); setSt($('addSt'), '');
   renderMeta();
@@ -275,7 +280,7 @@ function startEdit(i){
   const s = ED.sentences[i]; editingIdx = i;
   $('sent').value = (s.trad || []).join(' '); $('esTop').value = s.es || ''; $('enTop').value = s.en || '';
   tokenRows({ trad: s.trad || [], simp: s.simp || [], pinyin: s.pinyin || [] });
-  $('es').value = s.es || ''; $('en').value = s.en || '';
+  $('es').value = s.es || ''; $('en').value = s.en || ''; $('decoy').value = (s.decoy || []).join(' ');
   $('preview').hidden = false; setSt($('addSt'), '');
   renderMeta();
   $('preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -301,7 +306,16 @@ async function runGenerate(){
   }catch(e){ console.error(e); setSt(st, (e && e.message) || 'error', 'err'); }
   finally{ if($('gen')) $('gen').disabled = false; }
 }
-function addSentence(){
+// 干擾字：空格（或逗號、頓號）分開；去掉重複和句子本身用到的詞
+function parseDecoys(text, tokens){
+  const list = [];
+  String(text || '').split(/[\s,，、]+/).filter(Boolean).forEach(w => { if(list.indexOf(w) < 0 && (tokens || []).indexOf(w) < 0) list.push(w); });
+  const bad = list.find(w => !new RegExp('^[\u3400-\u9fff]{1,' + DECOY_LEN + '}$').test(w));
+  if(bad) return { err: tr('decoyBad', { len: DECOY_LEN, w: bad }) };
+  if(list.length > MAX_DECOY) return { err: tr('decoyTooMany', { n: MAX_DECOY }) };
+  return { list };
+}
+async function addSentence(){
   const st = $('addSt'), tk = collect(), es = $('es').value.trim(), en = $('en').value.trim();
   if(!tk.trad.length || !tk.simp.length || !tk.pinyin.length){ setSt(st, tr('emptyCells'), 'err'); return; }
   if(tk.trad.length !== tk.simp.length || tk.trad.length !== tk.pinyin.length){ setSt(st, tr('mismatch'), 'err'); return; }
@@ -311,7 +325,14 @@ function addSentence(){
   if(!es){ setSt(st, tr('needEs'), 'err'); return; }
   const k = keyOf(tk.trad);
   if(ED.sentences.some((s, i) => i !== editingIdx && keyOf(s.trad) === k)){ setSt(st, tr('dup'), 'err'); return; }
+  const dc = parseDecoys($('decoy').value, tk.trad);
+  if(dc.err){ setSt(st, dc.err, 'err'); return; }
   const obj = { trad: tk.trad, simp: tk.simp, pinyin: tk.pinyin, es, en };
+  if(dc.list.length){
+    try{ await loadLibs(); }catch(e){ setSt(st, (e && e.message) || 'error', 'err'); return; }
+    if(!ED) return;
+    obj.decoy = dc.list; obj.decoySimp = dc.list.map(w => toSimplified(w));
+  }
   let msg;
   if(editingIdx >= 0){ ED.sentences[editingIdx] = obj; msg = tr('updated'); }
   else{
@@ -377,12 +398,16 @@ async function saveBank(){
   if(!n){ setSt(st, tr('needOne'), 'err'); return; }
   if(n > cap()){ setSt(st, tr('full', { max: cap() }), 'err'); return; }
   const pro = ED.slot > 0 || n > FREE_SENT;
-  if(pro && !planOn()){ setSt(st, tr('needSub'), 'err'); return; }
+  if(pro && !planOn()){ setSt(st, tr('needSub'), 'err'); if(window.PROF) window.PROF.needSub(); return; }
   if(!ED.sentences.every(s => countHan(s.trad) >= 1 && countHan(s.trad) <= MAX_CHARS)){ setSt(st, tr('tooLong', { n: '>' + MAX_CHARS, max: MAX_CHARS }), 'err'); return; }
   const btn = $('save'); btn.disabled = true; setSt(st, tr('saving'));
   const ed = ED;
   try{
-    const clean = ed.sentences.map(s => ({ trad: s.trad, simp: s.simp, pinyin: s.pinyin, es: s.es, en: s.en || '' }));
+    const clean = ed.sentences.map(s => {
+      const o = { trad: s.trad, simp: s.simp, pinyin: s.pinyin, es: s.es, en: s.en || '' };
+      if(s.decoy && s.decoy.length){ o.decoy = s.decoy.slice(0, MAX_DECOY); o.decoySimp = (s.decoySimp || s.decoy).slice(0, MAX_DECOY); }
+      return o;
+    });
     const data = { name, speed: ed.speed, script: ed.script, boss: !!ed.boss, sentences: clean, pro };
     if(ed.phonetic === 'zhuyin' || ed.phonetic === 'both') data.phonetic = ed.phonetic;   // 預設拼音：不寫入（與教師頁相同）
     const r = await DATA.saveCorreBank(ACC.bslots || {}, ed.slot, ed.sid, data);
@@ -562,7 +587,7 @@ function pickSetSrc(src){
 function capture(){
   if(!ED || !$('sent')) return;
   const rows = [...document.querySelectorAll('#ce-tokens .tk')].map(r => ['trad', 'simp', 'pinyin'].map(c => r.querySelector('.' + c).value));
-  FORM = { name: $('name').value, sent: $('sent').value, esTop: $('esTop').value, enTop: $('enTop').value, es: $('es').value, en: $('en').value,
+  FORM = { name: $('name').value, sent: $('sent').value, esTop: $('esTop').value, enTop: $('enTop').value, es: $('es').value, en: $('en').value, decoy: $('decoy').value,
     bulk: $('bulk').value, rows, preview: !$('preview').hidden, filter: $('pickFilter').value, scroll: window.scrollY };
 }
 function mount(el, onBack){
@@ -571,7 +596,7 @@ function mount(el, onBack){
   renderGroups();
   $('name').value = FORM ? FORM.name : ED.name;
   if(FORM){
-    ['sent', 'esTop', 'enTop', 'es', 'en', 'bulk'].forEach(k => { $(k).value = FORM[k] || ''; });
+    ['sent', 'esTop', 'enTop', 'es', 'en', 'bulk', 'decoy'].forEach(k => { $(k).value = FORM[k] || ''; });
     FORM.rows.forEach(r => addRow(r[0], r[1], r[2]));
     $('preview').hidden = !FORM.preview;
     $('pickFilter').value = FORM.filter || '';
@@ -595,6 +620,7 @@ function mount(el, onBack){
   $('gen').addEventListener('click', runGenerate);
   $('addTok').addEventListener('click', () => addRow('', '', ''));
   $('addSent').addEventListener('click', addSentence);
+  if(!planOn()) $('decoyBox').addEventListener('click', () => { if(window.PROF) window.PROF.needSub(); });
   $('cancelEdit').addEventListener('click', resetForm);
   $('bulkCheck').addEventListener('click', bulkCheck);
   $('bulkGo').addEventListener('click', bulkGo);

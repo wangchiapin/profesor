@@ -103,7 +103,7 @@ function loginHtml(){
     (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
 }
 function whoHtml(){
-  return '<div class="who"><span>' + esc(T('signedInAs', { email: S.user.email })) + '</span><button class="pill sm" data-act="logout">' + esc(T('logout')) + '</button></div>';
+  return '<div class="who"><span>' + esc(T('signedInAs', { email: S.user.email })) + '</span><button class="pill sm" data-act="feedback">' + esc(T('fbBtn')) + '</button><button class="pill sm" data-act="logout">' + esc(T('logout')) + '</button></div>';
 }
 function planNoticeHtml(){
   const P = S.a.plan;
@@ -120,6 +120,12 @@ function planLabel(P){
   if(P.plan === 'trial' && P.expiresAt) return name + '・' + T('planDaysLeft', { n: Math.max(1, Math.ceil((P.expiresAt - Date.now()) / 86400000)) });
   return name;
 }
+// 遊戲設定、學習單頁上方的快速按鈕：按了直接捲到那一張卡片
+function jumpHtml(list){
+  return '<div class="jump" aria-label="' + esc(T('jumpTo')) + '">' + list.map(x => '<button class="pill sm" data-act="jump" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div>';
+}
+// 沒訂閱的人按到訂閱功能時的按鈕（按了跳出「建議訂閱」視窗）
+const lockBtn = label => '<button class="pill sm lockbtn" data-act="needsub">🔒 ' + esc(label) + '</button>';
 function homeHtml(){
   const A = S.a, P = A.plan, nCls = Object.keys(A.classes).length;
   const banksMax = P.active ? 5 : 1, cfgMax = P.active ? 15 : 3;
@@ -143,6 +149,7 @@ function classesHtml(){
     const c = A.classes[String(i)];
     if(c) h += '<div class="slot"><b>🏫 ' + esc(c.data.name) + '</b><button class="pill fill sm" data-act="openclass" data-slot="' + i + '">' + esc(T('open')) + '</button></div>';
     else if(P.active && A.clsReady) h += '<div class="slot empty"><input type="text" id="newCls' + i + '" maxlength="40" placeholder="' + esc(T('classNamePh')) + '"><button class="pill sm" data-act="createclass" data-slot="' + i + '">＋ ' + esc(T('createClass')) + '</button></div>';
+    else if(!P.active) h += '<div class="slot empty"><span class="mut">🔒 ' + esc(T('lockedSlot', { n: i + 1 })) + '</span>' + lockBtn(T('createClass')) + '</div>';
     else h += '<div class="slot empty"><span class="mut">🔒 ' + esc(T('lockedSlot', { n: i + 1 })) + '</span></div>';
   }
   if(S.msg) h += '<div class="err">' + esc(S.msg) + '</div>';
@@ -270,7 +277,7 @@ function bbkCardHtml(){
   if(E && E.i < 0) h += bbkEditorHtml();
   else if(!E){
     if(A.bbk.length < max) h += '<div class="row"><button class="pill fill sm" data-act="bbknew">＋ ' + esc(T('bbkNew')) + '</button></div>';
-    else h += '<div class="notice">' + esc(T(A.plan.active ? 'bbkFullPro' : 'bbkFullFree')) + (A.plan.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
+    else h += (A.plan.active ? '' : '<div class="row">' + lockBtn(T('bbkNew')) + '</div>') + '<div class="notice">' + esc(T(A.plan.active ? 'bbkFullPro' : 'bbkFullFree')) + (A.plan.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
   }
   if(S.bbkMsg && !E) h += '<div class="err">' + esc(S.bbkMsg) + '</div>';
   h += '<p class="hint">' + esc(T('bbkPracticeHint')) + '</p>';
@@ -329,7 +336,7 @@ function colCardHtml(){
   if(E && E.i < 0) h += colEditorHtml();
   else if(!E){
     if(A.configs.length < max) h += '<div class="row"><button class="pill fill sm" data-act="colnew">＋ ' + esc(T('colNew')) + '</button></div>';
-    else h += '<div class="notice">' + esc(T(A.plan.active ? 'bbkFullPro' : 'bbkFullFree')) + (A.plan.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
+    else h += (A.plan.active ? '' : '<div class="row">' + lockBtn(T('colNew')) + '</div>') + '<div class="notice">' + esc(T(A.plan.active ? 'bbkFullPro' : 'bbkFullFree')) + (A.plan.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
   }
   if(S.colMsg && !E) h += '<div class="err">' + esc(S.colMsg) + '</div>';
   h += '<p class="hint">' + esc(T('colPracticeHint')) + '</p>';
@@ -354,7 +361,7 @@ function correCardHtml(){
     }else if(i < CORRE.FREE_SLOTS || P.active){
       h += '<div class="slot empty"><span class="mut">' + esc(CORRE.tr('slotN', { n: i + 1 })) + '</span><button class="pill fill sm" data-act="bankedit" data-k="' + i + '">＋ ' + esc(T('correNew')) + '</button></div>';
     }else{
-      h += '<div class="slot empty"><span class="mut">🔒 ' + esc(CORRE.tr('slotN', { n: i + 1 })) + ' · ' + esc(T('correLocked')) + '</span></div>';
+      h += '<div class="slot empty"><span class="mut">🔒 ' + esc(CORRE.tr('slotN', { n: i + 1 })) + ' · ' + esc(T('correLocked')) + '</span>' + lockBtn(T('correNew')) + '</div>';
     }
   }
   if(!P.active) h += '<div class="notice">' + esc(T('correFreeNote')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
@@ -369,7 +376,8 @@ function bankRouteHtml(){
     esc(why === 'locked' ? CORRE.tr('slotLockedEd') : T('bbkUnavailable')) + '</div>';
 }
 function settingsHtml(){
-  return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' + correCardHtml() + bbkCardHtml() + colCardHtml();
+  return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' +
+    jumpHtml([['correCard', 'jumpCorre'], ['bbkCard', 'jumpBbk'], ['colCard', 'jumpColores']]) + correCardHtml() + bbkCardHtml() + colCardHtml();
 }
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
@@ -379,7 +387,7 @@ function wsDefaults(){
 function wsFormHtml(){
   const A = S.a, W = S.ws || (S.ws = wsDefaults());
   let h = '<div class="card" id="wsCard"><h3>' + esc(T('gameColores')) + '</h3>';
-  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div></div>';
+  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
   if(!A.configs.length) return h + '<p class="hint">' + esc(T('wsNoCfg')) + '</p><div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(T('navSettings')) + '</button></div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   h += '<div class="field"><label>' + esc(T('configLabel')) + '</label><select data-sel="wscfg"><option value="">' + esc(T('configPick')) + '</option>' +
@@ -408,7 +416,7 @@ function cwsDefaults(){ return { bank: '', lang: I18N.getLang() === 'en' ? 'en' 
 function cwsFormHtml(){
   const A = S.a, W = S.cws || (S.cws = cwsDefaults());
   let h = '<div class="card" id="cwsCard"><h3>' + esc(T('gameCorre')) + '</h3><p class="hint">' + esc(T('cwsHint')) + '</p>';
-  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div></div>';
+  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
   if(!A.banks.length) return h + '<p class="hint">' + esc(T('cwsNoBank')) + '</p><div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(T('navSettings')) + '</button></div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
@@ -426,8 +434,9 @@ function cwsFormHtml(){
 function printHtml(){
   if(S.wsSheet) return wsSheetHtml();
   const rows = [['bbk', 'printBbk']];
-  return '<h2>' + esc(T('printTitle')) + '</h2><p class="hint">' + esc(T('printHint')) + '</p>' + cwsFormHtml() + wsFormHtml() + rows.map(r =>
-    '<div class="card"><h3>' + esc(T(GAME_KEY[r[0]])) + '</h3><p class="hint">' + esc(T(r[1])) + '</p></div>').join('');
+  return '<h2>' + esc(T('printTitle')) + '</h2><p class="hint">' + esc(T('printHint')) + '</p>' +
+    jumpHtml([['cwsCard', 'jumpCorreWs'], ['wsCard', 'jumpColoresWs'], ['bbkWsCard', 'jumpBbkWs']]) + cwsFormHtml() + wsFormHtml() + rows.map(r =>
+    '<div class="card" id="bbkWsCard"><h3>' + esc(T(GAME_KEY[r[0]])) + '</h3><p class="hint">' + esc(T(r[1])) + '</p></div>').join('');
 }
 function bodyHtml(){
   if(S.acct === 'loading' || S.acct === '') return '<p class="hint center">' + esc(T('loading')) + '</p>';
@@ -486,6 +495,53 @@ function qrModal(cv, title, file, url){
   document.body.appendChild(m);
 }
 
+// ---- 建議訂閱（沒訂閱的人按到訂閱功能時跳出）----
+function needSub(){
+  if(document.querySelector('.modal.sub')) return;
+  const m = document.createElement('div'); m.className = 'modal sub';
+  m.innerHTML = '<div class="box left"><h3>' + esc(T('subTitle')) + '</h3><p class="hint">' + esc(T('subWhy')) + '</p><ul class="sublist">' +
+    T('subList').split('\n').map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' +
+    '<div class="row" style="justify-content:center"><a class="pill fill" data-m="go" href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subGo')) + '</a>' +
+    '<button class="pill" data-m="close">' + esc(T('subLater')) + '</button></div></div>';
+  m.addEventListener('click', e => {
+    const k = e.target.dataset && e.target.dataset.m;
+    if(e.target === m || k === 'close' || k === 'go') m.remove();
+  });
+  document.body.appendChild(m);
+}
+// ---- 意見回饋（存到中心專案 center_feedback，你在 stats 頁「老師管理中心回饋」看）----
+function feedbackModal(){
+  if(document.querySelector('.modal.fb')) return;
+  let type = 'idea', busy = false;
+  const m = document.createElement('div'); m.className = 'modal fb';
+  const draw = () => {
+    m.innerHTML = '<div class="box left"><h3>' + esc(T('fbTitle')) + '</h3><p class="hint">' + esc(T('fbHint')) + '</p>' +
+      '<div class="field"><label>' + esc(T('fbType')) + '</label><div class="row" style="margin-top:0">' +
+      [['idea', 'fbIdea'], ['bug', 'fbBug'], ['other', 'fbOther']].map(x => '<button class="pill sm ' + (type === x[0] ? 'on' : '') + '" data-t="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div></div>' +
+      '<div class="field"><label for="fbText">' + esc(T('fbMsg')) + '</label><textarea id="fbText" rows="5" maxlength="1000" placeholder="' + esc(T('fbPh')) + '"></textarea></div>' +
+      '<p class="hint">' + esc(T('fbFrom', { email: S.user.email })) + '</p><div class="st" id="fbSt"></div>' +
+      '<div class="row" style="justify-content:center"><button class="pill fill" data-m="send">' + esc(T('fbSend')) + '</button><button class="pill" data-m="close">' + esc(T('close')) + '</button></div></div>';
+  };
+  draw();
+  m.addEventListener('click', async e => {
+    const t = e.target.closest('[data-t]');
+    if(t){ const txt = m.querySelector('#fbText').value; type = t.dataset.t; draw(); m.querySelector('#fbText').value = txt; return; }
+    const k = e.target.dataset && e.target.dataset.m;
+    if(e.target === m || k === 'close'){ if(!busy) m.remove(); return; }
+    if(k !== 'send' || busy) return;
+    const msg = m.querySelector('#fbText').value.trim(), st = m.querySelector('#fbSt');
+    if(!msg){ st.className = 'st err'; st.textContent = T('fbNeed'); return; }
+    busy = true; e.target.disabled = true; st.className = 'st'; st.textContent = T('fbSending');
+    try{
+      await DATA.sendFeedback({ type, message: msg.slice(0, 1000), lang: I18N.getLang(), page: (location.hash || '#/home').slice(0, 40) });
+      m.remove(); toast(T('fbThanks'));
+    }catch(err2){ console.error(err2); busy = false; e.target.disabled = false; st.className = 'st err'; st.textContent = err(err2); }
+  });
+  document.body.appendChild(m);
+  setTimeout(() => { const ta = m.querySelector('#fbText'); if(ta) ta.focus(); }, 0);
+}
+window.PROF = { needSub };
+
 // ---- 操作 ----
 function toggleIn(arr, k){ const i = arr.indexOf(k); if(i < 0) arr.push(k); else arr.splice(i, 1); }
 async function run(fn){
@@ -495,6 +551,9 @@ async function run(fn){
 }
 const actions = {
   lang(el){ I18N.setLang(el.dataset.l); render(); },
+  jump(el){ const t = document.getElementById(el.dataset.k); if(t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
+  needsub(){ needSub(); },
+  feedback(){ feedbackModal(); },
   async login(){ S.msg = ''; try{ await DATA.login(); }catch(e){ console.error(e); S.msg = err(e); render(); } },
   async logout(){ await DATA.logout(); },
   nav(el){ go(el.dataset.r); },
@@ -600,11 +659,11 @@ const actions = {
   colstep(el){ const [k, d] = el.dataset.k.split(','), lim = k === 'rows' ? [3, 8] : [3, 6], dr = S.colEdit.dr; dr[k] = Math.min(lim[1], Math.max(lim[0], dr[k] + (+d))); render(); },
   colid(el){ toggleIn(S.colEdit.dr.ids, el.dataset.k); render(); },
   colquick(el){ const k = el.dataset.k; S.colEdit.dr.ids = k === 'basic' ? COL.SETS.basic.slice() : k === 'adv' ? COL.SETS.adv.slice() : k === 'all' ? Object.keys(COL.COLORS) : []; render(); },
-  colcadd(){ if(!S.a.plan.active){ toast(T('colProOnly')); return; } const dr = S.colEdit.dr; if(dr.custom.length >= 12) return; dr.custom.push({ n: '', s: '', h: '#43a047' }); render(); },
+  colcadd(){ if(!S.a.plan.active){ needSub(); return; } const dr = S.colEdit.dr; if(dr.custom.length >= 12) return; dr.custom.push({ n: '', s: '', h: '#43a047' }); render(); },
   colcdel(el){ S.colEdit.dr.custom.splice(+el.dataset.k, 1); render(); },
   colsay(el){ const c = S.colEdit.dr.custom[+el.dataset.k], t = ((c && (c.s || c.n)) || '').trim(); if(!t || !('speechSynthesis' in window)) return;
     speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'zh-TW'; u.rate = 0.85; speechSynthesis.speak(u); },
-  colnmode(el){ if(el.dataset.k === 'list' && !S.a.plan.active){ toast(T('colProOnly')); return; } S.colEdit.dr.nmode = el.dataset.k; render(); },
+  colnmode(el){ if(el.dataset.k === 'list' && !S.a.plan.active){ needSub(); return; } S.colEdit.dr.nmode = el.dataset.k; render(); },
   colsave(){ return run(async () => {
     const E = S.colEdit; if(!E) return;
     const r = COL.draftToCfg(E.dr);
