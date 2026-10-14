@@ -16,7 +16,7 @@ const S = {
   correBank: '', colCfg: '', bbkSel: '', busy: false,
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
-  ws: null, wsSheet: null,                                         // 色數學習單選項與產生好的學習單
+  ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
   bankMsg: '', cws: null                                           // 跑吧句庫卡片的錯誤訊息、跑吧學習單選項
 };
 
@@ -409,7 +409,7 @@ function wsFormHtml(){
 }
 function wsSheetHtml(){
   return '<div class="ws-bar noprint"><div class="row"><button class="pill sm" data-act="wsback">← ' + esc(T('back')) + '</button>' +
-    '<button class="pill sm" data-act="wsmake">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill fill sm" data-act="wsprint">🖨 ' + esc(T('wsPrint')) + '</button></div>' +
+    '<button class="pill sm" data-act="' + (S.wsKind === 'bbk' ? 'bwsmake' : 'wsmake') + '">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill fill sm" data-act="wsprint">🖨 ' + esc(T('wsPrint')) + '</button></div>' +
     '<p class="hint">' + esc(T('wsPrintTip')) + '</p></div><div class="ws">' + S.wsSheet + '</div>';
 }
 // ---- 列印：跑吧學習單 PDF ----
@@ -432,12 +432,65 @@ function cwsFormHtml(){
     (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
   return h + '</div>';
 }
+// ---- 列印：比比看學習單（用遊戲那邊的 engine.js＋worksheet.js，出題跟遊戲完全一樣）----
+const BBK_BASE = window.BBK_BASE || '../compara-y-adivina/';   // 同一個網站底下的比比看
+let bbkLoad = null;
+function loadBbk(){
+  if(!bbkLoad) bbkLoad = (async () => {
+    const add = src => new Promise((res, rej) => { const el = document.createElement('script'); el.src = BBK_BASE + src; el.onload = res; el.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(el); });
+    if(!window.THEME_PACK) await add('themes/people.js?v=5-4');
+    if(!window.BBK_ENGINE) await add('engine.js?v=5-4');
+    if(!window.BBK_WORKSHEET) await add('worksheet.js?v=5-4');
+    return window.BBK_ENGINE(window.THEME_PACK);
+  })().catch(e => { bbkLoad = null; throw e; });
+  return bbkLoad;
+}
+function bwsDefaults(){
+  const l = I18N.getLang();
+  return { sel: 'L1', n: 10, simp: l === 'sc', lang: l === 'en' ? 'en' : 'es', phon: 'pinyin', answers: true, busy: false, msg: '' };
+}
+function bwsRange(W){
+  if(W.sel[0] === 'L') return { lv: +W.sel[1], dims: [], types: [], n: W.n, name: '' };
+  const it = S.a.bbk[+W.sel]; if(!it) return null;
+  return { lv: it.lv, dims: it.d || [], types: it.t || [], n: W.n, name: it.name };
+}
+function bwsFormHtml(){
+  const A = S.a, W = S.bws || (S.bws = bwsDefaults());
+  let h = '<div class="card" id="bbkWsCard"><h3>' + esc(T('gameBbk')) + '</h3><p class="hint">' + esc(T('printBbk')) + '</p>';
+  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
+  const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
+  const mine = A.bbkReady ? A.bbk : [];
+  h += '<div class="field"><label>' + esc(T('bwsRange')) + '</label><select data-sel="bwssel">' +
+    [1, 2, 3].map(n => '<option value="L' + n + '" ' + (W.sel === 'L' + n ? 'selected' : '') + '>' + esc(T('bwsLevel', { n })) + '</option>').join('') +
+    (mine.length ? '<optgroup label="' + esc(T('bwsMine')) + '">' + mine.map((it, i) => '<option value="' + i + '" ' + (W.sel === String(i) ? 'selected' : '') + '>📐 ' + esc(it.name) + '</option>').join('') + '</optgroup>' : '') +
+    '</select>' + (W.sel[0] !== 'L' && mine[+W.sel] ? '<p class="hint">' + esc(bbkSummary(mine[+W.sel])) + '</p>' : '') + '</div>' +
+    '<div class="field"><label>' + esc(T('wsCount')) + '</label><div class="row" style="margin-top:0">' + pills('bwsn', W.n, [[5, '5'], [10, '10'], [15, '15'], [20, '20']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('bwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('bwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('bwsphon', W.phon, [['pinyin', T('bwsPinyin')], ['zhuyin', T('bwsZhuyin')], ['both', T('bwsBoth')], ['off', T('bwsOff')]]) + '</div></div>' +
+    '<div class="field"><div class="row" style="margin-top:0"><button class="pill sm chip ' + (W.answers ? 'on' : '') + '" data-act="bwsans">' + (W.answers ? '✓ ' : '') + esc(T('wsAnswersOpt')) + '</button></div></div>' +
+    '<div class="row"><button class="pill fill" data-act="bwsmake" ' + (W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? T('loading') : T('wsMake')) + '</button></div>' +
+    (W.msg ? '<div class="err">' + esc(W.msg) + '</div>' : '');
+  return h + '</div>';
+}
+async function bwsMake(){
+  const W = S.bws; if(!W || !S.a.plan.active || W.busy) return;
+  const rg = bwsRange(W); if(!rg) return;
+  W.busy = true; W.msg = ''; render();
+  let E;
+  try{ E = await loadBbk(); }catch(e){ W.busy = false; W.msg = T('bwsLoadFail'); render(); return; }
+  W.busy = false;
+  const range = { lv: rg.lv, dims: rg.dims, types: rg.types, n: rg.n };
+  const qs = E.makeRound(rg.lv, range);
+  if(!qs.length){ W.msg = T('bwsNoQ'); render(); return; }
+  S.wsKind = 'bbk';
+  S.wsSheet = window.BBK_WORKSHEET(E, qs, { range, title: rg.name, simp: W.simp, lang: W.lang, phon: W.phon, answers: W.answers, base: BBK_BASE });
+  render(); window.scrollTo(0, 0);
+}
 function printHtml(){
   if(S.wsSheet) return wsSheetHtml();
-  const rows = [['bbk', 'printBbk']];
   return '<h2>' + esc(T('printTitle')) + '</h2><p class="hint">' + esc(T('printHint')) + '</p>' +
-    jumpHtml([['cwsCard', 'jumpCorreWs'], ['wsCard', 'jumpColoresWs'], ['bbkWsCard', 'jumpBbkWs']]) + cwsFormHtml() + wsFormHtml() + rows.map(r =>
-    '<div class="card" id="bbkWsCard"><h3>' + esc(T(GAME_KEY[r[0]])) + '</h3><p class="hint">' + esc(T(r[1])) + '</p></div>').join('');
+    jumpHtml([['cwsCard', 'jumpCorreWs'], ['wsCard', 'jumpColoresWs'], ['bbkWsCard', 'jumpBbkWs']]) + cwsFormHtml() + wsFormHtml() + bwsFormHtml();
 }
 function bodyHtml(){
   if(S.acct === 'loading' || S.acct === '') return '<p class="hint center">' + esc(T('loading')) + '</p>';
@@ -704,10 +757,17 @@ const actions = {
     const W = S.ws, it = W && S.a.configs[+W.cfg]; if(!it || !S.a.plan.active) return;
     const c = COL.normalizeCfg(it.cfg); if(!c) return;
     const opts = Object.assign({}, W, { title: c.name });
+    S.wsKind = 'colores';
     S.wsSheet = COL.worksheet(c, opts, COL.makeBoard(c), k => I18N.D[k]);
     render(); window.scrollTo(0, 0);
   },
-  wsback(){ S.wsSheet = null; render(); },
+  wsback(){ S.wsSheet = null; S.wsKind = ''; render(); },
+  bwsn(el){ S.bws.n = +el.dataset.k; render(); },
+  bwssimp(el){ S.bws.simp = el.dataset.k === '1'; render(); },
+  bwslang(el){ S.bws.lang = el.dataset.k; render(); },
+  bwsphon(el){ S.bws.phon = el.dataset.k; render(); },
+  bwsans(){ S.bws.answers = !S.bws.answers; render(); },
+  bwsmake(){ return bwsMake(); },
   wsprint(){ window.print(); },
   colmake(){ return run(async () => {
     try{
@@ -754,6 +814,10 @@ document.addEventListener('change', e => {
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'wscfg') S.ws.cfg = s.value;
+  if(s.dataset.sel === 'bwssel'){
+    S.bws.sel = s.value; S.bws.msg = '';
+    const it = s.value[0] !== 'L' && S.a.bbk[+s.value]; if(it && it.n) S.bws.n = [5, 10, 15, 20].indexOf(it.n) >= 0 ? it.n : S.bws.n;   // 題數預設跟範圍一樣
+  }
   if(s.dataset.sel === 'cwsbank'){
     S.cws.bank = s.value; S.cws.msg = '';
     const b = s.value !== '' && CORRE.bankOf(S.a, +s.value), ph = (b && b.data && b.data.phonetic) || 'pinyin';

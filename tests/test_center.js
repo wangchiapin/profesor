@@ -6,9 +6,17 @@ const MOCK = fs.readFileSync(path.join(__dirname, 'firebase-mock.js'), 'utf8');
 const SHOT = process.argv[2] || null; if(SHOT) fs.mkdirSync(SHOT, { recursive: true });
 let pass = 0, fail = 0;
 function ok(c, name, extra){ if(c){ pass++; console.log('  ✓', name); } else { fail++; console.log('  ✗', name, extra !== undefined ? '→ ' + JSON.stringify(extra) : ''); } }
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css', '.webp': 'image/webp' };
+// 比比看的學習單會讀遊戲那邊的 engine.js／worksheet.js／人物圖：/compara-y-adivina/ 對到旁邊的資料夾（或用 BBK_DIR 指定）
+const BBK_DIR = process.env.BBK_DIR || path.join(ROOT, '..', 'compara-y-adivina');
 const server = http.createServer((req, res) => {
-  let f = path.normalize(path.join(ROOT, decodeURIComponent(req.url.split('?')[0])));
+  const url = decodeURIComponent(req.url.split('?')[0]);
+  if(url.startsWith('/compara-y-adivina/')){
+    const g = path.normalize(path.join(BBK_DIR, url.slice('/compara-y-adivina/'.length)));
+    if(!g.startsWith(BBK_DIR) || !fs.existsSync(g)){ res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(g)] || 'application/octet-stream' }); return fs.createReadStream(g).pipe(res);
+  }
+  let f = path.normalize(path.join(ROOT, url));
   if(fs.existsSync(f) && fs.statSync(f).isDirectory()) f = path.join(f, 'index.html');
   if(!f.startsWith(ROOT) || !fs.existsSync(f)){ res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
@@ -665,6 +673,7 @@ server.listen(0, 'localhost', async () => {
     await page.evaluate(() => window.__profesor.go('print')); await page.waitForSelector('#wsCard');
     const jp = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k));
     ok(jp.join() === 'cwsCard,wsCard,bbkWsCard' && await page.$('#bbkWsCard') !== null, '學習單頁：三個快速按鈕', jp);
+    ok(!(await text(page, '#app')).includes('之後會搬到這裡') && !(await text(page, '#app')).includes('老師設定'), '學習單頁：不再叫老師去遊戲裡做練習紙');
     ok((await text(page, 'h2')) === '學習單', '學習單頁標題');
     // 意見回饋
     await page.click('[data-act=feedback]'); await page.waitForSelector('.modal.fb');
@@ -688,7 +697,8 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'n1_needsub');
     await page.click('.modal.sub [data-m=close]'); ok(await page.$('.modal.sub') === null, '「之後再說」關掉視窗');
     await page.evaluate(() => window.__profesor.go('print')); await page.waitForSelector('#wsCard');
-    ok((await page.$$('#cwsCard [data-act=needsub], #wsCard [data-act=needsub]')).length === 2, '學習單：未訂閱有上鎖的「產生」按鈕');
+    ok((await page.$$('#cwsCard [data-act=needsub], #wsCard [data-act=needsub], #bbkWsCard [data-act=needsub]')).length === 3, '學習單：未訂閱三款都有上鎖的「產生」按鈕（含比比看）');
+    ok(await page.$('#bbkWsCard [data-act=bwsmake]') === null, '比比看學習單：未訂閱不能產生');
     await page.click('#wsCard [data-act=needsub]'); ok(await page.$('.modal.sub') !== null, '按了跳出建議訂閱'); await page.click('.modal.sub [data-m=close]');
     ok((await text(page, '.nav')).includes('Hojas de trabajo'), '西文：Hojas de trabajo');
     await page.evaluate(() => window.__profesor.go('bank', '0')); await page.waitForSelector('#ce-decoy', { state: 'attached' });
@@ -750,6 +760,56 @@ server.listen(0, 'localhost', async () => {
     const missing = [...used].filter(k => k.endsWith('_') ? !keys.some(x => x.startsWith(k)) : !keys.includes(k));   // 以底線結尾的是前綴（p_、t_、d_…）
     ok(missing.length === 0, '程式裡用到的詞條都存在', missing);
     await ctx.close(); }
+
+  console.log('\n[O] 步驟 5-4：比比看學習單搬到中心');
+  { const BBK = [{ id: 'b1', name: '身高和年齡', lv: 2, d: ['height', 'age'], t: ['pick', 'decode'], n: 5 }];
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/print' });
+    await page.waitForSelector('#bbkWsCard [data-act=bwsmake]');
+    const opts = await page.$$eval('#bbkWsCard select[data-sel=bwssel] option', o => o.map(x => x.value + ':' + x.textContent));
+    ok(opts.length === 4 && opts[3] === '0:📐 身高和年齡' && opts[0].includes('第 1 關'), '範圍選單：三個關卡＋老師存的範圍', opts);
+    ok(await page.evaluate(() => !window.BBK_ENGINE), '還沒按產生前不載入比比看程式');
+    await shot(page, 'o1_bbk_form');
+    await page.selectOption('#bbkWsCard select[data-sel=bwssel]', '0');
+    ok((await text(page, '#bbkWsCard')).includes('身高') && await page.$eval('#bbkWsCard [data-act=bwsn].on', b => b.dataset.k) === '5', '選範圍：顯示摘要、題數跟範圍一樣（5）');
+    await page.click('#bbkWsCard [data-act=bwsphon][data-k=both]');
+    await page.click('#bbkWsCard [data-act=bwsmake]');
+    await page.waitForSelector('.ws .bbkws');
+    const r = await page.evaluate(() => ({ q: document.querySelectorAll('.bw-q').length, k: document.querySelectorAll('.bw-k').length, zy: document.querySelectorAll('.bbkws .ph.zy').length, py: document.querySelectorAll('.bbkws .ph:not(.zy)').length,
+      name: document.querySelector('.bbkws').innerText.includes('身高和年齡'), ws: document.body.classList.contains('wsmode'),
+      dims: [...document.querySelectorAll('.bw-range')].map(e => e.innerText).join(' ') }));
+    ok(r.q === 5 && r.k === 5 && r.zy > 0 && r.py > 0 && r.name && r.ws, '產生學習單：5 題＋答案頁、拼音＋注音、範圍名稱', r);
+    await page.waitForFunction(() => [...document.querySelectorAll('.bbkws img')].every(i => i.complete && i.naturalWidth > 0));
+    ok(true, '人物圖從比比看讀得到');
+    await shot(page, 'o2_bbk_sheet');
+    const q1 = await page.evaluate(() => document.querySelector('.bbkws').innerText);
+    await page.click('[data-act=bwsmake]');   // 換一張
+    await page.waitForSelector('.ws .bbkws');
+    ok(await page.evaluate(() => document.querySelectorAll('.bw-q').length) === 5, '「換一張」：還是比比看、照同一個範圍');
+    await page.click('[data-act=wsback]'); await page.waitForSelector('#bbkWsCard');
+    await page.selectOption('#bbkWsCard select[data-sel=bwssel]', 'L3');
+    await page.click('#bbkWsCard [data-act=bwssimp][data-k="1"]'); await page.click('#bbkWsCard [data-act=bwslang][data-k=zh]');
+    await page.click('#bbkWsCard [data-act=bwsphon][data-k=off]'); await page.click('#bbkWsCard [data-act=bwsans]');
+    await page.click('#bbkWsCard [data-act=bwsn][data-k="10"]');
+    await page.click('#bbkWsCard [data-act=bwsmake]'); await page.waitForSelector('.ws .bbkws');
+    const r2 = await page.evaluate(() => ({ q: document.querySelectorAll('.bw-q').length, k: document.querySelectorAll('.bw-k').length, ph: document.querySelectorAll('.bbkws .ph').length,
+      small: document.querySelectorAll('.bbkws small').length, t: document.querySelector('.bbkws').innerText }));
+    ok(r2.q === 10 && r2.k === 0 && r2.ph === 0 && r2.small === 0 && r2.t.includes('第 3 关') && r2.t.includes('学习单'), '第 3 關全部、10 題、不附答案、拼音關、只有中文、簡體', { q: r2.q, k: r2.k, ph: r2.ph, small: r2.small });
+    ok(await noOverflow(page), '手機寬度不會左右捲');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 比比看程式載入失敗
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/print' });
+    await page.waitForSelector('#bbkWsCard [data-act=bwsmake]');
+    await page.route('**/compara-y-adivina/**', r => r.abort());
+    await page.click('#bbkWsCard [data-act=bwsmake]');
+    await page.waitForSelector('#bbkWsCard .err');
+    ok((await text(page, '#bbkWsCard .err')).includes('載入失敗'), '載入失敗：顯示說明，可以再按一次');
+    await page.unroute('**/compara-y-adivina/**');
+    await page.click('#bbkWsCard [data-act=bwsmake]'); await page.waitForSelector('.ws .bbkws');
+    ok(true, '網路恢復後再按就成功');
+    ok(errors.filter(e => !/load|ERR_FAILED/.test(e)).length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 中心的版本號
+    const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    ok(!/\?v=5-3/.test(ix) && (ix.match(/\?v=5-4/g) || []).length >= 9, 'index.html 的 css／js 都改成 ?v=5-4'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

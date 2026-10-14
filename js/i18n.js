@@ -299,9 +299,21 @@ const D = {
 
   // ---- 學習單（網址仍是 #/print）----
   printTitle: ['學習單', '学习单', 'Hojas de trabajo', 'Worksheets'],
-  printHint: ['學習單都是訂閱功能。跑吧和色數的學習單在這裡產生；比比看的練習紙目前仍在遊戲裡，之後會搬到這裡。', '学习单都是订阅功能。跑吧和色数的学习单在这里生成；比比看的练习纸目前仍在游戏里，之后会搬到这里。', 'Las hojas de trabajo requieren suscripción. Las de Corre y Pop Colores se crean aquí; la de Compara y Adivina sigue dentro del juego por ahora.', 'Worksheets need a subscription. Run Hanzi and Pop Colors worksheets are made here; the Compare & Guess sheet is still inside the game for now.'],
+  printHint: ['學習單都是訂閱功能。三款遊戲的學習單都在這裡產生，可以列印或存成 PDF。', '学习单都是订阅功能。三款游戏的学习单都在这里生成，可以打印或存成 PDF。', 'Las hojas de trabajo requieren suscripción. Las de los tres juegos se crean aquí; puedes imprimirlas o guardarlas en PDF.', 'Worksheets need a subscription. All three games\' worksheets are made here; print them or save as PDF.'],
   printColores: ['學習單：即將新增（聽讀找色、看色寫數、著色版）。', '学习单：即将新增（听读找色、看色写数、着色版）。', 'Hojas de trabajo: próximamente (oír y buscar color, ver color y escribir número, colorear).', 'Worksheets: coming soon (listen and find color, see color and write number, coloring).'],
-  printBbk: ['練習紙：在遊戲主選單的「老師設定」裡按「練習紙」。', '练习纸：在游戏主选单的「老师设置」里按「练习纸」。', 'Hoja de práctica: en «Ajustes del profesor» del juego, pulsa «Hoja de práctica».', 'Practice sheet: press "Practice sheet" in the in-game teacher settings.'],
+  printBbk: ['用比比看的出題程式出一張學習單：題目、人物圖、選項，最後可附答案頁（含翻譯）。', '用比比看的出题程序出一张学习单：题目、人物图、选项，最后可附答案页（含翻译）。', 'Una hoja con las mismas preguntas del juego: frases, personas y opciones; con hoja de respuestas (con traducción) si quieres.', 'A sheet made by the game\'s own question generator: sentences, people and options, with an optional answer page (with translations).'],
+  bwsRange: ['出題範圍', '出题范围', 'Rango de preguntas', 'Question range'],
+  bwsLevel: ['第 {n} 關（全部特徵與題型）', '第 {n} 关（全部特征与题型）', 'Nivel {n} (todos los rasgos y tipos)', 'Level {n} (all features and types)'],
+  bwsMine: ['我存的範圍', '我存的范围', 'Mis rangos', 'My ranges'],
+  bwsLang: ['語言', '语言', 'Idioma', 'Language'],
+  bwsOnlyZh: ['只有中文', '只有中文', 'Solo chino', 'Chinese only'],
+  bwsPhon: ['拼音／注音', '拼音／注音', 'Pinyin / Zhuyin', 'Pinyin / Zhuyin'],
+  bwsPinyin: ['拼音', '拼音', 'Pinyin', 'Pinyin'],
+  bwsZhuyin: ['注音', '注音', 'Zhuyin', 'Zhuyin'],
+  bwsBoth: ['兩個都顯示', '两个都显示', 'Los dos', 'Both'],
+  bwsOff: ['不顯示', '不显示', 'Ninguno', 'None'],
+  bwsLoadFail: ['比比看的出題程式載入失敗，請檢查網路後再試一次。', '比比看的出题程序载入失败，请检查网络后再试一次。', 'No se pudo cargar el generador de Compara y Adivina. Revisa la conexión e inténtalo otra vez.', 'Could not load the Compare & Guess generator. Check your connection and try again.'],
+  bwsNoQ: ['這個範圍湊不出題目，請換一個範圍。', '这个范围凑不出题目，请换一个范围。', 'Con este rango no se pueden generar preguntas. Elige otro.', 'No questions can be made from this range. Pick another.'],
 
   // ---- 比比看標籤（成績簿用）----
   p_BI: ['A 比 B ＋形容詞', 'A 比 B ＋形容词', 'A es más … que B', 'A is more … than B'],
