@@ -296,7 +296,8 @@ function colEditorHtml(){
   const crows = dr.custom.map((c, i) => '<div class="crow"><input type="color" value="' + esc(c.h) + '" data-cc="' + i + '" data-f="h">' +
     '<input type="text" maxlength="8" placeholder="' + esc(T('colColorName')) + '" value="' + esc(c.n) + '" data-cc="' + i + '" data-f="n">' +
     '<input type="text" maxlength="12" placeholder="' + esc(T('colColorSay')) + '" value="' + esc(c.s) + '" data-cc="' + i + '" data-f="s">' +
-    '<button class="x" data-act="colsay" data-k="' + i + '" title="' + esc(T('colListen')) + '">🔊</button><button class="x" data-act="colcdel" data-k="' + i + '">✕</button></div>').join('');
+    '<button class="x" data-act="colsay" data-k="' + i + '" title="' + esc(T('colListen')) + '">🔊</button><button class="x" data-act="colcdel" data-k="' + i + '">✕</button>' +
+    '<input type="text" class="cpy" maxlength="40" placeholder="' + esc(T('colColorPy')) + '" value="' + esc(c.p || '') + '" data-cc="' + i + '" data-f="p"></div>').join('');
   let h = '<div class="editor">' +
     '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="colName" maxlength="20" placeholder="' + esc(T('colNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
     '<div class="field"><label>' + esc(T('colMode')) + '</label><div class="row" style="margin-top:0">' + pills('colmode', dr.mode, [['A', T('colModeA')], ['B', T('colModeB')]]) + '</div></div>' +
@@ -767,6 +768,19 @@ document.addEventListener('input', e => {
     if(e.target.id === 'colList') S.colEdit.dr.list = e.target.value;
     if(e.target.dataset && e.target.dataset.cc != null){ const c = S.colEdit.dr.custom[+e.target.dataset.cc]; if(c) c[e.target.dataset.f] = e.target.value; }
   }
+});
+// 自訂顏色：打完名稱（離開欄位）就自動帶出台灣讀音拼音；老師改過的拼音不會被蓋掉
+document.addEventListener('change', async e => {
+  const d = e.target.dataset;
+  if(!S.colEdit || !d || d.cc == null || d.f !== 'n') return;
+  const c = S.colEdit.dr.custom[+d.cc]; if(!c) return;
+  const name = String(c.n || '').trim();
+  if(c.p && c.p !== c._autoP) return;
+  let py = '';
+  try{ py = name ? await window.CORRE.pinyinOf(name) : ''; }catch(err){ return; }
+  if(String(c.n || '').trim() !== name) return;   // 等待時名稱又被改了
+  c.p = py; c._autoP = py;
+  const inp = document.querySelector('input[data-cc="' + d.cc + '"][data-f="p"]'); if(inp) inp.value = py;
 });
 window.addEventListener('hashchange', onRoute);
 

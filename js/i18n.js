@@ -121,6 +121,7 @@ const D = {
   colAddColor: ['新增顏色', '新增颜色', 'Añadir color', 'Add color'],
   colColorName: ['顏色名稱（例：天空藍）', '颜色名称（例：天空蓝）', 'Nombre (ej.: 天空藍)', 'Name (e.g. 天空藍)'],
   colColorSay: ['唸法（可不填）', '读法（可不填）', 'Pronunciación (opcional)', 'Pronunciation (optional)'],
+  colColorPy: ['拼音（打完名稱會自動帶出，可修改）', '拼音（打完名称会自动带出，可修改）', 'Pinyin (se completa solo; puedes corregirlo)', 'Pinyin (filled in automatically; you can edit it)'],
   colListen: ['試聽', '试听', 'Escuchar', 'Listen'],
   colNums: ['數字', '数字', 'Números', 'Numbers'],
   colList: ['自訂數字', '自定数字', 'Números propios', 'Custom numbers'],

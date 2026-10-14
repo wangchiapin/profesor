@@ -399,13 +399,22 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page, '#colCard .editor .err')).includes('至少要選 2 種顏色'), '只選 1 色不能存');
     await page.click('[data-act=colid][data-k=blue]');
     await page.click('[data-act=colcadd]'); await page.fill('[data-cc="0"][data-f=n]', '天空藍'); await page.fill('[data-cc="0"][data-f=s]', '天空藍色');
+    if(LIBS){
+      await page.$eval('[data-cc="0"][data-f=n]', e => e.dispatchEvent(new Event('change', { bubbles: true })));
+      await page.waitForFunction(() => document.querySelector('[data-cc="0"][data-f=p]').value, null, { timeout: 15000 });
+      ok((await page.$eval('[data-cc="0"][data-f=p]', e => e.value)) === 'tiān kōng lán', '自訂顏色：打完名稱自動帶出拼音', await page.$eval('[data-cc="0"][data-f=p]', e => e.value));
+      await page.fill('[data-cc="0"][data-f=p]', 'tiān kōng lán.');
+      await page.$eval('[data-cc="0"][data-f=n]', e => e.dispatchEvent(new Event('change', { bubbles: true }))); await page.waitForTimeout(300);
+      ok((await page.$eval('[data-cc="0"][data-f=p]', e => e.value)) === 'tiān kōng lán.', '老師改過的拼音不會被蓋掉');
+      await page.fill('[data-cc="0"][data-f=p]', 'tiān kōng lán');
+    }
     await page.click('[data-act=colnmode][data-k=list]'); await page.fill('#colList', '1, 2, 10-12, 100');
     ok((await page.$eval('#colName', i => i.value)) === '三年級', '名稱沒被重畫洗掉');
     await shot(page, 'k1_col_editor');
     await page.click('[data-act=colsave]'); await page.waitForFunction(() => !document.querySelector('#colCard .editor'));
     let d = await db(page), it = d.teacher_configs.u1.items[2];
     ok(it && it.cfg.name === '三年級' && it.cfg.mode === 'B' && it.cfg.rows === 6 && it.cfg.cols === 3 && it.cfg.hearts === 0 && it.cfg.ids.join() === 'red,blue' &&
-      it.cfg.custom[0].n === '天空藍' && it.cfg.custom[0].s === '天空藍色' && it.cfg.nums.join() === '1,2,10,11,12,100' && !it.cfg.range && typeof it.id === 'string', '存成遊戲同樣的格式', it);
+      it.cfg.custom[0].n === '天空藍' && it.cfg.custom[0].s === '天空藍色' && (!LIBS || it.cfg.custom[0].p === 'tiān kōng lán') && !('_autoP' in it.cfg.custom[0]) && it.cfg.nums.join() === '1,2,10,11,12,100' && !it.cfg.range && typeof it.id === 'string', '存成遊戲同樣的格式', it);
     // 編輯有連結碼的那組：shared_configs 跟著改
     await page.click('#colCard [data-act=coledit][data-k="0"]'); await page.click('[data-act=colnmode][data-k="9999"]'); await page.click('[data-act=colsave]');
     await page.waitForFunction(() => !document.querySelector('#colCard .editor'));

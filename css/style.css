@@ -123,7 +123,8 @@ table.t td{padding-left:8px}
 .cchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .cchip{border:2px solid transparent;border-radius:999px;padding:6px 12px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.35;min-height:36px}
 .cchip.on{opacity:1;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--brown)}
-.crow{display:flex;gap:6px;align-items:center;margin:6px 0}
+.crow{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.crow input.cpy{flex:1 1 100%}
 .crow input[type=text]{min-width:0;flex:1;padding:6px 12px;min-height:38px;font-size:.92rem}
 .crow input[type=color]{width:42px;height:38px;border:1.5px solid var(--line);border-radius:12px;padding:2px;background:#fff;flex:none}
 .field.locked{opacity:.6}

@@ -799,6 +799,8 @@ async function makeWorksheet(data, opt){
   return { blob: buildPdf(jpegs, PDFW, PDFH), pages: pages.length };
 }
 
-window.CORRE = { tr, open, close, mount, capture, isDirty, summary, paused, remove, bankName, bankOf, qrCanvas, makeWorksheet,
+// 色數自訂顏色用：一段中文 → 台灣讀音拼音（例：米白 → mǐ bái）
+async function pinyinOf(text){ await loadLibs(); const t = String(text || '').trim(); return t ? toPinyinTW(t, toSimplified(t)).trim() : ''; }
+window.CORRE = { pinyinOf, tr, open, close, mount, capture, isDirty, summary, paused, remove, bankName, bankOf, qrCanvas, makeWorksheet,
   FREE_SLOTS, PRO_SLOTS, MAX_CHARS, ZY, _toneFix: fixYiBu };
 })();

@@ -63,7 +63,8 @@ function normalizeCfg(c){
   o.rows = Math.min(8, Math.max(3, parseInt(c.rows) || 5));
   o.cols = Math.min(6, Math.max(3, parseInt(c.cols) || 4));
   o.hearts = [0, 3, 5].includes(c.hearts) ? c.hearts : 5;
-  const cu = Array.isArray(c.custom) ? c.custom.slice(0, 12).map(x => ({ n: cp(x && x.n, 8), s: cp(x && x.s, 12), h: (x && /^#[0-9a-fA-F]{6}$/.test(x.h)) ? x.h.toLowerCase() : '#888888' })) : [];
+  // p＝拼音（選填，遊戲顯示在按鈕字上面）
+  const cu = Array.isArray(c.custom) ? c.custom.slice(0, 12).map(x => { const o = { n: cp(x && x.n, 8), s: cp(x && x.s, 12), h: (x && /^#[0-9a-fA-F]{6}$/.test(x.h)) ? x.h.toLowerCase() : '#888888' }; const py = cp(x && x.p, 40); if(py) o.p = py; return o; }) : [];
   if(cu.some(x => !x.n)) return null;
   const ids = Array.isArray(c.ids) ? [...new Set(c.ids.filter(id => COLORS[id]))] : [];
   if(ids.length + cu.length < 2) return null;
