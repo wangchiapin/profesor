@@ -60,7 +60,7 @@ async function loadAccount(user){
   const d = p.exists ? p.data() : {};
   const plan = { plan: d.plan || 'free', expiresAt: tsMs(d.expiresAt) };
   plan.active = planActive(plan);
-  const acct = { plan, cslots: {}, classes: {}, clsReady: true, banks: [], configs: [], extrasReady: true, bbk: [], bbkReady: true };
+  const acct = { plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, bbk: [], bbkReady: true };
   try{
     const ix = await db.collection('teacher_classes').doc(user.uid).get();
     acct.cslots = ix.exists ? (ix.data().slots || {}) : {};
@@ -73,8 +73,9 @@ async function loadAccount(user){
   try{
     const bx = await db.collection('teacher_banks').doc(user.uid).get();
     const slots = bx.exists ? (bx.data().slots || {}) : {};
+    acct.bslots = slots;
     await Promise.all(Object.keys(slots).sort().map(async k => {
-      try{ const s = await db.collection('shared_banks').doc(slots[k]).get(); if(s.exists) acct.banks.push({ slot: +k, sid: s.id, name: s.data().name || '' }); }
+      try{ const s = await db.collection('shared_banks').doc(slots[k]).get(); if(s.exists) acct.banks.push({ slot: +k, sid: s.id, name: s.data().name || '', data: s.data() }); }
       catch(e){ console.warn('bank read failed', k, e); }
     }));
     acct.banks.sort((a, b) => a.slot - b.slot);
@@ -219,6 +220,31 @@ async function coloresLinkOff(items, i){
 function linkColoresPractice(sid){ return GAME_URL.colores + '?c=' + sid; }
 const coloresMax = plan => plan && plan.active ? 15 : 3;
 
+// ---- 跑吧！漢字：句庫（格式與 corre/teacher/ 完全相同，規則已在 corre/teacher/firestore.rules.txt）----
+// teacher_banks/{uid} = { slots: { '0'..'4': sid }, updatedAt }
+// shared_banks/{sid}  = { owner, slot, name, speed, script, boss, phonetic?, sentences[], pro, updatedAt }
+// 連結碼建立後就不換，所以改了句子，已發出去的連結會跟著變。
+async function saveCorreBank(bslots, slot, sid, data){
+  const ts = serverTs(), b = db.batch();
+  let slots = bslots;
+  if(!sid){
+    sid = newId(14); slots = Object.assign({}, bslots, { [String(slot)]: sid });
+    b.set(db.collection('teacher_banks').doc(uid()), { slots, updatedAt: ts });
+  }
+  b.set(db.collection('shared_banks').doc(sid), Object.assign({}, data, { owner: uid(), slot, updatedAt: ts }));
+  await b.commit();
+  return { sid, slots };
+}
+async function deleteCorreBank(bslots, slot, sid){
+  const slots = Object.assign({}, bslots); delete slots[String(slot)];
+  const b = db.batch();
+  b.delete(db.collection('shared_banks').doc(sid));
+  b.set(db.collection('teacher_banks').doc(uid()), { slots, updatedAt: serverTs() });
+  await b.commit();
+  return slots;
+}
+function linkCorrePractice(sid){ return GAME_URL.corre + '?bank=' + sid; }
+
 // ---- 學生連結 ----
 function linkCorre(cid, bankSid){ return GAME_URL.corre + '?class=' + cid + (bankSid ? '&bank=' + bankSid : ''); }
 function linkColores(cid, sid){ return GAME_URL.colores + '?c=' + sid + '&class=' + cid; }
@@ -233,5 +259,5 @@ function explain(e, t){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, linkCorre, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

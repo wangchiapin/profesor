@@ -16,7 +16,8 @@ const S = {
   correBank: '', colCfg: '', bbkSel: '', busy: false,
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
-  ws: null, wsSheet: null                                          // 色數學習單選項與產生好的學習單
+  ws: null, wsSheet: null,                                         // 色數學習單選項與產生好的學習單
+  bankMsg: '', cws: null                                           // 跑吧句庫卡片的錯誤訊息、跑吧學習單選項
 };
 
 // ---- 小工具 ----
@@ -40,18 +41,28 @@ function parseHash(){
   const h = (location.hash || '').replace(/^#\/?/, '').split('/');
   const r = h[0] || 'home';
   if(r === 'class' && /^[0-2]$/.test(h[1] || '')) return { route: 'class', cur: h[1] };
+  if(r === 'bank' && /^[0-4]$/.test(h[1] || '')) return { route: 'bank', cur: h[1] };
   return { route: ['home', 'classes', 'settings', 'print'].indexOf(r) >= 0 ? r : 'home', cur: null };
 }
 function go(route, cur){ location.hash = '#/' + route + (cur != null ? '/' + cur : ''); }
+let lastHash = location.hash, skipHash = false;
 async function onRoute(){
-  const r = parseHash(); S.route = r.route; S.cur = r.cur;
+  if(skipHash){ skipHash = false; return; }
+  const r = parseHash();
+  // 離開句庫編輯：有沒上傳的修改要先問
+  if(S.route === 'bank' && !(r.route === 'bank' && r.cur === S.cur)){
+    if(CORRE.isDirty() && !confirm(CORRE.tr('confirmLeave'))){ skipHash = true; location.hash = lastHash; return; }
+    CORRE.close();
+  }
+  lastHash = location.hash;
+  S.route = r.route; S.cur = r.cur;
   if(S.route === 'class'){
     S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.msg2 = ''; S.correBank = ''; S.colCfg = ''; S.bbkSel = '';
     render(); window.scrollTo(0, 0);
     if(S.acct === 'ok' && classOf(S.cur)) await loadBook();
     return;
   }
-  if(S.route !== 'settings'){ S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; }
+  if(S.route !== 'settings'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; }
   if(S.route !== 'print') S.wsSheet = null;
   render(); window.scrollTo(0, 0);
 }
@@ -83,7 +94,7 @@ function headerHtml(){
 }
 function navHtml(){
   const items = [['home', 'navHome'], ['classes', 'navClasses'], ['settings', 'navSettings'], ['print', 'navPrint']];
-  const cur = S.route === 'class' ? 'classes' : S.route;
+  const cur = S.route === 'class' ? 'classes' : S.route === 'bank' ? 'settings' : S.route;
   return '<div class="nav">' + items.map(i => '<button class="pill ' + (cur === i[0] ? 'on' : '') + '" data-act="nav" data-r="' + i[0] + '">' + esc(T(i[1])) + '</button>').join('') + '</div>';
 }
 function loginHtml(){
@@ -324,10 +335,41 @@ function colCardHtml(){
   h += '<p class="hint">' + esc(T('colPracticeHint')) + '</p>';
   return h + '</div>';
 }
+// ---- 跑吧！漢字：句庫 ----
+function correCardHtml(){
+  const A = S.a, P = A.plan;
+  let h = '<div class="card" id="correCard"><h3>' + esc(T('correBanksTitle')) + '</h3><p class="hint">' + esc(T('correBanksHint')) + '</p>';
+  if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  h += '<p class="hint"><b>' + esc(T('correQuota', { n: A.banks.length, max: P.active ? CORRE.PRO_SLOTS : CORRE.FREE_SLOTS })) + '</b></p>';
+  for(let i = 0; i < CORRE.PRO_SLOTS; i++){
+    const b = CORRE.bankOf(A, i);
+    if(b){
+      h += '<div class="setrow"><div><b>📚 ' + esc(CORRE.bankName(b)) + '</b><small>' + esc(CORRE.tr('slotN', { n: i + 1 }) + ' · ' + CORRE.summary(b, P)) + '</small>' +
+        (CORRE.paused(b, P) ? '<small class="err">' + esc(CORRE.tr('paused')) + '</small>' : '') + '</div><div class="row">' +
+        '<button class="pill sm" data-act="bankedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
+        '<button class="pill sm" data-act="bankpractice" data-k="' + i + '">🔗 ' + esc(T('bbkPractice')) + '</button>' +
+        '<button class="pill sm" data-act="bankqr" data-k="' + i + '">' + esc(T('qr')) + '</button>' +
+        '<a class="pill sm" href="' + esc(DATA.linkCorrePractice(b.sid) + '&preview=1') + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' +
+        '<button class="pill sm" data-act="bankdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+    }else if(i < CORRE.FREE_SLOTS || P.active){
+      h += '<div class="slot empty"><span class="mut">' + esc(CORRE.tr('slotN', { n: i + 1 })) + '</span><button class="pill fill sm" data-act="bankedit" data-k="' + i + '">＋ ' + esc(T('correNew')) + '</button></div>';
+    }else{
+      h += '<div class="slot empty"><span class="mut">🔒 ' + esc(CORRE.tr('slotN', { n: i + 1 })) + ' · ' + esc(T('correLocked')) + '</span></div>';
+    }
+  }
+  if(!P.active) h += '<div class="notice">' + esc(T('correFreeNote')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
+  if(S.bankMsg) h += '<div class="err">' + esc(S.bankMsg) + '</div>';
+  h += '<p class="hint">' + esc(T('correPracticeHint')) + '</p>';
+  return h + '</div>';
+}
+function bankRouteHtml(){
+  const why = CORRE.open(S.a, +S.cur);
+  if(!why) return '<div id="correEd"></div>';
+  return '<div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(CORRE.tr('back')) + '</button></div><div class="notice">' +
+    esc(why === 'locked' ? CORRE.tr('slotLockedEd') : T('bbkUnavailable')) + '</div>';
+}
 function settingsHtml(){
-  const rows = [['corre', 'settingsCorre']];
-  return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' + bbkCardHtml() + colCardHtml() + rows.map(r =>
-    '<div class="card"><h3>' + esc(T(GAME_KEY[r[0]])) + '</h3><p class="hint">' + esc(T(r[1])) + '</p><div class="row"><a class="pill sm" href="' + DATA.TEACHER_URL[r[0]] + '" target="_blank" rel="noopener">' + esc(T('openSettingsPage')) + '</a></div></div>').join('');
+  return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' + correCardHtml() + bbkCardHtml() + colCardHtml();
 }
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
@@ -361,10 +403,30 @@ function wsSheetHtml(){
     '<button class="pill sm" data-act="wsmake">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill fill sm" data-act="wsprint">🖨 ' + esc(T('wsPrint')) + '</button></div>' +
     '<p class="hint">' + esc(T('wsPrintTip')) + '</p></div><div class="ws">' + S.wsSheet + '</div>';
 }
+// ---- 列印：跑吧學習單 PDF ----
+function cwsDefaults(){ return { bank: '', lang: I18N.getLang() === 'en' ? 'en' : 'es', pinyin: true, zhuyin: false, order: true, busy: false, msg: '', ok: false }; }
+function cwsFormHtml(){
+  const A = S.a, W = S.cws || (S.cws = cwsDefaults());
+  let h = '<div class="card" id="cwsCard"><h3>' + esc(T('gameCorre')) + '</h3><p class="hint">' + esc(T('cwsHint')) + '</p>';
+  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div></div>';
+  if(!A.banks.length) return h + '<p class="hint">' + esc(T('cwsNoBank')) + '</p><div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(T('navSettings')) + '</button></div></div>';
+  const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
+  const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
+  const b = W.bank !== '' ? CORRE.bankOf(A, +W.bank) : null;
+  h += '<div class="field"><label>' + esc(T('cwsBank')) + '</label><select data-sel="cwsbank"><option value="">' + esc(T('configPick')) + '</option>' +
+    A.banks.map(x => '<option value="' + x.slot + '" ' + (W.bank === String(x.slot) ? 'selected' : '') + '>📚 ' + esc(CORRE.bankName(x)) + '</option>').join('') + '</select>' +
+    (b ? '<p class="hint">' + esc(CORRE.summary(b, A.plan)) + '</p>' : '') + '</div>' +
+    '<div class="field"><label>' + esc(CORRE.tr('pdfLang')) + '</label><div class="row" style="margin-top:0">' + pills('cwslang', W.lang, [['es', 'Español'], ['en', 'English']]) + '</div></div>' +
+    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'cwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'cwszy') + '</div>' +
+    '<div class="row">' + chipB(W.order, CORRE.tr('pdfOrder'), 'cwsorder') + '</div></div>' +
+    '<div class="row"><button class="pill fill" data-act="cwsmake" ' + (!b || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
+    (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
+  return h + '</div>';
+}
 function printHtml(){
   if(S.wsSheet) return wsSheetHtml();
-  const rows = [['corre', 'printCorre'], ['bbk', 'printBbk']];
-  return '<h2>' + esc(T('printTitle')) + '</h2><p class="hint">' + esc(T('printHint')) + '</p>' + wsFormHtml() + rows.map(r =>
+  const rows = [['bbk', 'printBbk']];
+  return '<h2>' + esc(T('printTitle')) + '</h2><p class="hint">' + esc(T('printHint')) + '</p>' + cwsFormHtml() + wsFormHtml() + rows.map(r =>
     '<div class="card"><h3>' + esc(T(GAME_KEY[r[0]])) + '</h3><p class="hint">' + esc(T(r[1])) + '</p></div>').join('');
 }
 function bodyHtml(){
@@ -374,6 +436,7 @@ function bodyHtml(){
     case 'classes': return classesHtml();
     case 'class': return classHtml();
     case 'settings': return settingsHtml();
+    case 'bank': return bankRouteHtml();
     case 'print': return printHtml();
     default: return homeHtml();
   }
@@ -386,7 +449,10 @@ function render(){
   else h += whoHtml() + navHtml() + bodyHtml();
   const keep = document.activeElement && document.activeElement.id;
   const vals = {}; app.querySelectorAll('input[type=text]').forEach(i => { if(i.id) vals[i.id] = i.value; });
+  CORRE.capture();                                    // 句庫編輯器：記下還沒加入的輸入
   app.innerHTML = h;
+  const ce = document.getElementById('correEd');
+  if(ce) CORRE.mount(ce, () => go('settings'));
   document.body.classList.toggle('wsmode', !!(S.route === 'print' && S.wsSheet));
   Object.keys(vals).forEach(id => { const el = document.getElementById(id); if(el && /^newCls/.test(id)) el.value = vals[id]; });   // 重畫時保留還沒送出的新班級名稱
   if(keep){ const el = document.getElementById(keep); if(el && el.focus) el.focus(); }
@@ -403,14 +469,19 @@ function qrCanvas(url){
 }
 function showQr(url, game){
   const c = classOf(S.cur);
-  const cv = qrCanvas(url);
+  qrModal(qrCanvas(url), T(GAME_KEY[game]) + ' · ' + (c ? c.data.name : ''), 'qr-' + game + '-' + safeName(c ? c.data.name : '') + '.png', url);
+}
+function qrModal(cv, title, file, url){
   const m = document.createElement('div'); m.className = 'modal';
-  m.innerHTML = '<div class="box"><h3>' + esc(T(GAME_KEY[game])) + ' · ' + esc(c ? c.data.name : '') + '</h3></div>';
+  m.innerHTML = '<div class="box"><h3>' + esc(title) + '</h3></div>';
   const box = m.firstChild; box.appendChild(cv);
-  box.insertAdjacentHTML('beforeend', '<p class="hint">' + esc(T('qrHint')) + '</p><div class="row" style="justify-content:center"><button class="pill fill sm" data-m="dl">' + esc(T('qrDownload')) + '</button><button class="pill sm" data-m="close">' + esc(T('close')) + '</button></div>');
+  box.insertAdjacentHTML('beforeend', '<p class="hint">' + esc(T('qrHint')) + '</p><div class="row" style="justify-content:center"><button class="pill fill sm" data-m="dl">' + esc(T('qrDownload')) + '</button>' +
+    '<button class="pill sm" data-m="copy">' + esc(T('copyLink')) + '</button><button class="pill sm" data-m="close">' + esc(T('close')) + '</button></div>');
   m.addEventListener('click', e => {
-    if(e.target === m || e.target.dataset.m === 'close') m.remove();
-    else if(e.target.dataset.m === 'dl') cv.toBlob(b => saveBlob(b, 'qr-' + game + '-' + safeName(c ? c.data.name : '') + '.png'), 'image/png');
+    const k = e.target.dataset && e.target.dataset.m;
+    if(e.target === m || k === 'close') m.remove();
+    else if(k === 'dl') cv.toBlob(b => saveBlob(b, file), 'image/png');
+    else if(k === 'copy') copyText(url);
   });
   document.body.appendChild(m);
 }
@@ -452,6 +523,36 @@ const actions = {
   }); },
   copy(el){ return copyText(el.dataset.url); },
   qr(el){ showQr(el.dataset.url, el.dataset.game); },
+  // ---- 跑吧句庫 ----
+  bankedit(el){ S.bankMsg = ''; go('bank', el.dataset.k); },
+  async bankpractice(el){ const b = CORRE.bankOf(S.a, +el.dataset.k); if(b) await copyText(DATA.linkCorrePractice(b.sid)); },
+  async bankqr(el){
+    const b = CORRE.bankOf(S.a, +el.dataset.k); if(!b) return;
+    const title = CORRE.bankName(b);
+    try{ await document.fonts.load('900 40px "Noto Sans TC"', title + '跑吧！漢字每天一分鐘'); }catch(e){}
+    qrModal(CORRE.qrCanvas(DATA.linkCorrePractice(b.sid), title), T('gameCorre') + ' · ' + title, 'corre-qr-' + safeName(title) + '.png', DATA.linkCorrePractice(b.sid));
+  },
+  bankdel(el){ return run(async () => {
+    const i = +el.dataset.k, b = CORRE.bankOf(S.a, i); if(!b || !confirm(CORRE.tr('delConfirm', { name: CORRE.bankName(b) }))) return;
+    try{ await CORRE.remove(S.a, i); S.bankMsg = ''; if(S.cws && S.cws.bank === String(i)) S.cws.bank = ''; }
+    catch(e){ console.error(e); S.bankMsg = CORRE.tr('delFail', { m: err(e) }); }
+    render();
+  }); },
+  // ---- 跑吧學習單 ----
+  cwslang(el){ S.cws.lang = el.dataset.k; S.cws.msg = ''; render(); },
+  cwspy(){ S.cws.pinyin = !S.cws.pinyin; S.cws.msg = ''; render(); },
+  cwszy(){ S.cws.zhuyin = !S.cws.zhuyin; S.cws.msg = ''; render(); },
+  cwsorder(){ S.cws.order = !S.cws.order; S.cws.msg = ''; render(); },
+  async cwsmake(){
+    const W = S.cws, b = W && W.bank !== '' && CORRE.bankOf(S.a, +W.bank); if(!b || W.busy || !S.a.plan.active) return;
+    W.busy = true; W.msg = ''; render();
+    try{
+      const r = await CORRE.makeWorksheet(b.data, { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, order: W.order });
+      saveBlob(r.blob, 'worksheet-' + safeName(CORRE.bankName(b)) + '.pdf');
+      W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;
+    }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
+    W.busy = false; render();
+  },
   // ---- 比比看範圍 ----
   bbknew(){ S.bbkEdit = { i: -1, dr: BBK.draftFrom(null) }; S.bbkMsg = ''; render(); const el = document.getElementById('bbkName'); if(el) el.focus(); },
   bbkedit(el){ S.bbkEdit = { i: +el.dataset.k, dr: BBK.draftFrom(S.a.bbk[+el.dataset.k]) }; S.bbkMsg = ''; render(); },
@@ -593,6 +694,11 @@ document.addEventListener('change', e => {
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'wscfg') S.ws.cfg = s.value;
+  if(s.dataset.sel === 'cwsbank'){
+    S.cws.bank = s.value; S.cws.msg = '';
+    const b = s.value !== '' && CORRE.bankOf(S.a, +s.value), ph = (b && b.data && b.data.phonetic) || 'pinyin';
+    S.cws.pinyin = ph !== 'zhuyin'; S.cws.zhuyin = ph === 'zhuyin' || ph === 'both';   // 預設跟句庫的拼音／注音設定一樣
+  }
   render();
 });
 document.addEventListener('input', e => {

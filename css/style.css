@@ -180,3 +180,28 @@ textarea{width:100%;border:1.5px solid var(--line);border-radius:16px;padding:10
   .ws-cell.blank{min-height:17mm}
   .ws-key{break-before:page;border-top:0;margin-top:0;padding-top:0}
 }
+
+/* 跑吧句庫編輯器 */
+.st{font-size:.9rem;margin:6px 0;color:var(--mut);white-space:pre-wrap}
+.st:empty{display:none}
+.st.ok{color:var(--ok)}.st.err{color:var(--err)}
+.warn{color:#a06a12}
+.sent{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0;background:#fff}
+.sent .info{flex:1;min-width:0}
+.sent .hz{font-size:1.15rem;font-weight:700;word-break:break-all}
+.sent .py{color:var(--brown);font-size:.92rem;word-break:break-word}
+.sent .tl{font-size:.92rem;word-break:break-word}
+.sent small{display:block;font-size:.8rem}
+.sent .acts{display:flex;flex-direction:column;gap:2px}
+.sent.dis{opacity:.5}
+label.sent.pick{cursor:pointer}
+label.sent.pick input{width:22px;height:22px;margin-top:4px;accent-color:var(--brown);flex:none}
+.tk-head,.tk{display:grid;grid-template-columns:22px 1fr 1fr 1.3fr 36px;gap:6px;align-items:center}
+.tk-head{font-size:.85rem;font-weight:700;margin:4px 0}
+.tk{margin:6px 0}
+.tk .idx{font-size:.8rem;color:var(--mut);text-align:right}
+.tk input[type=text]{min-height:40px;padding:6px 10px;border-radius:12px;font-size:1rem;min-width:0}
+.savebar{position:sticky;bottom:0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--bg);border-top:1px solid var(--line);padding:10px 4px calc(10px + env(safe-area-inset-bottom));margin:12px -4px 0}
+.savebar .st{margin:0}
+.dirty{color:var(--err);font-size:.88rem;font-weight:700}
+#cwsCard .chip{white-space:normal}

@@ -26,7 +26,7 @@
 | `teacher_classes/{uid}`、`classes/{cid}` | 班級（三款共用，最多 3 班） |
 | `class_scores/{cid}_{game}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生一筆 |
 | `class_plays/{自動 id}` | 比比看每回合每題的紀錄 |
-| `teacher_banks`、`shared_banks` | 跑吧句庫（只讀，用來選題目來源） |
+| `teacher_banks`、`shared_banks` | 跑吧句庫（步驟 4 起在中心編輯） |
 | `teacher_configs`、`shared_configs` | 色數設定組（讀；沒有連結碼時，照色數教師區的做法寫入連結碼） |
 
 學生連結格式：
@@ -56,6 +56,14 @@
   - 學習單字體繁／簡、輔助語言無／西／英、可附答案頁（另起一頁）
 - 顏色、數字讀法（國字）、設定格式在 `js/colores.js`，要跟遊戲 `index.html` 一致。
 
+## 跑吧句庫與學習單（步驟 4）
+
+- 「遊戲設定」：跑吧句庫卡片，5 個位置（免費 1 個、每庫 50 句；訂閱 5 個、每庫 80 句；每句最多 20 字）。每個句庫：編輯、練習連結（`corre/?bank=<句庫碼>`，成績不回傳）、QR（下面印句庫名稱）、試玩（`&preview=1`）、刪除。
+- 編輯頁 `#/bank/<0-4>`：句庫設定、輸入一句自動產生簡體／台灣拼音／翻譯再逐詞微調、批次匯入、從公開題庫（`corre-d16da` 專案，只讀）或主題包（訂閱）挑句、句子清單改／刪、上傳。有沒上傳的修改，離開前會先問。
+- 資料跟 `corre/teacher/` 同一份、格式完全相同（`teacher_banks/{uid}.slots` → `shared_banks/{sid}`），規則在 `corre/teacher/firestore.rules.txt`，**不用新規則**。句庫碼建立後不換，所以改句子後已發出的連結自動跟著變。
+- 「列印」：跑吧學習單 PDF（訂閱限定），選句庫、西／英翻譯、拼音／注音、排列句子＋答案頁。
+- 程式在 `js/corre.js`（文字在 `js/corre-text.js`）。繁簡轉換與拼音函式庫（opencc-js、pinyin-pro）第一次按「自動產生」或「批次匯入」才載入。舊的 `corre/teacher/` 頁暫時保留，兩邊改的是同一份資料。
+
 ## 檔案
 
 ```
@@ -65,6 +73,8 @@ js/i18n.js        四語詞條（每個詞條 = [繁, 简, es, en]）
 js/data.js        Firebase：登入、方案、班級、成績、比比看範圍
 js/bbk.js         比比看的特徵／題型清單與範圍草稿
 js/colores.js     色數的顏色、數字、設定格式與三種學習單
+js/corre.js       跑吧句庫編輯器、句庫 QR、學習單 PDF
+js/corre-text.js  句庫編輯器的四語文字
 js/books.js       成績簿表格與比比看常錯統計（只產生 HTML）
 js/app.js         畫面與操作
 js/qrcode.js      qrcode-generator 1.4.4（MIT，Kazuhiko Arase）
@@ -78,6 +88,8 @@ npm i -D playwright && npx playwright install chromium   # 第一次
 node tests/test_center.js [截圖資料夾]
 ```
 
-測試用 `tests/firebase-mock.js` 取代 Firebase，涵蓋：四語、免費／訂閱／到期、建班／改名／排行榜／刪班（含連帶刪成績）、三款連結與 QR、比比看範圍（新增／編輯／刪除／額度／範圍碼）、三款成績簿、常錯統計、CSV、詞條完整性、手機寬度不橫向捲動。
+「自動產生」的測試要本機有 `opencc-js@1.4.1`、`pinyin-pro@3.20.0`（`npm i` 在這個資料夾，或用環境變數 `CORRE_LIBS` 指到有 node_modules 的資料夾）；沒有的話會自動略過那幾項。
+
+測試用 `tests/firebase-mock.js` 取代 Firebase，涵蓋：四語、免費／訂閱／到期、建班／改名／排行榜／刪班（含連帶刪成績）、三款連結與 QR、比比看範圍（新增／編輯／刪除／額度／範圍碼）、跑吧句庫（建立／自動產生／批次／題庫與主題包／改／存／刪、額度、到期、學習單 PDF）、三款成績簿、常錯統計、CSV、詞條完整性、手機寬度不橫向捲動。
 
 **沒有涵蓋：** Firestore 安全規則（模擬器不驗規則）。請用非管理員的 Gmail 在實機測一次：建班、改名、刪班、色數「產生連結」、比比看範圍「儲存」「練習連結」，並用另一支手機（沒登入）打開範圍連結。

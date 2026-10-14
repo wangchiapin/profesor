@@ -31,6 +31,25 @@
       if(keys !== ['d','lv','n','name','owner','t','th','updatedAt'].join()) deny();
       return;
     }
+    // 跑吧句庫：照 corre/teacher/firestore.rules.txt 的重點模擬（位置 1–4 或超過 50 句要訂閱中；每庫最多 80 句；本人才能寫）
+    if(c === 'teacher_banks'){
+      if(!user || user.uid !== id) deny();
+      const p = col(pid, 'site_plans')[id], pro = !!(p && p.expiresAt > NOW());
+      const keys = Object.keys(data.slots || {}), before = col(pid, c)[id] ? Object.keys(col(pid, c)[id].slots || {}) : [];
+      if(!pro && keys.some(k => k !== '0' && before.indexOf(k) < 0)) deny();
+      return;
+    }
+    if(c === 'shared_banks'){
+      if(!user || data.owner !== user.uid) deny();
+      const old = col(pid, c)[id]; if(old && (old.owner !== user.uid || old.slot !== data.slot)) deny();
+      const p = col(pid, 'site_plans')[user.uid], pro = !!(p && p.expiresAt > NOW());
+      const ok = Object.keys(data).every(k => ['owner','slot','name','speed','script','boss','phonetic','sentences','pro','updatedAt'].indexOf(k) >= 0)
+        && data.sentences.length >= 1 && data.sentences.length <= 80 && data.pro === (data.slot > 0 || data.sentences.length > 50) && (!data.pro || pro)
+        && ['facil','normal','dificil'].indexOf(data.speed) >= 0 && ['trad','simp'].indexOf(data.script) >= 0 && typeof data.boss === 'boolean'
+        && data.name.length >= 1 && data.name.length <= 40;
+      if(!ok) deny();
+      return;
+    }
     if(c !== 'class_plays') return;
     const d = data, keys = Object.keys(d).sort().join();
     if(keys !== ['at','cid','game','h','lv','max','nick','owner','qs','rg','score','th'].sort().join()) deny();
@@ -45,12 +64,16 @@
     return { id, exists: data !== undefined, data: () => (data === undefined ? undefined : clone(data)) };
   }
   let auth = null;
-  function Query(pid, c, filters, lim){
+  const OPS = { '==': (a, b) => a === b, '>=': (a, b) => a >= b, '<': (a, b) => a < b };
+  function Query(pid, c, filters, lim, ord, after){
     return {
-      where: (f, op, v) => Query(pid, c, filters.concat([[f, op, v]]), lim),
-      limit: n => Query(pid, c, filters, n),
+      where: (f, op, v) => Query(pid, c, filters.concat([[f, op, v]]), lim, ord, after),
+      limit: n => Query(pid, c, filters, n, ord, after),
+      orderBy: f => Query(pid, c, filters, lim, f, after),
+      startAfter: d => Query(pid, c, filters, lim, ord, d),
       get: async () => {
-        let ids = Object.keys(col(pid, c)).filter(id => filters.every(([f, op, v]) => op === '==' && col(pid, c)[id][f] === v));
+        let ids = Object.keys(col(pid, c)).filter(id => filters.every(([f, op, v]) => OPS[op](col(pid, c)[id][f], v)));
+        if(ord){ ids.sort((a, b) => col(pid, c)[a][ord] - col(pid, c)[b][ord]); if(after) ids = ids.filter(id => col(pid, c)[id][ord] > after.data()[ord]); }
         if(c === 'class_plays' && !filters.some(([f, , v]) => f === 'owner' && auth.currentUser && v === auth.currentUser.uid)) deny();
         if(lim != null) ids = ids.slice(0, lim);
         window.__reads[pid] = (window.__reads[pid] || 0) + Math.max(1, ids.length);
@@ -92,7 +115,7 @@
   window.firebase = {
     initializeApp(cfg, name){
       const n = name || '[DEFAULT]'; if(apps[n]) throw new Error('app exists: ' + n);
-      const fs = makeFirestore(cfg.projectId); auth = makeAuth();
+      const fs = makeFirestore(cfg.projectId); auth = auth || makeAuth();   // 第二個 app（公開題庫）不換掉登入
       apps[n] = { name: n, options: cfg, firestore: () => fs, auth: () => auth };
       window.__apps = Object.keys(apps).map(k => k + ':' + apps[k].options.projectId);
       return apps[n];

@@ -27,6 +27,17 @@ const D = {
   permDenied: ['沒有權限。請確認已登入，而且方案還有效。', '没有权限。请确认已登录，而且方案还有效。', 'Sin permiso. Comprueba que has iniciado sesión y que tu suscripción está activa.', 'Permission denied. Check that you are signed in and your plan is active.'],
   network: ['連線失敗，請稍後再試。', '连线失败，请稍后再试。', 'Fallo de conexión. Inténtalo de nuevo más tarde.', 'Connection failed. Please try again later.'],
 
+  // ---- 跑吧！漢字：句庫（步驟 4）----
+  correBanksTitle: ['跑吧！漢字：句庫', '跑吧！汉字：句库', 'Corre Hanzi: bancos de frases', 'Run Hanzi: sentence banks'],
+  correBanksHint: ['自己出題：每個句庫是一組句子，學生用連結就能玩。改了句子，已發出去的連結會自動用新的句子。', '自己出题：每个句库是一组句子，学生用链接就能玩。改了句子，已发出去的链接会自动用新的句子。', 'Crea tus propias frases: cada banco es un grupo de frases que tus alumnos juegan con un enlace. Si cambias las frases, los enlaces ya enviados usan las nuevas.', 'Write your own sentences: each bank is a set of sentences students play from a link. If you change the sentences, links already sent use the new ones.'],
+  correQuota: ['已用 {n} / {max} 個句庫', '已用 {n} / {max} 个句库', 'Usados {n} / {max} bancos', '{n} / {max} banks used'],
+  correNew: ['建立句庫', '创建句库', 'Crear banco', 'Create bank'],
+  correLocked: ['訂閱後可用', '订阅后可用', 'requiere suscripción', 'subscribers only'],
+  correFreeNote: ['免費版：1 個句庫，每庫最多 50 句。訂閱後最多 5 個句庫，每庫 80 句。', '免费版：1 个句库，每库最多 50 句。订阅后最多 5 个句库，每库 80 句。', 'Plan gratis: 1 banco, hasta 50 frases. Con suscripción: hasta 5 bancos de 80 frases.', 'Free plan: 1 bank, up to 50 sentences. With a subscription: up to 5 banks of 80 sentences.'],
+  correPracticeHint: ['「練習連結」不屬於任何班級：學生打開就能玩這個句庫，但成績不會回傳給你。要收成績，請到「班級」頁，在跑吧！漢字的「題目來源」選這個句庫，再複製班級連結。', '「练习链接」不属于任何班级：学生打开就能玩这个句库，但成绩不会回传给你。要收成绩，请到「班级」页，在跑吧！汉字的「题目来源」选这个句库，再复制班级链接。', 'El «enlace de práctica» no pertenece a ninguna clase: el alumno juega este banco, pero las notas no te llegan. Para recibir notas, ve a la página de la clase, elige este banco en «Origen de las frases» de Corre Hanzi y copia el enlace de la clase.', 'A "practice link" belongs to no class: students play this bank, but scores are not sent to you. To collect scores, go to the class page, choose this bank as the Run Hanzi "sentence source" and copy the class link.'],
+  cwsHint: ['選一個句庫，產生 PDF 學習單：句子（附拼音或注音與翻譯），可再加「排列句子」練習和答案頁。', '选一个句库，生成 PDF 学习单：句子（附拼音或注音与翻译），可再加「排列句子」练习和答案页。', 'Elige un banco y crea una ficha en PDF: las frases (con pinyin o zhuyin y traducción) y, si quieres, un ejercicio de ordenar palabras con respuestas.', 'Pick a bank to make a PDF worksheet: the sentences (with pinyin or zhuyin and translation), plus an optional word-order exercise with answers.'],
+  cwsNoBank: ['還沒有句庫。先到「遊戲設定」建立一個。', '还没有句库。先到「游戏设置」创建一个。', 'Aún no tienes bancos. Crea uno en «Ajustes de juegos».', 'No banks yet. Create one in Game settings first.'],
+  cwsBank: ['句庫', '句库', 'Banco de frases', 'Sentence bank'],
   // ---- 比比看：練習範圍（步驟 2）----
   bbkSetsTitle: ['比比看：練習範圍', '比比看：练习范围', 'Compara y Adivina: rangos de práctica', 'Compare & Guess: practice ranges'],
   bbkSetsHint: ['把常用的出題範圍存起來、取個名字。在班級頁選它就能做學生連結。之後改了範圍，已經發出去的連結也會跟著改。', '把常用的出题范围存起来、取个名字。在班级页选它就能做学生链接。之后改了范围，已经发出去的链接也会跟着改。', 'Guarda los rangos que más usas con un nombre. En la página de la clase puedes elegirlos para el enlace de alumnos. Si cambias un rango, los enlaces ya enviados también cambian.', 'Save the ranges you use often under a name. Pick one on the class page to make a student link. If you edit a range later, links already sent change too.'],
@@ -254,16 +265,13 @@ const D = {
 
   // ---- 遊戲設定 ----
   settingsTitle: ['遊戲設定', '游戏设置', 'Ajustes de juegos', 'Game settings'],
-  settingsHint: ['比比看的練習範圍和色數的設定組都在這裡管理；跑吧目前先連到原本的設定頁，之後搬進來。', '比比看的练习范围和色数的设置组都在这里管理；跑吧目前先连到原本的设置页，之后搬进来。', 'Aquí gestionas los rangos de Compara y Adivina y las configuraciones de Pop Colores; Corre enlaza por ahora a su página original.', 'Manage Compare & Guess ranges and Pop Colors setups here; Run Hanzi still links to its original page for now.'],
-  settingsCorre: ['句庫與學習單在「跑吧！漢字」教師頁。', '句库与学习单在「跑吧！汉字」教师页。', 'Los bancos de frases y las hojas están en la página docente de Corre Hanzi.', 'Sentence banks and worksheets are on the Run Hanzi teacher page.'],
+  settingsHint: ['三款遊戲的句庫、練習範圍、設定組都在這裡管理。', '三款游戏的句库、练习范围、设置组都在这里管理。', 'Aquí gestionas los bancos de frases, los rangos y las configuraciones de los tres juegos.', 'Manage the sentence banks, ranges and setups of all three games here.'],
   settingsColores: ['設定組在遊戲主選單最下面的「教師版」。', '设置组在游戏主选单最下面的「教师版」。', 'Las configuraciones están en «Versión docente», al final del menú del juego.', 'Setups are under "Teacher version" at the bottom of the game menu.'],
   settingsBbk: ['自選範圍在遊戲主選單最下面的「老師設定」。', '自选范围在游戏主选单最下面的「老师设置」。', 'El rango propio está en «Ajustes del profesor», al final del menú del juego.', 'Your own range is under "Teacher settings" at the bottom of the game menu.'],
-  openSettingsPage: ['開啟設定頁', '打开设置页', 'Abrir ajustes', 'Open settings'],
 
   // ---- 列印 ----
   printTitle: ['列印', '打印', 'Imprimir', 'Print'],
-  printHint: ['色數的學習單在這裡產生；跑吧和比比看的學習單目前仍在遊戲裡，之後會集中到這裡。', '色数的学习单在这里生成；跑吧和比比看的学习单目前仍在游戏里，之后会集中到这里。', 'Las hojas de Pop Colores se crean aquí; las de Corre y Compara y Adivina siguen dentro de cada juego por ahora.', 'Pop Colors worksheets are made here; Run Hanzi and Compare & Guess sheets are still inside each game for now.'],
-  printCorre: ['學習單 PDF：在教師頁的句庫裡按「學習單」。', '学习单 PDF：在教师页的句库里按「学习单」。', 'Hoja en PDF: en la página docente, pulsa «Hoja de trabajo» en un banco.', 'Worksheet PDF: press "Worksheet" on a bank in the teacher page.'],
+  printHint: ['跑吧和色數的學習單在這裡產生；比比看的練習紙目前仍在遊戲裡，之後會集中到這裡。', '跑吧和色数的学习单在这里生成；比比看的练习纸目前仍在游戏里，之后会集中到这里。', 'Las hojas de Corre y Pop Colores se crean aquí; la de Compara y Adivina sigue dentro del juego por ahora.', 'Run Hanzi and Pop Colors worksheets are made here; the Compare & Guess sheet is still inside the game for now.'],
   printColores: ['學習單：即將新增（聽讀找色、看色寫數、著色版）。', '学习单：即将新增（听读找色、看色写数、着色版）。', 'Hojas de trabajo: próximamente (oír y buscar color, ver color y escribir número, colorear).', 'Worksheets: coming soon (listen and find color, see color and write number, coloring).'],
   printBbk: ['練習紙：在遊戲主選單的「老師設定」裡按「練習紙」。', '练习纸：在游戏主选单的「老师设置」里按「练习纸」。', 'Hoja de práctica: en «Ajustes del profesor» del juego, pulsa «Hoja de práctica».', 'Practice sheet: press "Practice sheet" in the in-game teacher settings.'],
 
