@@ -807,6 +807,21 @@ server.listen(0, 'localhost', async () => {
     await page.click('#bbkWsCard [data-act=bwsmake]'); await page.waitForSelector('.ws .bbkws');
     ok(true, '網路恢復後再按就成功');
     ok(errors.filter(e => !/load|ERR_FAILED/.test(e)).length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 手機自動複製失敗：跳出可以手動複製、分享的小視窗
+    const BBK = [{ id: 'b1', name: '身高', lv: 1, d: ['height'], t: [], n: 5, sid: 'rng000011112' }];
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('#bbkCard [data-act=bbkpractice]');
+    await page.evaluate(() => { let n = 0; window.__copies = [];
+      navigator.clipboard.writeText = t => { n++; if(n === 1) return Promise.reject(new Error('NotAllowed')); window.__copies.push(t); return Promise.resolve(); };
+      document.execCommand = () => false; });
+    await page.click('#bbkCard [data-act=bbkpractice]');
+    await page.waitForSelector('.modal.cp');
+    const v = await page.$eval('.modal.cp .cpbox', t => t.value);
+    ok(v.includes('compara-y-adivina') && v.includes('r=rng000011112'), '自動複製失敗：跳出小視窗，裡面是練習連結', v);
+    await shot(page, 'o3_copybox');
+    await page.click('.modal.cp [data-m=cp]');
+    ok(await page.$('.modal.cp') === null && (await page.evaluate(() => window.__copies))[0] === v, '按「複製連結」：複製成功、視窗關掉');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
     ok(!/\?v=5-3/.test(ix) && (ix.match(/\?v=5-4/g) || []).length >= 9, 'index.html 的 css／js 都改成 ?v=5-4'); }

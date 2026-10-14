@@ -24,12 +24,39 @@ const S = {
 function toast(m){ const el = document.getElementById('toast'); el.textContent = m; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 1600); }
 function saveBlob(blob, name){ const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
 const safeName = s => String(s || '').replace(/[\\/:*?"<>|\s]+/g, '_');
+// 複製連結：手機上如果前面有等網路（例如先存檔才拿到連結），瀏覽器常常不讓自動複製。
+// 這時跳出一個小視窗：連結放在框框裡（已選好），按「複製」一定成功；手機還有「分享」可以直接傳到 LINE／WhatsApp。
 async function copyText(text){
   try{ await navigator.clipboard.writeText(text); toast(T('copied')); return; }catch(e){}
   try{
-    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
-    const ok = document.execCommand('copy'); ta.remove(); toast(ok ? T('copied') : T('copyFail'));
-  }catch(e){ toast(T('copyFail')); }
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy'); ta.remove(); if(ok){ toast(T('copied')); return; }
+  }catch(e){}
+  copyBox(text);
+}
+function copyBox(text){
+  const old = document.querySelector('.modal.cp'); if(old) old.remove();
+  const m = document.createElement('div'); m.className = 'modal cp';
+  m.innerHTML = '<div class="box"><h3>🔗 ' + esc(T('copyTitle')) + '</h3><p class="hint">' + esc(T('copyHint')) + '</p>' +
+    '<textarea class="cpbox" readonly rows="3">' + esc(text) + '</textarea>' +
+    '<div class="row" style="justify-content:center"><button class="pill fill" data-m="cp">' + esc(T('copyLink')) + '</button>' +
+    (navigator.share ? '<button class="pill" data-m="share">' + esc(T('shareLink')) + '</button>' : '') +
+    '<button class="pill" data-m="close">' + esc(T('close')) + '</button></div></div>';
+  document.body.appendChild(m);
+  const box = m.querySelector('.cpbox');
+  const sel = () => { box.focus(); box.select(); box.setSelectionRange(0, text.length); };
+  setTimeout(sel, 50);
+  m.addEventListener('click', async e => {
+    const b = e.target.closest('[data-m]');
+    if(e.target === m || (b && b.dataset.m === 'close')){ m.remove(); return; }
+    if(!b) return;
+    if(b.dataset.m === 'cp'){
+      let ok = false;
+      try{ await navigator.clipboard.writeText(text); ok = true; }catch(err){ sel(); try{ ok = document.execCommand('copy'); }catch(e2){} }
+      if(ok){ toast(T('copied')); m.remove(); } else { sel(); toast(T('copySelect')); }
+    }
+    if(b.dataset.m === 'share'){ try{ await navigator.share({ url: text }); m.remove(); }catch(err){} }
+  });
 }
 const err = e => DATA.explain(e, T);
 const isReal = () => DATA.isRealUser(S.user);
