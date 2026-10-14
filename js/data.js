@@ -189,6 +189,36 @@ async function ensureBbkSid(items, i){
   return writeBbkList(next);
 }
 
+// ---- 色數：設定組（teacher_configs/{uid}.items[{id,cfg,sid?}]），格式與遊戲教師區完全相同 ----
+async function writeColoresList(items){
+  const clean = items.map(x => { const o = { id: x.id, cfg: x.cfg }; if(x.sid) o.sid = x.sid; return o; });
+  await db.collection('teacher_configs').doc(uid()).set({ items: clean, updatedAt: serverTs() });
+  return clean;
+}
+// 新增（i < 0）或修改第 i 組；有連結碼的一起更新 shared_configs（已發出的連結跟著改）
+async function saveColoresCfg(items, i, cfg){
+  const next = items.slice();
+  if(i < 0) next.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), cfg });
+  else next[i] = Object.assign({}, items[i], { cfg });
+  const it = next[i < 0 ? next.length - 1 : i];
+  const saved = await writeColoresList(next);
+  if(it.sid){ try{ await db.collection('shared_configs').doc(it.sid).set({ owner: uid(), cfg, pro: !!(cfg.custom || cfg.nums), updatedAt: serverTs() }); }catch(e){ console.warn('shared_configs update failed', e); } }
+  return saved;
+}
+async function deleteColoresCfg(items, i){
+  const it = items[i]; if(!it) return items;
+  if(it.sid){ try{ await db.collection('shared_configs').doc(it.sid).delete(); }catch(e){ console.warn('shared_configs delete failed', e); } }
+  return writeColoresList(items.filter((_, k) => k !== i));
+}
+// 停用連結：刪掉 shared_configs，設定組本身留著
+async function coloresLinkOff(items, i){
+  const it = items[i]; if(!it || !it.sid) return items;
+  await db.collection('shared_configs').doc(it.sid).delete();
+  return writeColoresList(items.map((x, k) => { if(k !== i) return x; const y = Object.assign({}, x); delete y.sid; return y; }));
+}
+function linkColoresPractice(sid){ return GAME_URL.colores + '?c=' + sid; }
+const coloresMax = plan => plan && plan.active ? 15 : 3;
+
 // ---- 學生連結 ----
 function linkCorre(cid, bankSid){ return GAME_URL.corre + '?class=' + cid + (bankSid ? '&bank=' + bankSid : ''); }
 function linkColores(cid, sid){ return GAME_URL.colores + '?c=' + sid + '&class=' + cid; }
@@ -203,5 +233,5 @@ function explain(e, t){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs,
-  ensureColoresSid, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, linkCorre, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, linkCorre, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

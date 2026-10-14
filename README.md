@@ -46,6 +46,16 @@
 - 特徵與題型清單在 `js/bbk.js`，要跟遊戲（`themes/people.js` 的 dims、`index.html` 的 POOL）一致
 - 規則：`firestore-rules-step2.txt`（要手動貼到 Firebase 主控台）
 
+## 色數設定組與學習單（步驟 3）
+
+- 「遊戲設定」：新增／編輯／刪除色數設定組、練習連結（`?c=`）、停用連結、試玩。資料跟遊戲教師區同一份（`teacher_configs/{uid}.items[{id,cfg,sid?}]` → `shared_configs/{sid}`），格式完全相同，**不用新規則**。免費 3 組、訂閱 15 組；自訂顏色、自訂數字限訂閱。
+- 「列印」：三種學習單（訂閱限定），從選的設定組隨機產生，可「換一張」：
+  - 聽讀找色：彩色色塊板＋國字數字題目（可改「老師唸」），學生寫顏色；可附顏色名稱表
+  - 看色寫數：彩色色塊板＋顏色題目，學生用國字寫出那個顏色上的所有數字
+  - 著色版：格子印國字數字＋顏色對照表，黑白印就能用；答案頁是塗好的彩色板
+  - 學習單字體繁／簡、輔助語言無／西／英、可附答案頁（另起一頁）
+- 顏色、數字讀法（國字）、設定格式在 `js/colores.js`，要跟遊戲 `index.html` 一致。
+
 ## 檔案
 
 ```
@@ -54,6 +64,7 @@ css/style.css     無印風格咖啡色、膠囊按鈕
 js/i18n.js        四語詞條（每個詞條 = [繁, 简, es, en]）
 js/data.js        Firebase：登入、方案、班級、成績、比比看範圍
 js/bbk.js         比比看的特徵／題型清單與範圍草稿
+js/colores.js     色數的顏色、數字、設定格式與三種學習單
 js/books.js       成績簿表格與比比看常錯統計（只產生 HTML）
 js/app.js         畫面與操作
 js/qrcode.js      qrcode-generator 1.4.4（MIT，Kazuhiko Arase）

@@ -270,10 +270,10 @@ server.listen(0, 'localhost', async () => {
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
     await page.waitForSelector('#bbkCard');
     ok((await text(page, '#bbkCard')).includes('已存 0 / 15 組'), '訂閱老師：0 / 15');
-    await page.click('[data-act=bbknew]'); await page.waitForSelector('.editor');
-    let chips = await page.$$eval('.editor [data-act=bbkd]', e => e.map(x => x.dataset.k));
+    await page.click('[data-act=bbknew]'); await page.waitForSelector('#bbkCard .editor');
+    let chips = await page.$$eval('#bbkCard .editor [data-act=bbkd]', e => e.map(x => x.dataset.k));
     ok(chips.join() === 'height,age,build,hair,eyes,nose', '第 1 關只列第 1 關的特徵', chips);
-    ok((await page.$$eval('.editor [data-act=bbkt]', e => e.map(x => x.dataset.k))).join() === 'decode,tf,pick,more', '第 1 關的題型');
+    ok((await page.$$eval('#bbkCard .editor [data-act=bbkt]', e => e.map(x => x.dataset.k))).join() === 'decode,tf,pick,more', '第 1 關的題型');
     await page.fill('#bbkName', '身高和年齡');
     await page.click('[data-act=bbkall][data-k=d0]');
     ok(await page.$eval('[data-act=bbksave]', b => b.disabled), '特徵全清：不能儲存');
@@ -282,14 +282,14 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=bbkn][data-k="15"]');
     ok((await page.$eval('#bbkName', i => i.value)) === '身高和年齡', '點選其他東西時名稱不會消失');
     await shot(page, 'i1_editor');
-    await page.click('[data-act=bbksave]'); await page.waitForSelector('.setrow');
+    await page.click('[data-act=bbksave]'); await page.waitForSelector('#bbkCard .setrow');
     let d = await db(page), it = d.bbk_sets.u1.items[0];
     ok(it.name === '身高和年齡' && it.lv === 1 && it.d.join() === 'height,age' && it.t.join() === 'decode,pick,more' && it.n === 15 && !it.sid, '存進 bbk_sets（還沒有連結碼）', it);
     ok((await text(page, '#bbkCard')).includes('第 1 關 · 15 題 · 身高、年齡 · 看句子找人、看圖選句子、誰比較…'), '列表摘要', await text(page, '#bbkCard'));
     // 第二組：全選＋第 3 關
     await page.click('[data-act=bbknew]'); await page.click('[data-act=bbklv][data-k="3"]');
-    ok((await page.$$eval('.editor [data-act=bbkd].on', e => e.length)) === 9, '換到第 3 關：全選時跟著變成 9 個特徵');
-    await page.click('[data-act=bbksave]'); await page.waitForFunction(() => document.querySelectorAll('.setrow').length === 2);
+    ok((await page.$$eval('#bbkCard .editor [data-act=bbkd].on', e => e.length)) === 9, '換到第 3 關：全選時跟著變成 9 個特徵');
+    await page.click('[data-act=bbksave]'); await page.waitForFunction(() => document.querySelectorAll('#bbkCard .setrow').length === 2);
     d = await db(page); it = d.bbk_sets.u1.items[1];
     ok(it.name === '範圍 2' && it.lv === 3 && it.d.length === 0 && it.t.length === 0 && it.n === 10, '沒取名用預設名稱；全選存成空陣列（＝全部）', it);
     // 練習連結：產生連結碼並複製
@@ -299,11 +299,11 @@ server.listen(0, 'localhost', async () => {
     const sid = it.sid, sh = d.shared_bbk && d.shared_bbk[sid];
     ok(/^[a-z0-9]{12}$/.test(sid) && sh && sh.owner === 'u1' && sh.name === '身高和年齡' && sh.th === 'people' && sh.d.join() === 'height,age' && sh.n === 15, '產生連結碼：寫入 shared_bbk', sh);
     ok((await page.evaluate(() => window.__copied)) === 'https://wangchiapin.github.io/compara-y-adivina/?r=' + sid, '複製練習連結 ?r=代碼');
-    ok(await page.$('.setrow a[href*="?r=' + sid + '"]') !== null, '出現「試玩」');
+    ok(await page.$('#bbkCard .setrow a[href*="?r=' + sid + '"]') !== null, '出現「試玩」');
     // 編輯＋改名：shared_bbk 跟著改，連結碼不變
     await page.click('[data-act=bbkedit][data-k="0"]'); await page.fill('#bbkName', '身高年齡（改）'); await page.click('[data-act=bbklv][data-k="2"]');
     await page.click('[data-act=bbkd][data-k=muscle]');
-    await page.click('[data-act=bbksave]'); await page.waitForFunction(() => !document.querySelector('.editor'));
+    await page.click('[data-act=bbksave]'); await page.waitForFunction(() => !document.querySelector('#bbkCard .editor'));
     d = await db(page); it = d.bbk_sets.u1.items[0];
     ok(it.sid === sid && it.name === '身高年齡（改）' && it.lv === 2 && it.d.join() === 'height,age,muscle', '編輯後連結碼不變', it);
     ok(d.shared_bbk[sid].name === '身高年齡（改）' && d.shared_bbk[sid].lv === 2 && d.shared_bbk[sid].d.join() === 'height,age,muscle', '已發出的連結跟著改（shared_bbk 更新）', d.shared_bbk[sid]);
@@ -329,7 +329,7 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'i3_class_link');
     // 刪除：shared_bbk 一起刪
     await page.click('[data-act=nav][data-r=settings]'); await page.waitForSelector('#bbkCard .setrow');
-    await page.click('[data-act=bbkdel][data-k="0"]'); await page.waitForFunction(() => document.querySelectorAll('.setrow').length === 1);
+    await page.click('[data-act=bbkdel][data-k="0"]'); await page.waitForFunction(() => document.querySelectorAll('#bbkCard .setrow').length === 1);
     d = await db(page);
     ok(d.bbk_sets.u1.items.length === 1 && d.bbk_sets.u1.items[0].sid === sid2 && !d.shared_bbk[sid] && !!d.shared_bbk[sid2], '刪除：清單與 shared_bbk 一起刪，其他組不動');
     ok(await noOverflow(page), '手機寬度沒有橫向捲動');
@@ -340,7 +340,7 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page, '#bbkCard')).includes('3 / 3 guardados') && await page.$('[data-act=bbknew]') === null, '免費：3 / 3，不能再新增（西文）');
     ok((await text(page, '#bbkCard')).includes('hasta 15'), '提示訂閱可存 15 組');
     await page.click('[data-act=bbkedit][data-k="2"]'); await page.fill('#bbkName', 'Nuevo nombre'); await page.click('[data-act=bbksave]');
-    await page.waitForFunction(() => !document.querySelector('.editor'));
+    await page.waitForFunction(() => !document.querySelector('#bbkCard .editor'));
     ok((await db(page)).bbk_sets.u1.items[2].name === 'Nuevo nombre', '免費滿額仍可改名');
     await shot(page, 'i4_free_es');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
@@ -348,7 +348,7 @@ server.listen(0, 'localhost', async () => {
     const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true, expired: true, bbk: five }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
     await page.waitForSelector('#bbkCard .setrow');
     ok((await text(page, '#bbkCard')).includes('已存 5 / 3 組') && await page.$('[data-act=bbknew]') === null, '到期：超過額度的仍看得到，但不能新增');
-    await page.click('[data-act=bbkdel][data-k="4"]'); await page.waitForFunction(() => document.querySelectorAll('.setrow').length === 4);
+    await page.click('[data-act=bbkdel][data-k="4"]'); await page.waitForFunction(() => document.querySelectorAll('#bbkCard .setrow').length === 4);
     ok((await db(page)).bbk_sets.u1.items.length === 4, '到期仍可刪除');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/settings' });
@@ -356,8 +356,8 @@ server.listen(0, 'localhost', async () => {
     // 畫面以為還在訂閱中，但其實已到期：規則（模擬）不准存第 4 組
     await page.evaluate(() => { __profesor.S.a.bbk = [1, 2, 3].map(i => ({ id: 'y' + i, name: 'R' + i, lv: 1, d: [], t: [], n: 10 })); });
     await page.evaluate(t => { window.__DB[t].site_plans = {}; }, T);
-    await page.click('[data-act=bbksave]'); await page.waitForSelector('.editor .err');
-    ok((await text(page, '.editor')).includes('Permission denied'), '規則拒絕時顯示錯誤、草稿還在');
+    await page.click('[data-act=bbksave]'); await page.waitForSelector('#bbkCard .editor .err');
+    ok((await text(page, '#bbkCard .editor')).includes('Permission denied'), '規則拒絕時顯示錯誤、草稿還在');
     ok(errors.every(e => /insufficient permissions/.test(e)), '只有預期中的權限錯誤', errors); await ctx.close(); }
 
   console.log('\n[J] 方案名稱');
@@ -368,6 +368,113 @@ server.listen(0, 'localhost', async () => {
     ok(b === want, '方案顯示：' + want, b);
     await ctx.close();
   }
+
+  console.log('\n[K] 色數設定組：新增、編輯、停用連結、刪除、訂閱功能');
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('#colCard .setrow');
+    ok((await text(page, '#colCard')).includes('已存 2 / 15 組') && (await text(page, '#colCard')).includes('百位數'), '列出原本的 2 組設定');
+    await page.click('#colCard [data-act=colnew]'); await page.waitForSelector('#colCard .editor');
+    ok((await page.$$eval('.cchip.on', e => e.length)) === 9, '新設定預設基本色 9 色');
+    await page.fill('#colName', '三年級');
+    await page.click('[data-act=colmode][data-k=B]'); await page.click('[data-act=colstep][data-k="rows,1"]'); await page.click('[data-act=colstep][data-k="cols,-1"]');
+    await page.click('[data-act=colhearts][data-k="0"]');
+    await page.click('[data-act=colquick][data-k=none]'); await page.click('[data-act=colid][data-k=red]');
+    await page.click('[data-act=colsave]'); await page.waitForSelector('#colCard .editor .err');
+    ok((await text(page, '#colCard .editor .err')).includes('至少要選 2 種顏色'), '只選 1 色不能存');
+    await page.click('[data-act=colid][data-k=blue]');
+    await page.click('[data-act=colcadd]'); await page.fill('[data-cc="0"][data-f=n]', '天空藍'); await page.fill('[data-cc="0"][data-f=s]', '天空藍色');
+    await page.click('[data-act=colnmode][data-k=list]'); await page.fill('#colList', '1, 2, 10-12, 100');
+    ok((await page.$eval('#colName', i => i.value)) === '三年級', '名稱沒被重畫洗掉');
+    await shot(page, 'k1_col_editor');
+    await page.click('[data-act=colsave]'); await page.waitForFunction(() => !document.querySelector('#colCard .editor'));
+    let d = await db(page), it = d.teacher_configs.u1.items[2];
+    ok(it && it.cfg.name === '三年級' && it.cfg.mode === 'B' && it.cfg.rows === 6 && it.cfg.cols === 3 && it.cfg.hearts === 0 && it.cfg.ids.join() === 'red,blue' &&
+      it.cfg.custom[0].n === '天空藍' && it.cfg.custom[0].s === '天空藍色' && it.cfg.nums.join() === '1,2,10,11,12,100' && !it.cfg.range && typeof it.id === 'string', '存成遊戲同樣的格式', it);
+    // 編輯有連結碼的那組：shared_configs 跟著改
+    await page.click('#colCard [data-act=coledit][data-k="0"]'); await page.click('[data-act=colnmode][data-k="9999"]'); await page.click('[data-act=colsave]');
+    await page.waitForFunction(() => !document.querySelector('#colCard .editor'));
+    d = await db(page);
+    ok(d.teacher_configs.u1.items[0].cfg.range === 9999 && d.teacher_configs.u1.items[0].sid === 'cfg000011112' && d.shared_configs && d.shared_configs.cfg000011112.cfg.range === 9999, '編輯後已發出的連結跟著改');
+    // 練習連結
+    await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async t => { window.__copied = t; }; });
+    await page.click('#colCard [data-act=colpractice][data-k="2"]'); await page.waitForFunction(() => window.__copied);
+    d = await db(page); const sid = d.teacher_configs.u1.items[2].sid;
+    ok(/^[a-z0-9]{12}$/.test(sid) && d.shared_configs[sid].pro === true && (await page.evaluate(() => window.__copied)) === 'https://wangchiapin.github.io/pop-colores-numeros/?c=' + sid, '練習連結 ?c=代碼（用到訂閱功能 pro=true）');
+    // 停用連結
+    await page.click('#colCard [data-act=coloff][data-k="2"]'); await page.waitForFunction(s => !document.querySelector('#colCard [data-act=coloff][data-k="2"]'), sid);
+    d = await db(page);
+    ok(!d.teacher_configs.u1.items[2].sid && !d.shared_configs[sid], '停用連結：刪 shared_configs，設定組留著');
+    // 刪除
+    await page.click('#colCard [data-act=coldel][data-k="1"]'); await page.waitForFunction(() => document.querySelectorAll('#colCard .setrow').length === 2);
+    d = await db(page);
+    ok(d.teacher_configs.u1.items.map(x => x.cfg.name).join() === '百位數,三年級', '刪除第 2 組');
+    await shot(page, 'k2_col_list');
+    ok(await noOverflow(page), '手機寬度沒有橫向捲動');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'es' }, hash: '#/settings' });
+    await page.waitForSelector('#colCard .setrow');
+    await page.click('#colCard [data-act=colnew]'); await page.waitForSelector('#colCard .editor');
+    await page.click('[data-act=colcadd]');
+    ok(await page.$('[data-cc="0"]') === null, '免費：不能加自訂顏色');
+    await page.click('[data-act=colnmode][data-k=list]');
+    ok(await page.$('#colList') === null && (await text(page, '#colCard')).includes('requieren suscripción'), '免費：不能用自訂數字（西文提示）');
+    await page.click('[data-act=colsave]'); await page.waitForFunction(() => !document.querySelector('#colCard .editor'));
+    ok((await db(page)).teacher_configs.u1.items.length === 3 && await page.$('#colCard [data-act=colnew]') === null, '免費：存到第 3 組就不能再新增');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[L] 色數學習單');
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/print' });
+    await page.waitForSelector('#wsCard');
+    ok(await page.$eval('[data-act=wsmake]', b => b.disabled), '沒選設定組不能產生');
+    await page.selectOption('[data-sel=wscfg]', '0');
+    await shot(page, 'l0_form');
+    // 聽讀找色
+    await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    let info = await page.evaluate(() => ({ cells: document.querySelectorAll('.ws-board:not(.ws-key .ws-board) .ws-cell').length,
+      qs: document.querySelectorAll('.ws > .ws-qs li').length, key: document.querySelectorAll('.ws-key li').length,
+      nums: [...document.querySelectorAll('.ws > .ws-board .ws-cell .d')].map(e => +e.textContent),
+      legend: !!document.querySelector('.ws-legend'), qtext: [...document.querySelectorAll('.ws > .ws-qs .q')].map(e => e.textContent) }));
+    ok(info.cells === 16 && info.qs === 10 && info.key === 10, '聽讀找色：4×4 色塊板、10 題、答案 10 題', info);
+    ok(new Set(info.nums).size === 16 && info.nums.every(n => n >= 0 && n <= 999), '數字不重複、在 0–999', info.nums);
+    ok(info.legend && info.qtext.every(t => /^[零一二三四五六七八九十百千兩]+$/.test(t)), '題目是國字數字、附顏色名稱表', info.qtext);
+    ok((await text(page, '.ws')).includes('Respuestas'), '輔助語言西文');
+    await shot(page, 'l1_listen');
+    if(SHOT) await page.pdf({ path: path.join(SHOT, 'l1_listen.pdf'), format: 'A4', printBackground: true });
+    const before = info.nums.join();
+    await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    const after = await page.$$eval('.ws > .ws-board .ws-cell .d', e => e.map(x => x.textContent).join());
+    ok(before !== after, '「換一張」數字會變');
+    // 老師唸
+    await page.click('[data-act=wsback]'); await page.click('[data-act=wsread][data-k="0"]'); await page.click('[data-act=wscount][data-k="5"]'); await page.click('[data-act=wsmake]');
+    await page.waitForSelector('.ws');
+    ok((await page.$$eval('.ws > .ws-qs .q', e => e.length)) === 0 && (await page.$$eval('.ws > .ws-qs li', e => e.length)) === 5 && (await text(page, '.ws')).includes('聽老師唸'), '老師唸：紙上沒題目、5 個空格');
+    // 看色寫數
+    await page.click('[data-act=wsback]'); await page.click('[data-act=wskind][data-k=write]'); await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    info = await page.evaluate(() => ({ groups: document.querySelectorAll('.ws > .ws-qs li').length, key: [...document.querySelectorAll('.ws-key li')].map(e => e.textContent) }));
+    ok(info.groups === 2 && info.key.length === 2 && info.key.every(t => /^(紅色|藍色)/.test(t)), '看色寫數：每個顏色一題（設定 2 色）', info);
+    await shot(page, 'l2_write');
+    // 著色版，簡體、不附答案
+    await page.click('[data-act=wsback]'); await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wssimp][data-k="1"]'); await page.click('[data-act=wshelp][data-k=none]'); await page.click('[data-act=wsans]');
+    await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    info = await page.evaluate(() => ({ blank: document.querySelectorAll('.ws-cell.blank').length, key: !!document.querySelector('.ws-key'), t: document.querySelector('.ws').innerText }));
+    ok(info.blank === 16 && !info.key && info.t.includes('色数消消乐') && info.t.includes('涂上') && !info.t.includes('Respuestas'), '著色版：16 格空白、簡體、無答案頁、無輔助語言', info.t.slice(0, 80));
+    await shot(page, 'l3_color');
+    if(SHOT) await page.pdf({ path: path.join(SHOT, 'l3_color.pdf'), format: 'A4', printBackground: true });
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/print' });
+    await page.waitForSelector('#wsCard');
+    ok((await text(page, '#wsCard')).includes('學習單是訂閱功能') && await page.$('[data-act=wsmake]') === null, '免費老師：學習單上鎖');
+    await ctx.close(); }
+  { const big = { id: 'b1', cfg: { name: '大', mode: 'A', rows: 8, cols: 6, hearts: 5, ids: ['red', 'blue', 'green'], range: 9999 } };
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/print' });
+    await page.waitForSelector('#wsCard');
+    await page.evaluate(c => { __profesor.S.a.configs = [c]; }, big); await page.click('[data-act=lang][data-l=en]');
+    await page.selectOption('[data-sel=wscfg]', '0'); await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    ok((await page.$$eval('.ws-cell.blank', e => e.length)) === 48, '8×6、0–9999 也做得出來');
+    ok(await noOverflow(page), '大格子在手機上也不橫向捲動');
+    await shot(page, 'l4_big');
+    if(SHOT) await page.pdf({ path: path.join(SHOT, 'l4_big.pdf'), format: 'A4', printBackground: true });
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[H] 詞條完整性');
   { const { page, ctx } = await open(browser, { user: null });
