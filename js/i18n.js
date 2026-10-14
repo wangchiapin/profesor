@@ -209,9 +209,9 @@ const D = {
   gameCorre: ['跑吧！漢字', '跑吧！汉字', 'Corre Hanzi', 'Run Hanzi'],
   gameColores: ['色數消消樂', '色数消消乐', 'Pop Colores y Números', 'Pop Colors & Numbers'],
   gameBbk: ['比比看', '比比看', 'Compara y Adivina', 'Compare & Guess'],
-  gameCorreDesc: ['依序吃掉詞語，排出正確的句子。', '依序吃掉词语，排出正确的句子。', 'Come las palabras en orden para formar la frase.', 'Eat the words in order to build the sentence.'],
-  gameColoresDesc: ['聽數字選顏色、聽顏色輸入數字。', '听数字选颜色、听颜色输入数字。', 'Oye el número y elige el color, u oye el color y escribe el número.', 'Hear a number and pick the color, or hear a color and type the number.'],
-  gameBbkDesc: ['看人物圖，練習比較句。', '看人物图，练习比较句。', 'Mira a las personas y practica las comparaciones.', 'Look at people and practice comparisons.'],
+  gameCorreDesc: ['練習識字能力', '练习识字能力', 'Practica el reconocimiento de caracteres', 'Practice reading characters'],
+  gameColoresDesc: ['數字和顏色的綜合練習', '数字和颜色的综合练习', 'Práctica combinada de números y colores', 'Numbers and colors practice'],
+  gameBbkDesc: ['練習比較句', '练习比较句', 'Practica las oraciones comparativas', 'Practice comparative sentences'],
 
   // ---- 班級列表 ----
   classesTitle: ['我的班級', '我的班级', 'Mis clases', 'My classes'],
@@ -225,7 +225,10 @@ const D = {
   open: ['開啟', '打开', 'Abrir', 'Open'],
 
   // ---- 班級頁 ----
-  allClasses: ['← 全部班級', '← 全部班级', '← Todas las clases', '← All classes'],
+  jumpClass: ['🏫 班級', '🏫 班级', '🏫 Clase', '🏫 Class'],
+  jumpLinks: ['🔗 學生遊戲連結', '🔗 学生游戏链接', '🔗 Enlaces de juego', '🔗 Game links'],
+  jumpScores: ['📊 成績', '📊 成绩', '📊 Notas', '📊 Scores'],
+  classesFull: ['已經有 3 個班級了（最多 3 班）。要新的班級，請先刪掉一個。', '已经有 3 个班级了（最多 3 班）。要新的班级，请先删掉一个。', 'Ya tienes 3 clases (el máximo). Para crear otra, borra una primero.', 'You already have 3 classes (the maximum). Delete one to create another.'],
   classNameLabel: ['班級名稱', '班级名称', 'Nombre de la clase', 'Class name'],
   renamed: ['已改名', '已改名', 'Renombrada', 'Renamed'],
   deleteClass: ['刪除班級', '删除班级', 'Borrar la clase', 'Delete class'],
@@ -233,8 +236,9 @@ const D = {
   deleting: ['刪除中…', '删除中…', 'Borrando…', 'Deleting…'],
   boardTitle: ['班級排行榜', '班级排行榜', 'Ranking de la clase', 'Class leaderboard'],
   boardHint: ['開啟後，學生在跑吧、色數的結果畫面看得到全班排行。', '开启后，学生在跑吧、色数的结果画面看得到全班排行。', 'Si lo activas, los alumnos ven el ranking de la clase al terminar en Corre Hanzi y Pop Colores.', 'When on, students see the class ranking on the result screen of Run Hanzi and Pop Colors.'],
-  linksTitle: ['學生連結', '学生链接', 'Enlaces para alumnos', 'Student links'],
-  linksHint: ['學生打開連結、輸入暱稱，每一回合的成績會自動回傳到這個班級。', '学生打开链接、输入昵称，每一回合的成绩会自动回传到这个班级。', 'El alumno abre el enlace y escribe su apodo; las notas de cada ronda llegan a esta clase.', 'Students open the link and enter a nickname; each round is sent to this class automatically.'],
+  linksTitle: ['學生遊戲連結', '学生游戏链接', 'Enlaces de juego para alumnos', 'Student game links'],
+  linksHint: ['快速依你的設定建立遊戲連結，傳給你的學生。學生打開連結、輸入暱稱，每一回合的成績會自動回傳到下方成績冊。', '快速依你的设置建立游戏链接，传给你的学生。学生打开链接、输入昵称，每一回合的成绩会自动回传到下方成绩册。', 'Crea rápidamente enlaces de juego con tus ajustes y envíalos a tus alumnos. El alumno abre el enlace y escribe su apodo; las notas de cada ronda llegan solas al libro de notas de abajo.', 'Quickly create game links with your settings and send them to your students. Students open the link and enter a nickname; each round\'s score goes straight to the gradebook below.'],
+  linksNick: ['注意：如有同暱稱之學生，應告知學生修改暱稱。', '注意：如有同昵称的学生，应告知学生修改昵称。', 'Atención: si dos alumnos usan el mismo apodo, pide a uno que lo cambie.', 'Note: if two students use the same nickname, ask one of them to change it.'],
   sourceLabel: ['題目來源', '题目来源', 'Origen de las frases', 'Sentence source'],
   sourcePool: ['公開題庫（一般句子）', '公开题库（一般句子）', 'Banco público (frases generales)', 'Public bank (general sentences)'],
   configLabel: ['設定組', '设置组', 'Configuración', 'Setup'],
@@ -243,7 +247,6 @@ const D = {
   makeLink: ['產生連結', '生成链接', 'Generar enlace', 'Create link'],
   configNeedPick: ['請先選一組設定', '请先选一组设置', 'Elige primero una configuración', 'Choose a setup first'],
   configFail: ['產生連結失敗：{m}', '产生链接失败：{m}', 'No se pudo crear el enlace: {m}', 'Could not create the link: {m}'],
-  bbkLinkNote: ['選一組範圍，學生打開就直接練那個範圍；改了範圍，這個連結也會跟著改。', '选一组范围，学生打开就直接练那个范围；改了范围，这个链接也会跟着改。', 'Con un rango, el alumno practica directamente ese rango; si lo editas, el enlace también cambia.', 'With a range, students go straight to that range; if you edit it, the link changes too.'],
 
   // ---- 成績 ----
   resultsTitle: ['成績', '成绩', 'Notas', 'Scores'],

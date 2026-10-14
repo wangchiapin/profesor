@@ -132,32 +132,41 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('.badge'); const t = await text(page);
     ok(t.includes('免費') && t.includes('需要訂閱'), '免費：提示需要訂閱');
     ok(/句庫\s*1 \/ 1/.test(t) && /設定組\s*2 \/ 3/.test(t), '免費額度 1 / 3');
-    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.slot');
+    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.ctabs');
+    ok(page.url().endsWith('#/class/0'), '按「班級」直接打開第一班', page.url());
     ok((await page.$$('input[id^=newCls]')).length === 0, '免費沒有建立班級的欄位');
-    ok((await text(page)).includes('週三班') && (await text(page)).includes('🔒'), '仍看得到班級，空位上鎖');
+    ok((await text(page, '.ctabs')).includes('週三班') && (await text(page, '.ctabs')).includes('週五班') && !!(await page.$('.ctabs [data-act=needsub]')), '仍看得到班級分頁，「建立班級」上鎖');
     await ctx.close(); }
   { const { page, ctx } = await open(browser, { seedOpt: { expired: true }, ls: { profesorLang: 'tc' } });
     await page.waitForSelector('.badge'); const t = await text(page);
     ok(t.includes('已於') && t.includes('到期') && t.includes('舊的班級與成績仍可查看'), '到期：顯示到期說明');
-    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.slot');
+    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.ctabs');
     ok((await page.$$('input[id^=newCls]')).length === 0, '到期不能建立班級');
-    await page.click('[data-act=openclass][data-slot="0"]'); await page.waitForSelector('table.t');
+    await page.waitForSelector('table.t');
     ok((await text(page)).includes('Ana'), '到期仍可查看成績');
     await ctx.close(); }
 
   console.log('\n[D] 班級：建立、改名、排行榜、刪除');
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' } });
-    await page.waitForSelector('.nav'); await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.slot');
-    ok((await page.$$('input[id^=newCls]')).length === 1, '還剩 1 個空位可建班');
-    await page.click('.slot.empty [data-act=createclass]');
+    await page.waitForSelector('.nav'); await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('h2:has-text("週三班")');
+    ok(page.url().endsWith('#/class/0'), '按「班級」直接顯示第一班', page.url());
+    ok(JSON.stringify(await page.$$eval('.ctabs .pill', a => a.map(x => x.textContent.trim()))) === JSON.stringify(['🏫 週三班', '🏫 週五班', '＋ 建立班級']), '分頁：班名＋最後是「＋ 建立班級」', await page.$$eval('.ctabs .pill', a => a.map(x => x.textContent)));
+    ok(await page.$eval('.ctabs .pill.on', e => e.textContent.includes('週三班')), '目前那班的分頁是亮的');
+    await page.click('.ctabs [data-slot="1"]'); await page.waitForSelector('h2:has-text("週五班")');
+    ok(page.url().endsWith('#/class/1'), '點分頁換班');
+    await page.click('.ctabs [data-act=newclass]'); await page.waitForSelector('input[id^=newCls]');
+    ok(page.url().endsWith('#/classes/new') && (await page.$$('input[id^=newCls]')).length === 1, '「＋ 建立班級」分頁：出現輸入框');
+    await shot(page, 'd0_newclass_tab');
+    await page.click('[data-act=createclass]');
     ok((await text(page)).includes('請輸入班級名稱'), '空名稱不能建立');
-    await page.fill('#newCls2', '週末班'); await page.click('.slot.empty [data-act=createclass]');
+    await page.fill('#newCls2', '週末班'); await page.click('[data-act=createclass]');
     await page.waitForSelector('h2:has-text("週末班")');
     let d = await db(page); const cid3 = d.teacher_classes.u1.slots['2'];
     ok(cid3 && d.classes[cid3].owner === 'u1' && d.classes[cid3].slot === 2 && d.classes[cid3].name === '週末班' && d.classes[cid3].showBoard === false, '建班：寫入 classes、teacher_classes（保留原有的班）');
     ok(d.teacher_classes.u1.slots['0'] === CID && d.teacher_classes.u1.slots['1'] === CID2, '原有的班沒被動到');
     ok(Object.keys(d.classes[cid3]).sort().join() === 'name,owner,showBoard,slot,updatedAt', '班級欄位剛好符合規則');
     ok((await text(page)).includes('還沒有成績'), '新班級沒有成績');
+    ok(page.url().endsWith('#/class/2') && !(await page.$('.ctabs [data-act=newclass]')) && (await page.$$('.ctabs .pill')).length === 3, '滿 3 班：「＋ 建立班級」分頁不見了，跳到新班');
     await page.fill('#clsName', '週末進階班'); await page.click('[data-act=classrename]'); await page.waitForSelector('h2:has-text("週末進階班")');
     d = await db(page); ok(d.classes[cid3].name === '週末進階班' && d.classes[cid3].owner === 'u1' && d.classes[cid3].slot === 2, '改名成功、欄位不變');
     await page.click('[data-act=board][data-v="1"]'); await page.waitForTimeout(100);
@@ -166,15 +175,15 @@ server.listen(0, 'localhost', async () => {
     d = await db(page); ok(d.classes[cid3].showBoard === false, '排行榜關');
     await shot(page, 'd1_class_empty');
     // 刪除有成績的班（週三班）：三款成績全清，別的班、別人的不動
-    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.slot');
-    await page.click('[data-act=openclass][data-slot="0"]'); await page.waitForSelector('h2:has-text("週三班")');
-    await page.click('[data-act=classdelete]'); await page.waitForSelector('h2:has-text("我的班級")'); await page.waitForTimeout(150);
+    await page.click('.ctabs [data-slot="0"]'); await page.waitForSelector('h2:has-text("週三班")');
+    await page.click('[data-act=classdelete]'); await page.waitForSelector('h2:has-text("週五班")'); await page.waitForTimeout(150);
+    ok(page.url().endsWith('#/class/1'), '刪班後跳到剩下的第一班');
     d = await db(page);
     ok(!d.classes[CID] && d.classes[CID2] && !d.teacher_classes.u1.slots['0'] && d.teacher_classes.u1.slots['1'] === CID2, '刪班：班級與位置索引都移除，其他班還在');
     ok(!Object.values(d.class_scores).some(r => r.cid === CID && r.owner === 'u1') && !Object.values(d.class_plays).some(r => r.cid === CID && r.owner === 'u1'), '刪班：三款遊戲的成績一起刪除');
     ok(Object.values(d.class_scores).some(r => r.cid === CID2) && Object.values(d.class_plays).some(r => r.cid === CID2), '別的班成績還在');
     ok(Object.values(d.class_scores).some(r => r.owner === 'u2') && Object.values(d.class_plays).some(r => r.owner === 'u2'), '別的老師的資料沒被動到');
-    ok(!(await text(page)).includes('週三班'), '列表上不見了');
+    ok(!(await text(page)).includes('週三班') && !!(await page.$('.ctabs [data-act=newclass]')), '分頁上不見了，「＋ 建立班級」又出現');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[E] 學生連結與 QR');
@@ -280,9 +289,8 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'g1_settings_en');
     await page.click('[data-act=nav][data-r=print]'); await page.waitForSelector('.card');
     ok((await text(page)).includes('Print'), '列印頁（英文）');
-    await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.slot');
-    await page.click('[data-act=openclass][data-slot="0"]'); await page.waitForSelector('table.t');
-    ok((await text(page)).includes('Enlaces para alumnos') && (await text(page)).includes('Apodo'), '班級頁（西文）');
+    await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('table.t');
+    ok((await text(page)).includes('Enlaces de juego para alumnos') && (await text(page)).includes('Apodo') && (await text(page)).includes('mismo apodo'), '班級頁（西文）');
     await shot(page, 'g2_class_es');
     ok(await noOverflow(page), '西文版沒有橫向捲動');
     await page.click('[data-act=lang][data-l=sc]'); await page.click('[data-act=game][data-g=bbk]'); await page.click('[data-act=tab][data-tab=err]'); await page.waitForSelector('.bar');
@@ -607,7 +615,7 @@ server.listen(0, 'localhost', async () => {
     t = await text(page, '#correCard');
     ok(t.includes('第二課（改）') && t.includes('已用 2 / 5 個句庫'), '回到卡片：新句庫出現');
     // 班級頁的題目來源
-    await page.click('[data-act=nav][data-r=classes]'); await page.click('[data-act=openclass][data-slot="0"]'); await page.waitForSelector('[data-sel=correbank]');
+    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('[data-sel=correbank]');
     ok((await page.$$eval('[data-sel=correbank] option', o => o.map(x => x.textContent))).some(x => x.includes('第二課（改）')), '班級連結的題目來源有新句庫');
     // 列印：學習單 PDF
     await page.click('[data-act=nav][data-r=print]'); await page.waitForSelector('#cwsCard');
@@ -689,9 +697,9 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 免費老師：按到訂閱功能跳出建議訂閱
     const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'es' }, hash: '#/classes' });
-    await page.waitForSelector('.slot');
-    ok((await page.$$('.slot [data-act=needsub]')).length >= 1, '班級：上鎖的位置有按鈕');
-    await page.click('.slot [data-act=needsub]'); await page.waitForSelector('.modal.sub');
+    await page.waitForSelector('.ctabs');
+    ok((await page.$$('.ctabs [data-act=needsub]')).length === 1, '班級：上鎖的「建立班級」分頁');
+    await page.click('.ctabs [data-act=needsub]'); await page.waitForSelector('.modal.sub');
     const m = await text(page, '.modal.sub');
     ok(m.includes('Función de suscripción') && m.includes('5 bancos de Corre') && (await page.$eval('.modal.sub a[data-m=go]', a => a.href)).includes('cadadiaunosminutos-share-zone'), '建議訂閱視窗：西文、列出訂閱內容、連到入口網站', m);
     await shot(page, 'n1_needsub');
@@ -846,9 +854,41 @@ server.listen(0, 'localhost', async () => {
     global.window = {}; eval(fs.readFileSync(path.join(ROOT, 'js', 'help.js'), 'utf8')); const H = global.window.HELP;
     const shape = x => JSON.stringify(x.sections.map(s => [s.id, (s.steps || []).length, (s.items || []).length, (s.groups || []).map(g => g[1].length), !!s.plan, !!s.note, !!s.tip])) + x.jump.length;
     ok(['sc', 'es', 'en'].every(l => shape(H[l]) === shape(H.tc)), '說明內容：繁簡西英段落數量一致'); }
+  { // 6-1 中心小改善：首頁介紹、快速按鈕、學生遊戲連結、比比看那句、常錯統計不跳回最上面
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' } });
+    await page.waitForSelector('.badge');
+    let t = await text(page);
+    ok(t.includes('練習識字能力') && t.includes('數字和顏色的綜合練習') && t.includes('練習比較句') && !t.includes('依序吃掉詞語'), '首頁三款遊戲的新介紹（繁）');
+    for(const [l, w] of [['sc', ['练习识字能力', '数字和颜色的综合练习', '练习比较句']], ['es', ['Practica el reconocimiento de caracteres', 'Práctica combinada de números y colores', 'Practica las oraciones comparativas']], ['en', ['Practice reading characters', 'Numbers and colors practice', 'Practice comparative sentences']]]){
+      await page.click('[data-act=lang][data-l=' + l + ']'); const tt = await text(page); ok(w.every(x => tt.includes(x)), '首頁介紹：' + l);
+    }
+    await page.click('[data-act=lang][data-l=tc]');
+    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('table.t');
+    ok(JSON.stringify(await page.$$eval('.jump [data-act=jump]', a => a.map(x => x.textContent))) === JSON.stringify(['🏫 班級', '🔗 學生遊戲連結', '📊 成績']), '班級頁快速按鈕：班級｜學生遊戲連結｜成績');
+    t = await text(page, '#linksCard');
+    ok(t.includes('🔗 學生遊戲連結') && t.includes('快速依你的設定建立遊戲連結') && t.includes('自動回傳到下方成績冊'), '「學生遊戲連結」標題與新介紹');
+    ok((await text(page, '#linksCard .notice.alert')).includes('注意：如有同暱稱之學生，應告知學生修改暱稱。'), '「注意」那句用醒目的提醒框');
+    ok(!t.includes('改了範圍，這個連結也會跟著改') && !(await text(page)).includes('全部班級'), '比比看那句、「全部班級」按鈕都拿掉了');
+    // 成績冊在頁面最下面：頁面不夠長時捲到底就好（成績冊的開頭在畫面裡）
+    const atBook = () => page.evaluate(() => { const top = document.getElementById('bookCard').getBoundingClientRect().top, bottom = window.scrollY + innerHeight >= document.documentElement.scrollHeight - 2;
+      return { s: window.scrollY, top, ok: top >= 0 && (top < 120 || bottom) && top < innerHeight / 2 }; });
+    await page.click('.jump [data-k=bookCard]'); await page.waitForTimeout(1500);
+    const y0 = await atBook(); ok(y0.ok && y0.s > 200, '快速按鈕「成績」跳到成績冊', y0);
+    await page.click('[data-act=game][data-g=bbk]'); await page.waitForSelector('table.t.click');
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.click('table.t.click tr:nth-child(2)'); await page.waitForSelector('[data-act=stuback]');
+    const y1 = await atBook();
+    ok(y1.s > 200 && y1.ok, '點學生看常錯統計：停在成績那一段，不跳回最上面', y1);
+    await shot(page, 'q1_student_stays');
+    await page.click('[data-act=stuback]'); await page.waitForSelector('table.t.click');
+    const y2 = await atBook();
+    ok(y2.s > 200 && y2.ok, '按返回：也停在成績那一段', y2);
+    await page.evaluate(() => window.scrollTo(0, 0)); await shot(page, 'q2_class_top');
+    for(const l of ['sc', 'es', 'en']){ await page.click('[data-act=lang][data-l=' + l + ']'); ok(await noOverflow(page), '班級頁 ' + l + '：手機寬度不會左右滑'); }
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=5-4/.test(ix) && (ix.match(/\?v=6-1/g) || []).length >= 10 && ix.includes('js/help.js?v=6-1'), 'index.html 的 css／js 都改成 ?v=6-1（含 help.js）'); }
+    ok(!/\?v=(5-4|6-1)\b/.test(ix) && (ix.match(/\?v=6-2/g) || []).length >= 10 && ix.includes('js/help.js?v=6-2'), 'index.html 的 css／js 都改成 ?v=6-2（含 help.js）'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

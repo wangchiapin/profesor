@@ -63,13 +63,21 @@ const isReal = () => DATA.isRealUser(S.user);
 const classOf = slot => S.a && S.a.classes[String(slot)];
 const fdate = BOOKS.fdate;
 
-// ---- 路由（#/home、#/classes、#/class/0、#/settings、#/help、#/print）----
+// ---- 路由（#/home、#/classes、#/classes/new、#/class/0、#/settings、#/help、#/print）----
 function parseHash(){
   const h = (location.hash || '').replace(/^#\/?/, '').split('/');
   const r = h[0] || 'home';
   if(r === 'class' && /^[0-2]$/.test(h[1] || '')) return { route: 'class', cur: h[1] };
   if(r === 'bank' && /^[0-4]$/.test(h[1] || '')) return { route: 'bank', cur: h[1] };
+  if(r === 'classes') return { route: 'classes', cur: h[1] === 'new' ? 'new' : null };
   return { route: ['home', 'classes', 'settings', 'help', 'print'].indexOf(r) >= 0 ? r : 'home', cur: null };
+}
+// 按上方「班級」：有班級就直接打開第一班（班級頁上面的分頁可以換班）；「＋ 建立班級」分頁是 #/classes/new
+function firstSlot(){ return S.a ? Object.keys(S.a.classes).sort()[0] : undefined; }
+function classesRedirect(){
+  if(S.route !== 'classes' || S.cur === 'new' || S.acct !== 'ok') return false;
+  const s = firstSlot(); if(s == null) return false;
+  location.replace('#/class/' + s); return true;
 }
 function go(route, cur){ location.hash = '#/' + route + (cur != null ? '/' + cur : ''); }
 let lastHash = location.hash, skipHash = false;
@@ -89,6 +97,7 @@ async function onRoute(){
     if(S.acct === 'ok' && classOf(S.cur)) await loadBook();
     return;
   }
+  if(classesRedirect()) return;
   if(S.route !== 'settings'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; }
   if(S.route !== 'print') S.wsSheet = null;
   render(); window.scrollTo(0, 0);
@@ -99,6 +108,7 @@ async function loadAccount(){
   S.acct = 'loading'; S.msg = ''; render();
   try{ S.a = await DATA.loadAccount(S.user); S.acct = 'ok'; }
   catch(e){ console.error(e); S.acct = 'error'; S.msg = err(e); }
+  if(classesRedirect()) return;
   render();
   if(S.acct === 'ok' && S.route === 'class' && classOf(S.cur)) loadBook();
 }
@@ -168,19 +178,28 @@ function homeHtml(){
     '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>').join('') + '</div>';
   return plan + usage + games;
 }
+// 班級頁最上面的分頁：每班一個（顯示班名），最後是「＋ 建立班級」（還沒滿 3 班才有）
+function classTabsHtml(active){
+  const A = S.a, P = A.plan, slots = Object.keys(A.classes).sort();
+  let h = '<div class="ctabs">' + slots.map(k => '<button class="pill ' + (active === k ? 'on' : '') + '" data-act="openclass" data-slot="' + k + '">🏫 ' + esc(A.classes[k].data.name) + '</button>').join('');
+  if(slots.length < DATA.MAX_CLASSES){
+    if(P.active && A.clsReady) h += '<button class="pill add ' + (active === 'new' ? 'on' : '') + '" data-act="newclass">＋ ' + esc(T('createClass')) + '</button>';
+    else if(!P.active) h += '<button class="pill add lockbtn" data-act="needsub">🔒 ' + esc(T('createClass')) + '</button>';
+  }
+  return h + '</div>';
+}
 function classesHtml(){
   const A = S.a, P = A.plan;
-  let h = '<h2>' + esc(T('classesTitle')) + '</h2><p class="hint">' + esc(T('classesHint')) + '</p>' + planNoticeHtml();
+  let free = -1;
+  for(let i = 0; i < DATA.MAX_CLASSES; i++) if(!A.classes[String(i)]){ free = i; break; }
+  let h = classTabsHtml('new') + planNoticeHtml();
   if(!A.clsReady) h += '<div class="notice">' + esc(T('classesUnavailable')) + '</div>';
-  for(let i = 0; i < DATA.MAX_CLASSES; i++){
-    const c = A.classes[String(i)];
-    if(c) h += '<div class="slot"><b>🏫 ' + esc(c.data.name) + '</b><button class="pill fill sm" data-act="openclass" data-slot="' + i + '">' + esc(T('open')) + '</button></div>';
-    else if(P.active && A.clsReady) h += '<div class="slot empty"><input type="text" id="newCls' + i + '" maxlength="40" placeholder="' + esc(T('classNamePh')) + '"><button class="pill sm" data-act="createclass" data-slot="' + i + '">＋ ' + esc(T('createClass')) + '</button></div>';
-    else if(!P.active) h += '<div class="slot empty"><span class="mut">🔒 ' + esc(T('lockedSlot', { n: i + 1 })) + '</span>' + lockBtn(T('createClass')) + '</div>';
-    else h += '<div class="slot empty"><span class="mut">🔒 ' + esc(T('lockedSlot', { n: i + 1 })) + '</span></div>';
-  }
+  h += '<div class="card"><h2>＋ ' + esc(T('createClass')) + '</h2><p class="hint">' + esc(T('classesHint')) + '</p>';
+  if(free < 0) h += '<p class="hint">' + esc(T('classesFull')) + '</p>';
+  else if(P.active && A.clsReady) h += '<div class="inline"><input type="text" id="newCls' + free + '" maxlength="40" placeholder="' + esc(T('classNamePh')) + '"><button class="pill fill sm" data-act="createclass" data-slot="' + free + '">＋ ' + esc(T('createClass')) + '</button></div>';
+  else if(!P.active) h += (Object.keys(A.classes).length ? '' : '<p class="hint">' + esc(T('noClasses')) + '</p>') + '<div class="row">' + lockBtn(T('createClass')) + '</div>';
   if(S.msg) h += '<div class="err">' + esc(S.msg) + '</div>';
-  return h;
+  return h + '</div>';
 }
 
 // 學生連結
@@ -220,7 +239,6 @@ function linkCardHtml(game){
     '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
     '<button class="pill sm" data-act="qr" data-url="' + esc(url) + '" data-game="' + game + '">' + esc(T('qr')) + '</button>' +
     '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
-  if(game === 'bbk') h += '<p class="hint">' + esc(T('bbkLinkNote')) + '</p>';
   return h + '</div>';
 }
 function bookHtml(){
@@ -245,17 +263,18 @@ function bookHtml(){
 }
 function classHtml(){
   const c = classOf(S.cur);
-  if(!c) return '<p class="hint">' + esc(T('noClasses')) + '</p><div class="row"><button class="pill" data-act="nav" data-r="classes">' + esc(T('allClasses')) + '</button></div>';
-  let h = '<div class="row"><button class="pill sm" data-act="nav" data-r="classes">' + esc(T('allClasses')) + '</button></div>' + planNoticeHtml() +
-    '<div class="card"><h2>🏫 ' + esc(c.data.name) + '</h2>' +
+  if(!c) return classTabsHtml(String(S.cur)) + '<p class="hint">' + esc(T('noClasses')) + '</p>';
+  let h = classTabsHtml(String(S.cur)) + jumpHtml([['clsCard', 'jumpClass'], ['linksCard', 'jumpLinks'], ['bookCard', 'jumpScores']]) + planNoticeHtml() +
+    '<div class="card" id="clsCard"><h2>🏫 ' + esc(c.data.name) + '</h2>' +
     '<div class="field"><label>' + esc(T('classNameLabel')) + '</label><div class="inline"><input type="text" id="clsName" maxlength="40" value="' + esc(c.data.name) + '"><button class="pill sm" data-act="classrename">' + esc(T('rename')) + '</button></div></div>' +
     '<div class="field"><label>' + esc(T('boardTitle')) + '</label><div class="row" style="margin-top:0">' +
     '<button class="pill sm ' + (c.data.showBoard ? 'on' : '') + '" data-act="board" data-v="1">' + esc(T('on')) + '</button><button class="pill sm ' + (!c.data.showBoard ? 'on' : '') + '" data-act="board" data-v="0">' + esc(T('off')) + '</button></div>' +
     '<p class="hint">' + esc(T('boardHint')) + '</p></div>' +
     '<div class="row"><button class="pill sm" data-act="classdelete">🗑 ' + esc(T('deleteClass')) + '</button></div>' +
     (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
-  h += '<div class="card"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T('linksHint')) + '</p>' + GAMES.map(linkCardHtml).join('') + '</div>';
-  h += '<div class="card">' + bookHtml() + '</div>';
+  h += '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T('linksHint')) + '</p>' +
+    '<div class="notice alert">⚠️ ' + esc(T('linksNick')) + '</div>' + GAMES.map(linkCardHtml).join('') + '</div>';
+  h += '<div class="card" id="bookCard">' + bookHtml() + '</div>';
   return h;
 }
 // ---- 比比看：練習範圍 ----
@@ -645,6 +664,8 @@ function feedbackModal(){
 window.PROF = { needSub };
 
 // ---- 操作 ----
+// 成績冊裡換畫面（點學生、返回）：停在「成績」這一段的開頭，不跳回頁面最上面
+function toBook(){ const b = document.getElementById('bookCard'); if(b) b.scrollIntoView({ block: 'start' }); }
 function toggleIn(arr, k){ const i = arr.indexOf(k); if(i < 0) arr.push(k); else arr.splice(i, 1); }
 async function run(fn){
   if(S.busy) return; S.busy = true;
@@ -661,6 +682,7 @@ const actions = {
   nav(el){ go(el.dataset.r); },
   reload(){ return loadAccount(); },
   openclass(el){ go('class', el.dataset.slot); },
+  newclass(){ S.msg = ''; go('classes', 'new'); },
   createclass(el){ return run(async () => {
     const slot = +el.dataset.slot, inp = document.getElementById('newCls' + slot), name = ((inp && inp.value) || '').trim();
     if(!name){ S.msg = T('needName'); render(); return; }
@@ -826,8 +848,8 @@ const actions = {
   game(el){ S.game = el.dataset.g; S.sel = null; render(); },
   days(el){ S.days = +el.dataset.d; render(); },
   tab(el){ S.tab = el.dataset.tab; render(); },
-  stu(el){ S.sel = el.dataset.h; render(); window.scrollTo(0, 0); },
-  stuback(){ S.sel = null; render(); },
+  stu(el){ S.sel = el.dataset.h; render(); toBook(); },
+  stuback(){ S.sel = null; render(); toBook(); },
   studel(el){ return run(async () => {
     if(!confirm(T('confirmStudent', { nick: el.dataset.nick }))) return;
     const ids = S.plays.filter(r => r.h === el.dataset.h).map(r => r.id);
