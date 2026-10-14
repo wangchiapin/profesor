@@ -63,13 +63,13 @@ const isReal = () => DATA.isRealUser(S.user);
 const classOf = slot => S.a && S.a.classes[String(slot)];
 const fdate = BOOKS.fdate;
 
-// ---- 路由（#/home、#/classes、#/class/0、#/settings、#/print）----
+// ---- 路由（#/home、#/classes、#/class/0、#/settings、#/help、#/print）----
 function parseHash(){
   const h = (location.hash || '').replace(/^#\/?/, '').split('/');
   const r = h[0] || 'home';
   if(r === 'class' && /^[0-2]$/.test(h[1] || '')) return { route: 'class', cur: h[1] };
   if(r === 'bank' && /^[0-4]$/.test(h[1] || '')) return { route: 'bank', cur: h[1] };
-  return { route: ['home', 'classes', 'settings', 'print'].indexOf(r) >= 0 ? r : 'home', cur: null };
+  return { route: ['home', 'classes', 'settings', 'help', 'print'].indexOf(r) >= 0 ? r : 'home', cur: null };
 }
 function go(route, cur){ location.hash = '#/' + route + (cur != null ? '/' + cur : ''); }
 let lastHash = location.hash, skipHash = false;
@@ -121,7 +121,7 @@ function headerHtml(){
 }
 function navHtml(){
   const items = [['home', 'navHome'], ['classes', 'navClasses'], ['settings', 'navSettings'], ['print', 'navPrint']];
-  const cur = S.route === 'class' ? 'classes' : S.route === 'bank' ? 'settings' : S.route;
+  const cur = S.route === 'class' ? 'classes' : (S.route === 'bank' || S.route === 'help') ? 'settings' : S.route;
   return '<div class="nav">' + items.map(i => '<button class="pill ' + (cur === i[0] ? 'on' : '') + '" data-act="nav" data-r="' + i[0] + '">' + esc(T(i[1])) + '</button>').join('') + '</div>';
 }
 function loginHtml(){
@@ -405,7 +405,27 @@ function bankRouteHtml(){
 }
 function settingsHtml(){
   return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' +
+    '<div class="row"><button class="pill fill" data-act="nav" data-r="help">' + esc(helpLang().btn) + '</button></div>' +
     jumpHtml([['correCard', 'jumpCorre'], ['bbkCard', 'jumpBbk'], ['colCard', 'jumpColores']]) + correCardHtml() + bbkCardHtml() + colCardHtml();
+}
+// ---- 遊戲設定說明（#/help）：內容在 js/help.js（靜態文字，四種語言）----
+function helpLang(){ const H = window.HELP || {}; return H[I18N.getLang()] || H.tc || { btn: '', sections: [], jump: [] }; }
+function helpHtml(){
+  const H = helpLang();
+  const list = a => '<ul class="hlist">' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
+  const sec = x => '<div class="card hsec" id="' + x.id + '"><h3>' + esc(x.h) + '</h3>' +
+    (x.intro ? '<p>' + x.intro + '</p>' : '') +
+    (x.steps ? '<ol class="hsteps">' + x.steps.map((st, i) => '<li><span class="hnum">' + (i + 1) + '</span><div><b>' + esc(st[0]) + '</b><div>' + st[1] + '</div></div></li>').join('') + '</ol>' : '') +
+    (x.items ? list(x.items) : '') +
+    (x.groups ? x.groups.map(g => '<h4>' + esc(g[0]) + '</h4>' + list(g[1])).join('') : '') +
+    (x.tip ? '<div class="notice">' + x.tip + '</div>' : '') +
+    (x.note ? '<div class="notice">' + x.note + '</div>' : '') +
+    (x.plan ? '<div class="hplan"><div><span class="badge">' + esc(H.free) + '</span><span>' + esc(x.plan[0]) + '</span></div><div><span class="badge pro">' + esc(H.pro) + '</span><span>' + esc(x.plan[1]) + '</span></div></div>' : '') +
+    '</div>';
+  return '<div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(H.back) + '</button></div>' +
+    '<h2>' + esc(H.title) + '</h2><p class="hint">' + esc(H.intro) + '</p>' +
+    '<div class="jump">' + H.sections.map((x, i) => '<button class="pill sm" data-act="jump" data-k="' + x.id + '">' + esc(H.jump[i] || x.h) + '</button>').join('') + '</div>' +
+    H.sections.map(sec).join('');
 }
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
@@ -526,6 +546,7 @@ function bodyHtml(){
     case 'classes': return classesHtml();
     case 'class': return classHtml();
     case 'settings': return settingsHtml();
+    case 'help': return helpHtml();
     case 'bank': return bankRouteHtml();
     case 'print': return printHtml();
     default: return homeHtml();

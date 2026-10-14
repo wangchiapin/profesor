@@ -822,9 +822,33 @@ server.listen(0, 'localhost', async () => {
     await page.click('.modal.cp [data-m=cp]');
     ok(await page.$('.modal.cp') === null && (await page.evaluate(() => window.__copies))[0] === v, '按「複製連結」：複製成功、視窗關掉');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 6-1 遊戲設定說明頁
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('[data-act=nav][data-r=help]');
+    await page.click('[data-act=nav][data-r=help]'); await page.waitForSelector('#hBbk');
+    ok(page.url().endsWith('#/help'), '遊戲設定頁有「📘 遊戲設定說明」按鈕，按了到 #/help', page.url());
+    const t = await text(page);
+    ok(['使用步驟', '跑吧！漢字：句庫', '色數消消樂：設定組', '比比看：練習範圍', '訂閱後還可以', 'A 沒有 B 那麼高', '公開題庫（一般句子）', '0–9999'].every(w => t.includes(w)), '說明頁：五段內容都在（繁）');
+    ok(await page.$$eval('.hsteps > li', a => a.length) === 4 && await page.$$eval('.hsec', a => a.length) === 5 && await page.$$eval('.jump [data-act=jump]', a => a.length) === 5, '說明頁：4 個步驟卡片、5 段、5 個快速按鈕');
+    ok(await page.$eval('.nav .pill.on', e => e.dataset.r) === 'settings', '說明頁：上方選單停在「遊戲設定」');
+    ok(await noOverflow(page), '說明頁：手機寬度不會左右滑'); await shot(page, 'p1_help_tc');
+    await page.click('.jump [data-k=hCol]'); await page.waitForTimeout(600);
+    ok(await page.$eval('#hCol', e => Math.abs(e.getBoundingClientRect().top) < 200), '快速按鈕：跳到色數那一段');
+    for(const [l, w] of [['sc', '游戏设置说明'], ['es', 'Guía de ajustes'], ['en', 'Game settings guide']]){
+      await page.click('[data-act=lang][data-l=' + l + ']'); await page.waitForTimeout(100);
+      const tt = await text(page);
+      ok(tt.includes(w) && !/[「」]/.test(l === 'sc' ? tt : '') && await noOverflow(page), '說明頁：' + l + ' 版本正常', tt.slice(0, 80)); await shot(page, 'p2_help_' + l);
+    }
+    await page.click('[data-act=nav][data-r=settings]'); await page.waitForSelector('#correCard');
+    ok(page.url().endsWith('#/settings'), '「返回遊戲設定」回到設定頁');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 說明內容：四種語言結構一樣
+    global.window = {}; eval(fs.readFileSync(path.join(ROOT, 'js', 'help.js'), 'utf8')); const H = global.window.HELP;
+    const shape = x => JSON.stringify(x.sections.map(s => [s.id, (s.steps || []).length, (s.items || []).length, (s.groups || []).map(g => g[1].length), !!s.plan, !!s.note, !!s.tip])) + x.jump.length;
+    ok(['sc', 'es', 'en'].every(l => shape(H[l]) === shape(H.tc)), '說明內容：繁簡西英段落數量一致'); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=5-3/.test(ix) && (ix.match(/\?v=5-4/g) || []).length >= 9, 'index.html 的 css／js 都改成 ?v=5-4'); }
+    ok(!/\?v=5-4/.test(ix) && (ix.match(/\?v=6-1/g) || []).length >= 10 && ix.includes('js/help.js?v=6-1'), 'index.html 的 css／js 都改成 ?v=6-1（含 help.js）'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

@@ -219,3 +219,18 @@ label.sent.pick input{width:22px;height:22px;margin-top:4px;accent-color:var(--b
 .sublist{margin:6px 0 14px;padding-left:20px;line-height:1.7}
 .decoy-field.locked input{background:var(--brown-l);cursor:pointer}
 .sent .dc{font-size:.85rem;color:var(--brown)}
+
+/* 遊戲設定說明（#/help） */
+.hsec{scroll-margin-top:64px}
+.hsec p{margin:4px 0 8px}
+.hsec h4{margin:14px 0 4px;font-size:.98rem;color:var(--brown)}
+.hlist{margin:4px 0;padding-left:1.2em;line-height:1.65}
+.hlist li{margin:4px 0}
+.hlist ul{margin:2px 0;padding-left:1.1em}
+.hsteps{list-style:none;margin:8px 0;padding:0;display:flex;flex-direction:column;gap:10px}
+.hsteps>li{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:12px;line-height:1.6}
+.hsteps ul{margin:4px 0;padding-left:1.1em}
+.hnum{flex:0 0 30px;height:30px;border-radius:999px;background:var(--brown);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.hplan{display:flex;flex-direction:column;gap:8px;margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+.hplan>div{display:flex;gap:10px;align-items:flex-start;line-height:1.6}
+.hplan .badge{flex:0 0 auto}
