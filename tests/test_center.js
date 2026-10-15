@@ -964,7 +964,10 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6)\b/.test(ix) && (ix.match(/\?v=6-7/g) || []).length >= 10 && ix.includes('js/help.js?v=6-7'), 'index.html 的 css／js 都改成 ?v=6-7（含 help.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7)\b/.test(ix) && (ix.match(/\?v=6-8/g) || []).length >= 10 && ix.includes('js/help.js?v=6-8'), 'index.html 的 css／js 都改成 ?v=6-8（含 help.js）'); }
+  { // 第 4 批：說明頁四語都提到 🚩 題目回報
+    const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
+    ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

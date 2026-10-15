@@ -534,8 +534,8 @@ function loadBbk(){
   if(!bbkLoad) bbkLoad = (async () => {
     const add = src => new Promise((res, rej) => { const el = document.createElement('script'); el.src = BBK_BASE + src; el.onload = res; el.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(el); });
     if(!window.THEME_PACK) await add('themes/people.js?v=6-5');
-    if(!window.BBK_ENGINE) await add('engine.js?v=6-7');
-    if(!window.BBK_WORKSHEET) await add('worksheet.js?v=6-7');
+    if(!window.BBK_ENGINE) await add('engine.js?v=6-8');
+    if(!window.BBK_WORKSHEET) await add('worksheet.js?v=6-8');
     return window.BBK_ENGINE(window.THEME_PACK);
   })().catch(e => { bbkLoad = null; throw e; });
   return bbkLoad;

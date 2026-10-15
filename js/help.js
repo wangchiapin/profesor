@@ -109,7 +109,7 @@ window.HELP = {
       ]
      ]
     ],
-    "note": "提醒：特徵選太少時，有些題型可能湊不出題目。存好後可以按「試玩」看看。",
+    "note": "提醒：特徵選太少時，有些題型可能湊不出題目。存好後可以按「試玩」看看。學生每題答完，可以按「🚩 這題怪怪的」回報有問題的題目，我們會檢查修正。",
     "plan": [
      "3 組",
      "15 組"
@@ -234,7 +234,7 @@ window.HELP = {
       ]
      ]
     ],
-    "note": "提醒：特征选太少时，有些题型可能凑不出题目。存好后可以按“试玩”看看。",
+    "note": "提醒：特征选太少时，有些题型可能凑不出题目。存好后可以按“试玩”看看。学生每题答完，可以按“🚩 这题怪怪的”回报有问题的题目，我们会检查修正。",
     "plan": [
      "3 组",
      "15 组"
@@ -359,7 +359,7 @@ window.HELP = {
       ]
      ]
     ],
-    "note": "Ojo: con pocos rasgos, algunos tipos de pregunta quizá no tengan preguntas suficientes. Después de guardar, pulsa «Probar» para comprobarlo.",
+    "note": "Ojo: con pocos rasgos, algunos tipos de pregunta quizá no tengan preguntas suficientes. Después de guardar, pulsa «Probar» para comprobarlo. Después de cada pregunta, tus alumnos pueden pulsar «🚩 Algo raro en esta pregunta» para avisarnos de un error; lo revisaremos.",
     "plan": [
      "3",
      "15"
@@ -484,7 +484,7 @@ window.HELP = {
       ]
      ]
     ],
-    "note": "Note: with too few features, some question types may not have enough questions. After saving, press “Try it” to check.",
+    "note": "Note: with too few features, some question types may not have enough questions. After saving, press “Try it” to check. After each question, students can press “🚩 Something's off here” to report a problem; we will check and fix it.",
     "plan": [
      "3",
      "15"
