@@ -34,7 +34,7 @@ window.HELP = {
      ],
      [
       "看成績",
-      "到「班級」頁的成績冊查看。"
+      "到「班級」頁的成績冊查看。成績會依句庫、設定組或範圍分開記錄，可以用成績冊上方的「顯示」選單切換。"
      ]
     ],
     "tip": "💡 改了設定，已經發出去的連結會自動更新，不用重傳。"
@@ -158,7 +158,7 @@ window.HELP = {
      ],
      [
       "看成绩",
-      "到“班级”页的成绩册查看。"
+      "到“班级”页的成绩册查看。成绩会依句库、设置组或范围分开记录，可以用成绩册上方的“显示”选单切换。"
      ]
     ],
     "tip": "💡 改了设置，已经发出去的链接会自动更新，不用重传。"
@@ -282,7 +282,7 @@ window.HELP = {
      ],
      [
       "Ver las notas",
-      "Consulta el libro de notas en la página «Clases»."
+      "Consulta el libro de notas en la página «Clases». Las notas se guardan por banco, configuración o rango; cámbialo con el menú «Mostrar» de arriba."
      ]
     ],
     "tip": "💡 Si cambias un ajuste, los enlaces ya enviados se actualizan solos; no hace falta reenviarlos."
@@ -406,7 +406,7 @@ window.HELP = {
      ],
      [
       "Check scores",
-      "Open the gradebook on the Classes page."
+      "Open the gradebook on the Classes page. Scores are kept separately for each bank, setup or range; switch with the “Show” menu at the top."
      ]
     ],
     "tip": "💡 If you change a setting, links you already sent update automatically — no need to resend."

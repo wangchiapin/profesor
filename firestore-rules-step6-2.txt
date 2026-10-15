@@ -1,0 +1,82 @@
+    // ===================================================================
+    // ===== 步驟 6-2：成績依「用了哪個設定」分開 =====
+    // 貼在中心專案 subscription-48d3c 的規則裡：
+    //   ① 把原本整段 match /class_scores/{sid} { … } 換成下面的 ①
+    //   ② 把原本整段 match /class_plays/{pid} { … } 換成下面的 ②
+    // 其他段落都不用動。依賴既有函式：signedIn() / realUser() / isAdmin() / subActive(uid)
+    //
+    // 改了什麼：
+    //   class_scores：多一個欄位 k（跑吧＝句庫碼，公開題庫＝pool；色數＝設定碼，舊式連結＝link）
+    //                 文件 id 從「班級_遊戲_暱稱」改成「班級_遊戲_設定_暱稱」
+    //   class_plays ：多一個欄位 r（比比看老師範圍的範圍碼；一般模式＝''）
+    // 注意：換上新規則後，舊版遊戲（沒更新的瀏覽器）傳成績會失敗，重新整理遊戲頁就好。
+    // ===================================================================
+
+    // ① ---------------------------------------------------------------
+    match /class_scores/{sid} {
+      function classDoc(cid) {
+        return get(/databases/$(database)/documents/classes/$(cid)).data;
+      }
+      // 步驟 6-2：多了 k（用了哪個設定：跑吧＝句庫碼或 pool；色數＝設定碼或 link），文件 id = 班級_遊戲_設定_暱稱雜湊
+      function okScore() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['cid','owner','game','k','h','nick','best','plays','lastAt','extra'])
+          && d.keys().hasAll(['cid','owner','game','k','h','nick','best','plays','lastAt'])
+          && d.cid is string && d.game in ['corre','colores']
+          && d.k is string && d.k.matches('^[a-z0-9]{1,32}$')
+          && d.h is string && d.h.matches('^[a-f0-9]{16}$')
+          && sid == d.cid + '_' + d.game + '_' + d.k + '_' + d.h
+          && d.owner == classDoc(d.cid).owner
+          && d.nick is string && d.nick.size() >= 1 && d.nick.size() <= 16
+          && d.best is int && d.best >= 0 && d.best <= 1000000
+          && d.plays is int
+          && d.lastAt == request.time
+          && (!('extra' in d) || (d.extra is map && d.extra.size() <= 6))
+          && subActive(d.owner);
+      }
+      // 老師讀自己的；學生只有在老師開放排行榜時才讀得到
+      // get：文件還不存在時也要放行（學生第一次回傳前要先查一次有沒有舊紀錄）
+      allow get: if signedIn() && (resource == null
+                                   || resource.data.owner == request.auth.uid
+                                   || classDoc(resource.data.cid).showBoard == true);
+      allow list: if signedIn() && (resource.data.owner == request.auth.uid
+                                    || classDoc(resource.data.cid).showBoard == true);
+      allow create: if signedIn() && okScore() && request.resource.data.plays == 1;
+      allow update: if signedIn() && okScore()
+        && request.resource.data.cid == resource.data.cid
+        && request.resource.data.game == resource.data.game
+        && request.resource.data.k == resource.data.k
+        && request.resource.data.h == resource.data.h
+        && request.resource.data.owner == resource.data.owner
+        && request.resource.data.plays == resource.data.plays + 1
+        && request.resource.data.best >= resource.data.best;
+      allow delete: if realUser() && (resource.data.owner == request.auth.uid || isAdmin());
+    }
+
+    // ② ---------------------------------------------------------------
+    match /class_plays/{pid} {
+      // 步驟 6-2：多了 r（老師範圍的範圍碼；一般模式或舊格式範圍＝''）
+      function okPlay() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['cid','owner','game','h','nick','at','th','lv','rg','r','score','max','qs'])
+          && d.keys().hasAll(['cid','owner','game','h','nick','at','th','lv','rg','r','score','max','qs'])
+          && d.game == 'bbk'
+          && d.cid is string && d.cid.matches('^[a-z0-9]{8,32}$')
+          && d.owner == get(/databases/$(database)/documents/classes/$(d.cid)).data.owner
+          && d.h is string && d.h.matches('^[a-f0-9]{16}$')
+          && d.nick is string && d.nick.size() >= 1 && d.nick.size() <= 16
+          && d.at == request.time
+          && d.th is string && d.th.size() <= 20
+          && d.lv is int && d.lv >= 1 && d.lv <= 3
+          && d.rg is string && d.rg.size() <= 200
+          && d.r is string && d.r.matches('^([a-z0-9]{8,32})?$')
+          && d.max is int && d.max >= 10 && d.max <= 300
+          && d.score is int && d.score >= 0 && d.score <= d.max
+          && d.qs is list && d.qs.size() >= 1 && d.qs.size() <= 30
+          && subActive(d.owner);
+      }
+      allow create: if signedIn() && okPlay();
+      allow get, list: if signedIn() && resource.data.owner == request.auth.uid;
+      allow update: if false;
+      allow delete: if realUser() && (resource.data.owner == request.auth.uid || isAdmin());
+    }

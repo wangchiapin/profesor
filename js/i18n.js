@@ -273,6 +273,13 @@ const D = {
   confirmRow: ['確定刪除「{nick}」的成績？', '确定删除「{nick}」的成绩？', '¿Borrar las notas de «{nick}»?', 'Delete the scores of "{nick}"?'],
   students: ['{n} 位學生', '{n} 位学生', '{n} alumnos', '{n} students'],
 
+  // ---- 步驟 6-2：成績依設定分開 ----
+  setShow: ['顯示', '显示', 'Mostrar', 'Show'],
+  setAll: ['全部設定', '全部设置', 'Todos los ajustes', 'All settings'],
+  setDeleted: ['（已刪除的設定）', '（已删除的设置）', '(ajuste borrado)', '(deleted setting)'],
+  setOldLink: ['舊連結', '旧链接', 'Enlace antiguo', 'Old link'],
+  setOther: ['其他範圍', '其他范围', 'Otro rango', 'Other range'],
+
   // ---- 比比看成績簿 ----
   tabStudents: ['學生', '学生', 'Alumnos', 'Students'],
   tabErrors: ['常錯統計', '常错统计', 'Errores frecuentes', 'Common mistakes'],

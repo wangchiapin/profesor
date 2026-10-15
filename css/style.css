@@ -235,6 +235,9 @@ label.sent.pick input{width:22px;height:22px;margin-top:4px;accent-color:var(--b
 .hplan>div{display:flex;gap:10px;align-items:flex-start;line-height:1.6}
 .hplan .badge{flex:0 0 auto}
 
+/* 6-2：成績冊「全部設定」時，暱稱下面標出是哪個設定 */
+table.t small.setk{color:var(--mut);font-size:.8rem;font-weight:400;white-space:normal}
+
 /* 6-1：班級分頁、學生遊戲連結的提醒 */
 .ctabs{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;margin:4px -2px 2px;-webkit-overflow-scrolling:touch}
 .ctabs .pill{flex:0 0 auto;max-width:70vw;overflow:hidden;text-overflow:ellipsis}

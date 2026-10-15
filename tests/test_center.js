@@ -40,11 +40,11 @@ function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = n
       { id: 'a1', cfg: { name: '百位數', mode: 'A', rows: 4, cols: 4, hearts: 5, ids: ['red', 'blue'], range: 999 }, sid: 'cfg000011112' },
       { id: 'a2', cfg: { name: '小數字', mode: 'B', rows: 3, cols: 3, hearts: 3, ids: ['red', 'blue'], range: 999 } } ], updatedAt: 1 } },
     class_scores: {
-      [CID + '_corre_' + hx(1)]: { cid: CID, owner: 'u1', game: 'corre', h: hx(1), nick: 'Ana', best: 900, plays: 3, lastAt: Date.now() - 1 * day, extra: { sent: 12, diff: 'normal' } },
-      [CID + '_corre_' + hx(2)]: { cid: CID, owner: 'u1', game: 'corre', h: hx(2), nick: 'Beto', best: 400, plays: 5, lastAt: Date.now() - 40 * day, extra: { sent: 6, diff: 'dificil' } },
-      [CID + '_colores_' + hx(1)]: { cid: CID, owner: 'u1', game: 'colores', h: hx(1), nick: 'Ana', best: 640, plays: 2, lastAt: Date.now() - 2 * day, extra: { secs: 83, cleared: 1 } },
-      [CID2 + '_corre_' + hx(9)]: { cid: CID2, owner: 'u1', game: 'corre', h: hx(9), nick: 'Zoe', best: 100, plays: 1, lastAt: Date.now(), extra: { sent: 2, diff: 'facil' } },
-      [CID + '_corre_' + hx(3)]: { cid: CID, owner: 'u2', game: 'corre', h: hx(3), nick: '別人老師的學生', best: 5, plays: 1, lastAt: Date.now(), extra: { sent: 1, diff: 'facil' } }
+      [CID + '_corre_pool_' + hx(1)]: { cid: CID, owner: 'u1', game: 'corre', k: 'pool', h: hx(1), nick: 'Ana', best: 900, plays: 3, lastAt: Date.now() - 1 * day, extra: { sent: 12, diff: 'normal' } },
+      [CID + '_corre_bank00001111_' + hx(2)]: { cid: CID, owner: 'u1', game: 'corre', k: 'bank00001111', h: hx(2), nick: 'Beto', best: 400, plays: 5, lastAt: Date.now() - 40 * day, extra: { sent: 6, diff: 'dificil' } },
+      [CID + '_colores_cfg000011112_' + hx(1)]: { cid: CID, owner: 'u1', game: 'colores', k: 'cfg000011112', h: hx(1), nick: 'Ana', best: 640, plays: 2, lastAt: Date.now() - 2 * day, extra: { secs: 83, cleared: 1 } },
+      [CID2 + '_corre_pool_' + hx(9)]: { cid: CID2, owner: 'u1', game: 'corre', k: 'pool', h: hx(9), nick: 'Zoe', best: 100, plays: 1, lastAt: Date.now(), extra: { sent: 2, diff: 'facil' } },
+      [CID + '_corre_pool_' + hx(3)]: { cid: CID, owner: 'u2', game: 'corre', k: 'pool', h: hx(3), nick: '別人老師的學生', best: 5, plays: 1, lastAt: Date.now(), extra: { sent: 1, diff: 'facil' } }
     },
     class_plays: {
       p1: { cid: CID, owner: 'u1', game: 'bbk', h: hx(1), nick: 'Ana', at: Date.now() - 1 * day, th: 'people', lv: 1, rg: '', score: 90, max: 100, qs: qs(10, 8) },
@@ -228,7 +228,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('table.t');
     let rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
     ok(rows[0].startsWith('暱稱 最高分 次數 詳細 最近'), '欄位：暱稱｜最高分｜次數｜詳細｜最近', rows[0]);
-    ok(rows.length === 3 && rows[1].startsWith('Ana 900 3 12 句 · 普通') && rows[2].startsWith('Beto 400 5 6 句 · 困難'), '跑吧：依最高分排序、詳細=句數·難度、別的老師不出現', rows);
+    ok(rows.length === 3 && rows[1].startsWith('Ana 公開題庫（一般句子） 900 3 12 句 · 普通') && rows[2].startsWith('Beto 📚 點飲料 400 5 6 句 · 困難'), '跑吧：依最高分排序、詳細=句數·難度、別的老師不出現', rows);
     ok(!(await text(page)).includes('別人老師的學生') && !(await text(page)).includes('Zoe'), '別的班、別人的學生不出現');
     await shot(page, 'f1_corre');
     await page.click('[data-act=days][data-d="30"]'); rows = await page.$$eval('table.t tr', t => t.length);
@@ -236,20 +236,20 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=days][data-d="0"]');
     await page.click('[data-act=game][data-g=colores]');
     rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
-    ok(rows.length === 2 && rows[1].startsWith('Ana 640 2 用時 1:23 · 全部清除'), '色數：詳細=用時＋清盤', rows);
+    ok(rows.length === 2 && rows[1].startsWith('Ana 🎨 百位數 640 2 用時 1:23 · 全部清除'), '色數：詳細=用時＋清盤', rows);
     await shot(page, 'f2_colores');
     // CSV
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=csv]')]);
     const csv = fs.readFileSync(await dl.path(), 'utf8');
-    ok(csv.charCodeAt(0) === 0xfeff && csv.includes('nickname,best,plays,detail,last') && csv.includes('Ana,640,2,用時 1:23 · 全部清除'), 'CSV 內容（含 BOM）', csv.slice(0, 120));
+    ok(csv.charCodeAt(0) === 0xfeff && csv.includes('nickname,setting,best,plays,detail,last') && csv.includes('Ana,🎨 百位數,640,2,用時 1:23 · 全部清除'), 'CSV 內容（含 BOM）', csv.slice(0, 120));
     // 刪一列
     await page.click('[data-act=game][data-g=corre]'); await page.click('table.t tr:nth-child(3) [data-act=rowdel]'); await page.waitForTimeout(150);
-    ok(!Object.keys((await db(page)).class_scores).some(k => k === CID + '_corre_' + hx(2)) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_' + hx(1)), '刪除單列：只刪 Beto 的跑吧成績');
+    ok(!Object.keys((await db(page)).class_scores).some(k => k === CID + '_corre_bank00001111_' + hx(2)) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '刪除單列：只刪 Beto 的跑吧成績');
     // 比比看
     await page.click('[data-act=game][data-g=bbk]');
     rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
     ok(rows[0].startsWith('暱稱 最高分 次數 詳細 最近'), '比比看學生表欄位同上', rows[0]);
-    ok(rows[1].startsWith('Ana 90% 2 第一次就對 65%') && rows[2].startsWith('Beto 50% 1 第一次就對 30%'), '比比看：最高分%、回合數、第一次就對%', rows);
+    ok(rows[1].startsWith('Ana 一般模式 90% 1 第一次就對 80%') && rows[2].startsWith('Ana 其他範圍 70% 1 第一次就對 50%') && rows[3].startsWith('Beto 一般模式 50% 1 第一次就對 30%'), '比比看（全部設定）：每人每設定一列、最高分%、回合數、第一次就對%', rows);
     await shot(page, 'f3_bbk_students');
     await page.click('[data-act=tab][data-tab=err]'); await page.waitForSelector('.bar');
     const heads = await page.$$eval('.sec', e => e.map(x => x.innerText));
@@ -276,9 +276,9 @@ server.listen(0, 'localhost', async () => {
     // 清空這款
     await page.click('[data-act=cleargame]'); await page.waitForTimeout(150);
     ok(!Object.values((await db(page)).class_plays).some(r => r.cid === CID && r.owner === 'u1'), '清空比比看：本班紀錄清空');
-    ok(Object.keys((await db(page)).class_scores).includes(CID + '_corre_' + hx(1)), '清空比比看不影響跑吧成績');
+    ok(Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '清空比比看不影響跑吧成績');
     await page.click('[data-act=game][data-g=colores]'); await page.click('[data-act=cleargame]'); await page.waitForTimeout(150);
-    ok(!Object.keys((await db(page)).class_scores).some(k => k.includes('_colores_')) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_' + hx(1)), '清空色數：只清色數');
+    ok(!Object.keys((await db(page)).class_scores).some(k => k.includes('_colores_')) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '清空色數：只清色數');
     ok(await noOverflow(page), '沒有橫向捲動');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
@@ -886,9 +886,50 @@ server.listen(0, 'localhost', async () => {
     await page.evaluate(() => window.scrollTo(0, 0)); await shot(page, 'q2_class_top');
     for(const l of ['sc', 'es', 'en']){ await page.click('[data-act=lang][data-l=' + l + ']'); ok(await noOverflow(page), '班級頁 ' + l + '：手機寬度不會左右滑'); }
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 6-2 成績依設定分開：「顯示」選單、刪掉的設定、比比看範圍名稱
+    const bbkSets = [{ id: 'b1', name: '身高年齡', lv: 2, d: ['height', 'age'], t: ['pick'], n: 10, sid: 'rng000011112' }];
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: bbkSets }, ls: { profesorLang: 'tc' }, hash: '#/class/0' });
+    await page.waitForSelector('table.t');
+    // 多一筆：Ana 用「點飲料」句庫、一筆用已刪除的句庫；比比看一回合用「身高年齡」範圍
+    await page.evaluate(() => { const S = __profesor.S, now = Date.now();
+      S.scores.push({ id: 'x1', cid: 'class0000aaaa', owner: 'u1', game: 'corre', k: 'bank00001111', h: '0000000000000001', nick: 'Ana', best: 300, plays: 1, ms: now, extra: { sent: 3, diff: 'facil' } });
+      S.scores.push({ id: 'x2', cid: 'class0000aaaa', owner: 'u1', game: 'corre', k: 'gone00001111', h: '0000000000000004', nick: 'Caro', best: 50, plays: 1, ms: now, extra: {} });
+      S.plays.unshift({ id: 'y1', cid: 'class0000aaaa', owner: 'u1', game: 'bbk', h: '0000000000000002', nick: 'Beto', ms: now, th: 'people', lv: 2, rg: 'd=height,age&t=pick&n=10', r: 'rng000011112', score: 100, max: 100, qs: [{ t: 'pick', d: 'height', f: 'BI', p: 1, ok: true, f1: true }] });
+      document.querySelector('[data-act=lang][data-l=tc]').click(); });
+    const opts = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
+    ok(JSON.stringify(opts) === JSON.stringify(['全部設定', '公開題庫（一般句子）', '📚 點飲料', '（已刪除的設定）']), '「顯示」選單：全部＋這款遊戲有成績的設定（刪掉的句庫顯示已刪除）', opts);
+    ok((await page.$$('table.t tr')).length === 5, '全部設定：每人每設定一列（4 列）');
+    await page.selectOption('[data-sel=setk]', 'bank00001111');
+    let rows = await page.$$eval('table.t tr', t => t.slice(1).map(r => r.innerText.replace(/\s+/g, ' ').trim()));
+    ok(rows.length === 2 && rows[0].startsWith('Beto 400') && rows[1].startsWith('Ana 300') && !(await page.$('small.setk')), '選「點飲料」：只看這個句庫，每人一列、不再標設定', rows);
+    ok((await text(page, '#bookCard')).includes('2 位學生'), '學生數跟著設定');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=csv]')]);
+    const csv = fs.readFileSync(await dl.path(), 'utf8');
+    ok(csv.includes('Ana,📚 點飲料,300') && !csv.includes('公開題庫'), 'CSV 只匯出選的設定', csv);
+    await shot(page, 'r1_setk_corre');
+    await page.click('[data-act=game][data-g=bbk]'); await page.waitForSelector('[data-sel=setk]');
+    ok(await page.$eval('[data-sel=setk]', e => e.value) === '', '換遊戲：選單回到全部');
+    const bo = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
+    ok(bo.includes('📐 身高年齡') && bo.includes('一般模式') && bo.includes('其他範圍'), '比比看選單：範圍名稱、一般模式、舊格式範圍', bo);
+    await page.selectOption('[data-sel=setk]', 'rng000011112');
+    rows = await page.$$eval('table.t tr', t => t.slice(1).map(r => r.innerText.replace(/\s+/g, ' ').trim()));
+    ok(rows.length === 1 && rows[0].startsWith('Beto 100%'), '比比看選範圍：只算這個範圍的回合', rows);
+    await page.click('[data-act=tab][data-tab=err]'); await page.waitForSelector('.bar');
+    ok(await page.$$eval('table.t:has(.bar)', ts => ts[0].querySelectorAll('tr').length) === 2, '常錯統計也只算這個範圍');
+    await page.click('[data-act=tab][data-tab=stu]'); await page.click('table.t.click tr:nth-child(2)'); await page.waitForSelector('[data-act=stuback]');
+    ok(await page.$$eval('table.t', ts => ts[0].querySelectorAll('tr').length) === 2, '點學生：只列這個範圍的回合');
+    await shot(page, 'r2_setk_bbk');
+    for(const l of ['sc', 'es', 'en']){ await page.click('[data-act=lang][data-l=' + l + ']'); ok(await noOverflow(page), '成績冊 ' + l + '：手機寬度不會左右滑'); }
+    await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=stuback]');
+    ok((await text(page, '#bookCard')).includes('Mostrar') && (await page.$$eval('[data-sel=setk] option', o => o[0].textContent)) === 'Todos los ajustes', '西文：Mostrar／Todos los ajustes');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 說明頁：看成績補一句
+    global.window = {}; eval(fs.readFileSync(path.join(ROOT, 'js', 'help.js'), 'utf8')); const H = global.window.HELP;
+    const all = JSON.stringify(H);
+    ok(all.includes('成績會依句庫、設定組或範圍分開記錄') && all.includes('成绩会依句库、设置组或范围分开记录') && all.includes('menú «Mostrar»') && all.includes('“Show” menu'), '說明頁「看成績」補上依設定分開（四語）'); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1)\b/.test(ix) && (ix.match(/\?v=6-2/g) || []).length >= 10 && ix.includes('js/help.js?v=6-2'), 'index.html 的 css／js 都改成 ?v=6-2（含 help.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2)\b/.test(ix) && (ix.match(/\?v=6-3/g) || []).length >= 10 && ix.includes('js/help.js?v=6-3'), 'index.html 的 css／js 都改成 ?v=6-3（含 help.js）'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

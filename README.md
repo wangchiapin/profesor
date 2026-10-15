@@ -24,8 +24,8 @@
 |---|---|
 | `site_members/{uid}`、`site_plans/{uid}` | 會員、方案（`month`／`year`／`trial`／`pro` 且 `expiresAt` 還沒到才算訂閱） |
 | `teacher_classes/{uid}`、`classes/{cid}` | 班級（三款共用，最多 3 班） |
-| `class_scores/{cid}_{game}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生一筆 |
-| `class_plays/{自動 id}` | 比比看每回合每題的紀錄 |
+| `class_scores/{cid}_{game}_{k}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生×每個設定一筆；`k`＝句庫碼（公開題庫 `pool`）／設定碼（舊式連結 `link`）（步驟 6-2，規則見 `firestore-rules-step6-2.txt`） |
+| `class_plays/{自動 id}` | 比比看每回合每題的紀錄；`r`＝範圍碼（一般模式 `''`），成績冊依它分開 |
 | `teacher_banks`、`shared_banks` | 跑吧句庫（步驟 4 起在中心編輯） |
 | `teacher_configs`、`shared_configs` | 色數設定組（讀；沒有連結碼時，照色數教師區的做法寫入連結碼） |
 

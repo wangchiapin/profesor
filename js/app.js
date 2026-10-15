@@ -13,7 +13,7 @@ const S = {
   route: 'home', cur: null,
   game: 'corre', days: 0, tab: 'stu', sel: null,
   scores: [], scoresState: '', plays: [], playsState: '', msg2: '',
-  correBank: '', colCfg: '', bbkSel: '', busy: false,
+  correBank: '', colCfg: '', bbkSel: '', busy: false, setK: '',     // setK = 成績冊只看哪個設定（'' = 全部）
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
@@ -92,7 +92,7 @@ async function onRoute(){
   lastHash = location.hash;
   S.route = r.route; S.cur = r.cur;
   if(S.route === 'class'){
-    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.msg2 = ''; S.correBank = ''; S.colCfg = ''; S.bbkSel = '';
+    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correBank = ''; S.colCfg = ''; S.bbkSel = '';
     render(); window.scrollTo(0, 0);
     if(S.acct === 'ok' && classOf(S.cur)) await loadBook();
     return;
@@ -241,6 +241,28 @@ function linkCardHtml(game){
     '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
   return h + '</div>';
 }
+// ---- 步驟 6-2：成績冊依設定分開 ----
+// 設定的名稱：跑吧＝句庫、色數＝設定組、比比看＝範圍；刪掉的顯示「（已刪除的設定）」
+function setLabel(game, k){
+  const A = S.a;
+  if(game === 'corre'){
+    if(k === 'pool') return T('sourcePool');
+    const b = (A.banks || []).find(x => x.sid === k); return b ? '📚 ' + CORRE.bankName(b) : T('setDeleted');
+  }
+  if(game === 'colores'){
+    if(k === 'link') return T('setOldLink');
+    const it = (A.configs || []).find(x => x.sid === k); return it ? '🎨 ' + ((it.cfg && it.cfg.name) || '#') : T('setDeleted');
+  }
+  if(k === 'normal') return T('rangeNormal');
+  if(k === 'other') return T('setOther');
+  const it = (A.bbk || []).find(x => x.sid === k); return it ? '📐 ' + it.name : T('setDeleted');
+}
+function curSetK(keys){ return keys.indexOf(S.setK) >= 0 ? S.setK : ''; }
+function setPickHtml(g, keys, sk){
+  if(!keys.length) return '';
+  return '<div class="field"><label>' + esc(T('setShow')) + '</label><select data-sel="setk"><option value="">' + esc(T('setAll')) + '</option>' +
+    keys.map(k => '<option value="' + esc(k) + '" ' + (sk === k ? 'selected' : '') + '>' + esc(setLabel(g, k)) + '</option>').join('') + '</select></div>';
+}
 function bookHtml(){
   const g = S.game;
   let h = '<h3>' + esc(T('resultsTitle')) + '</h3><div class="row">' +
@@ -248,14 +270,17 @@ function bookHtml(){
   const state = g === 'bbk' ? S.playsState : S.scoresState;
   if(state === 'loading' || state === '') return h + '<p class="hint">' + esc(T('loading')) + '</p>';
   if(state === 'error') return h + '<div class="err">' + esc(S.msg2) + '</div><div class="row"><button class="pill" data-act="refresh">' + esc(T('retry')) + '</button></div>';
+  const rows0 = g === 'bbk' ? S.plays : S.scores, keys = BOOKS.setKeys(g, rows0), sk = curSetK(keys), lab = k => setLabel(g, k);
+  h += setPickHtml(g, keys, sk);
   h += '<div class="row">' + [[0, 'filterAll'], [7, 'filter7'], [30, 'filter30']].map(d => '<button class="pill sm ' + (S.days === d[0] ? 'on' : '') + '" data-act="days" data-d="' + d[0] + '">' + esc(T(d[1])) + '</button>').join('') + '</div>';
   if(g === 'bbk'){
-    if(S.sel) return h + BOOKS.bbkStudent(S.plays, S.sel, S.days);
+    const plays = sk ? S.plays.filter(r => BOOKS.setKeyOf('bbk', r) === sk) : S.plays;
+    if(S.sel) return h + BOOKS.bbkStudent(plays, S.sel, S.days);
     h += '<div class="row">' + [['stu', 'tabStudents'], ['err', 'tabErrors']].map(x => '<button class="pill sm ' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-tab="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div>';
-    const inRange = S.plays.filter(r => !S.days || r.ms >= Date.now() - S.days * 86400000);
-    h += S.tab === 'stu' ? BOOKS.bbkStudents(S.plays, S.days) : BOOKS.bbkStats(inRange);
+    const inRange = plays.filter(r => !S.days || r.ms >= Date.now() - S.days * 86400000);
+    h += S.tab === 'stu' ? BOOKS.bbkStudents(plays, S.days, sk, lab) : BOOKS.bbkStats(inRange);
   }else{
-    h += '<p class="hint">' + esc(T('students', { n: BOOKS.studentCount(g, S.scores) })) + '</p>' + BOOKS.scoreTable(g, S.scores, S.days);
+    h += '<p class="hint">' + esc(T('students', { n: BOOKS.studentCount(g, S.scores, sk) })) + '</p>' + BOOKS.scoreTable(g, S.scores, S.days, sk, lab);
   }
   h += '<div class="row"><button class="pill sm" data-act="refresh">🔄 ' + esc(T('refresh')) + '</button><button class="pill sm" data-act="csv">⬇ ' + esc(T('csv')) + '</button>' +
     '<button class="pill sm" data-act="cleargame">' + esc(T('clearGame')) + '</button></div>';
@@ -845,7 +870,7 @@ const actions = {
     }catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
     render();
   }); },
-  game(el){ S.game = el.dataset.g; S.sel = null; render(); },
+  game(el){ S.game = el.dataset.g; S.sel = null; S.setK = ''; render(); },
   days(el){ S.days = +el.dataset.d; render(); },
   tab(el){ S.tab = el.dataset.tab; render(); },
   stu(el){ S.sel = el.dataset.h; render(); toBook(); },
@@ -861,8 +886,9 @@ const actions = {
   }); },
   refresh(){ return loadBook(); },
   csv(){
-    const c = classOf(S.cur), g = S.game;
-    const rows = g === 'bbk' ? BOOKS.csvBbk(S.plays, S.days) : BOOKS.csvScores(g, S.scores, S.days);
+    const c = classOf(S.cur), g = S.game, lab = k => setLabel(g, k);
+    const sk = curSetK(BOOKS.setKeys(g, g === 'bbk' ? S.plays : S.scores));
+    const rows = g === 'bbk' ? BOOKS.csvBbk(sk ? S.plays.filter(r => BOOKS.setKeyOf('bbk', r) === sk) : S.plays, S.days, lab) : BOOKS.csvScores(g, S.scores, S.days, sk, lab);
     saveBlob(new Blob([BOOKS.toCsv(rows)], { type: 'text/csv;charset=utf-8' }), g + '_' + safeName(c.data.name) + '_' + fdate(Date.now()).replace(/\//g, '') + '.csv');
   },
   cleargame(){ return run(async () => {
@@ -883,6 +909,7 @@ document.addEventListener('change', e => {
   if(s.dataset.sel === 'correbank') S.correBank = s.value;
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
+  if(s.dataset.sel === 'setk'){ S.setK = s.value; S.sel = null; }
   if(s.dataset.sel === 'wscfg') S.ws.cfg = s.value;
   if(s.dataset.sel === 'bwssel'){
     S.bws.sel = s.value; S.bws.msg = '';
