@@ -305,7 +305,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=bbknew]'); await page.waitForSelector('#bbkCard .editor');
     let chips = await page.$$eval('#bbkCard .editor [data-act=bbkd]', e => e.map(x => x.dataset.k));
     ok(chips.join() === 'height,age,build,hair,eyes,nose', '第 1 關只列第 1 關的特徵', chips);
-    ok((await page.$$eval('#bbkCard .editor [data-act=bbkt]', e => e.map(x => x.dataset.k))).join() === 'decode,tf,pick,more,fill', '第 1 關的題型');
+    ok((await page.$$eval('#bbkCard .editor [data-act=bbkt]', e => e.map(x => x.dataset.k))).join() === 'decode,tf,pick,more,fill,adj', '第 1 關的題型');
     await page.fill('#bbkName', '身高和年齡');
     await page.click('[data-act=bbkall][data-k=d0]');
     ok(await page.$eval('[data-act=bbksave]', b => b.disabled), '特徵全清：不能儲存');
@@ -316,7 +316,7 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'i1_editor');
     await page.click('[data-act=bbksave]'); await page.waitForSelector('#bbkCard .setrow');
     let d = await db(page), it = d.bbk_sets.u1.items[0];
-    ok(it.name === '身高和年齡' && it.lv === 1 && it.d.join() === 'height,age' && it.t.join() === 'decode,pick,more,fill' && it.n === 15 && !it.sid, '存進 bbk_sets（還沒有連結碼）', it);
+    ok(it.name === '身高和年齡' && it.lv === 1 && it.d.join() === 'height,age' && it.t.join() === 'decode,pick,more,fill,adj' && it.n === 15 && !it.sid, '存進 bbk_sets（還沒有連結碼）', it);
     ok((await text(page, '#bbkCard')).includes('第 1 關 · 15 題 · 身高、年齡 · 看句子找人、看圖選句子、選人：誰比較＿？'), '列表摘要', await text(page, '#bbkCard'));
     // 第二組：全選＋第 3 關
     await page.click('[data-act=bbknew]'); await page.click('[data-act=bbklv][data-k="3"]');
@@ -339,7 +339,7 @@ server.listen(0, 'localhost', async () => {
     d = await db(page); it = d.bbk_sets.u1.items[0];
     ok(it.sid === sid && it.name === '身高年齡（改）' && it.lv === 2 && it.d.join() === 'height,age,muscle', '編輯後連結碼不變', it);
     ok(d.shared_bbk[sid].name === '身高年齡（改）' && d.shared_bbk[sid].lv === 2 && d.shared_bbk[sid].d.join() === 'height,age,muscle', '已發出的連結跟著改（shared_bbk 更新）', d.shared_bbk[sid]);
-    ok(it.t.join() === 'decode,pick,fill', '換關卡時題型只留新關卡有的', it.t);
+    ok(it.t.join() === 'decode,pick,fill,adj', '換關卡時題型只留新關卡有的', it.t);
     // 取消編輯不存
     await page.click('[data-act=bbkedit][data-k="1"]'); await page.fill('#bbkName', '不要存'); await page.click('[data-act=bbkcancel]');
     ok((await db(page)).bbk_sets.u1.items[1].name === '範圍 2', '取消：不存');
@@ -957,13 +957,14 @@ server.listen(0, 'localhost', async () => {
     ok(t2.includes('選人：誰比 A ＿？') && t2.includes('選人：A 比誰＿？') && t2.includes('選比較詞'), '第 2 關題型名稱：選人：誰比 A ＿？／選人：A 比誰＿？／選比較詞');
     await shot(page, 's2_bbk_labels');
     await page.click('[data-act=bbklv][data-k="1"]');
-    ok(JSON.stringify(await page.$$eval('[data-act=bbkt]', b => b.map(x => x.dataset.k))) === JSON.stringify(['decode', 'tf', 'pick', 'more', 'fill']), '第 1 關題型多了「選比較詞」');
+    ok(JSON.stringify(await page.$$eval('[data-act=bbkt]', b => b.map(x => x.dataset.k))) === JSON.stringify(['decode', 'tf', 'pick', 'more', 'fill', 'adj']), '第 1 關題型多了「選比較詞」「選形容詞」');
+    ok((await text(page, '#bbkCard')).includes('選形容詞'), '題型名稱：選形容詞');
     await page.click('[data-act=bbklv][data-k="3"]');
     ok((await page.$$eval('[data-act=bbkt]', b => b.map(x => x.dataset.k))).includes('fill'), '第 3 關題型多了「選比較詞」');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5)\b/.test(ix) && (ix.match(/\?v=6-6/g) || []).length >= 10 && ix.includes('js/help.js?v=6-6'), 'index.html 的 css／js 都改成 ?v=6-6（含 help.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6)\b/.test(ix) && (ix.match(/\?v=6-7/g) || []).length >= 10 && ix.includes('js/help.js?v=6-7'), 'index.html 的 css／js 都改成 ?v=6-7（含 help.js）'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

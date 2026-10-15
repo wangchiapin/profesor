@@ -90,14 +90,15 @@ window.HELP = {
       "要考的特徵",
       [
        "第 1 關起：身高、年齡、胖瘦、頭髮長短、眼睛大小、鼻子大小",
-       "第 2 關起再加：壯不壯、髮質（直／捲）、膚色"
+       "第 2 關起再加：壯不壯、髮質（直／捲）、膚色",
+       "胖瘦、壯不壯、髮質比較主觀，只有差很多的時候才出題；「選形容詞」不考膚色、髮質、壯不壯"
       ]
      ],
      [
       "題型",
       [
-       "第 1 關：看句子找人、對錯題、看圖選句子、選人：誰比較＿？、選比較詞",
-       "第 2 關：看句子找人、看圖選句子、選人：誰比 A ＿？、選人：A 比誰＿？、選比較詞",
+       "第 1 關：看句子找人、對錯題、看圖選句子、選人：誰比較＿？、選比較詞、選形容詞",
+       "第 2 關：看句子找人、看圖選句子、選人：誰比 A ＿？、選人：A 比誰＿？、選比較詞、選形容詞",
        "第 3 關：連鎖解碼、選人：誰最＿？、選人：誰比 A ＿？、選人：A 比誰＿？、看圖選句子、選比較詞"
       ]
      ],
@@ -214,14 +215,15 @@ window.HELP = {
       "要考的特征",
       [
        "第 1 关起：身高、年龄、胖瘦、头发长短、眼睛大小、鼻子大小",
-       "第 2 关起再加：壮不壮、发质（直／卷）、肤色"
+       "第 2 关起再加：壮不壮、发质（直／卷）、肤色",
+       "胖瘦、壮不壮、发质比较主观，只有差很多的时候才出题；“选形容词”不考肤色、发质、壮不壮"
       ]
      ],
      [
       "题型",
       [
-       "第 1 关：看句子找人、对错题、看图选句子、选人：谁比较＿？、选比较词",
-       "第 2 关：看句子找人、看图选句子、选人：谁比 A ＿？、选人：A 比谁＿？、选比较词",
+       "第 1 关：看句子找人、对错题、看图选句子、选人：谁比较＿？、选比较词、选形容词",
+       "第 2 关：看句子找人、看图选句子、选人：谁比 A ＿？、选人：A 比谁＿？、选比较词、选形容词",
        "第 3 关：连锁解码、选人：谁最＿？、选人：谁比 A ＿？、选人：A 比谁＿？、看图选句子、选比较词"
       ]
      ],
@@ -338,14 +340,15 @@ window.HELP = {
       "Rasgos",
       [
        "Desde el nivel 1: estatura, edad, complexión, largo del pelo, tamaño de ojos, tamaño de nariz",
-       "Desde el nivel 2, además: fuerza, tipo de pelo (liso / rizado), color de piel"
+       "Desde el nivel 2, además: fuerza, tipo de pelo (liso / rizado), color de piel",
+       "Complexión, fuerza y tipo de pelo son más subjetivos: solo salen cuando la diferencia es grande; «Elige el adjetivo» no usa color de piel, tipo de pelo ni fuerza"
       ]
      ],
      [
       "Tipos de pregunta",
       [
-       "Nivel 1: encuentra a la persona, verdadero o falso, elige la frase, elige: ¿quién es más ＿?, elige la palabra de comparación",
-       "Nivel 2: encuentra a la persona, elige la frase, elige: ¿quién es más ＿ que A?, elige: ¿A es más ＿ que quién?, elige la palabra de comparación",
+       "Nivel 1: encuentra a la persona, verdadero o falso, elige la frase, elige: ¿quién es más ＿?, elige la palabra de comparación, elige el adjetivo",
+       "Nivel 2: encuentra a la persona, elige la frase, elige: ¿quién es más ＿ que A?, elige: ¿A es más ＿ que quién?, elige la palabra de comparación, elige el adjetivo",
        "Nivel 3: decodifica en cadena, elige: ¿quién es el más ＿?, elige: ¿quién es más ＿ que A?, elige: ¿A es más ＿ que quién?, elige la frase, elige la palabra de comparación"
       ]
      ],
@@ -462,14 +465,15 @@ window.HELP = {
       "Features",
       [
        "From level 1: height, age, build, hair length, eye size, nose size",
-       "From level 2, also: muscles, hair type (straight / curly), skin tone"
+       "From level 2, also: muscles, hair type (straight / curly), skin tone",
+       "Build, muscles and hair type are more subjective, so they only appear when the difference is large; “Pick the adjective” does not use skin tone, hair type or muscles"
       ]
      ],
      [
       "Question types",
       [
-       "Level 1: find the person, true or false, pick the sentence, pick: who is more ＿?, pick the comparison word",
-       "Level 2: find the person, pick the sentence, pick: who is more ＿ than A?, pick: A is more ＿ than whom?, pick the comparison word",
+       "Level 1: find the person, true or false, pick the sentence, pick: who is more ＿?, pick the comparison word, pick the adjective",
+       "Level 2: find the person, pick the sentence, pick: who is more ＿ than A?, pick: A is more ＿ than whom?, pick the comparison word, pick the adjective",
        "Level 3: chain decoding, pick: who is the most ＿?, pick: who is more ＿ than A?, pick: A is more ＿ than whom?, pick the sentence, pick the comparison word"
       ]
      ],

@@ -357,6 +357,7 @@ const D = {
   t_whobi: ['選人：誰比 A ＿？', '选人：谁比 A ＿？', 'Elige: ¿quién es más ＿ que A?', 'Pick: who is more ＿ than A?'],
   t_biwho: ['選人：A 比誰＿？', '选人：A 比谁＿？', 'Elige: ¿A es más ＿ que quién?', 'Pick: A is more ＿ than whom?'],
   t_fill: ['選比較詞', '选比较词', 'Elige la palabra de comparación', 'Pick the comparison word'],
+  t_adj: ['選形容詞', '选形容词', 'Elige el adjetivo', 'Pick the adjective'],
   t_chain: ['連鎖解碼', '连锁解码', 'Decodifica en cadena', 'Chain decoding'],
   t_most: ['選人：誰最＿？', '选人：谁最＿？', 'Elige: ¿quién es el más ＿?', 'Pick: who is the most ＿?'],
   d_height: ['身高', '身高', 'Estatura', 'Height'],

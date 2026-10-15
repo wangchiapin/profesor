@@ -4,7 +4,7 @@
 (function(){
 'use strict';
 const DIM_LV = { height: 1, age: 1, build: 1, hair: 1, eyes: 1, nose: 1, muscle: 2, tex: 2, skin: 2 };
-const POOL = { 1: ['decode', 'tf', 'pick', 'more', 'fill'], 2: ['decode', 'pick', 'whobi', 'biwho', 'fill'], 3: ['chain', 'most', 'whobi', 'biwho', 'pick', 'fill'] };
+const POOL = { 1: ['decode', 'tf', 'pick', 'more', 'fill', 'adj'], 2: ['decode', 'pick', 'whobi', 'biwho', 'fill', 'adj'], 3: ['chain', 'most', 'whobi', 'biwho', 'pick', 'fill'] };
 const NS = [5, 10, 15, 20];
 // 主題（步驟 6-4）：目前只有人物可以選；其他「🔒 陸續開放」。以後開放時，只有訂閱老師能在中心選新主題。
 const THEMES = [['people', '👤', true], ['fruit', '🍎', false], ['animal', '🐶', false], ['action', '🏃', false]];
