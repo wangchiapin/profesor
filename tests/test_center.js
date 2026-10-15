@@ -317,7 +317,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=bbksave]'); await page.waitForSelector('#bbkCard .setrow');
     let d = await db(page), it = d.bbk_sets.u1.items[0];
     ok(it.name === '身高和年齡' && it.lv === 1 && it.d.join() === 'height,age' && it.t.join() === 'decode,pick,more' && it.n === 15 && !it.sid, '存進 bbk_sets（還沒有連結碼）', it);
-    ok((await text(page, '#bbkCard')).includes('第 1 關 · 15 題 · 身高、年齡 · 看句子找人、看圖選句子、誰比較…'), '列表摘要', await text(page, '#bbkCard'));
+    ok((await text(page, '#bbkCard')).includes('第 1 關 · 15 題 · 身高、年齡 · 看句子找人、看圖選句子、選人：誰比較＿？'), '列表摘要', await text(page, '#bbkCard'));
     // 第二組：全選＋第 3 關
     await page.click('[data-act=bbknew]'); await page.click('[data-act=bbklv][data-k="3"]');
     ok((await page.$$eval('#bbkCard .editor [data-act=bbkd].on', e => e.length)) === 9, '換到第 3 關：全選時跟著變成 9 個特徵');
@@ -946,10 +946,20 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=bbkedit][data-k="' + i + '"]');
     ok((await text(page, '#bbkCard')).includes('Tema') && (await text(page, '#bbkCard')).includes('Próximamente'), '西文：Tema／Próximamente');
     ok(await noOverflow(page), '手機寬度不會左右滑');
+    // 6-4 討論第 1 批：題型名稱空格寫法、主觀提醒
+    ok((await text(page, '#bbkCard')).includes('Elige: ¿quién es más ＿?') && (await text(page, '#bbkCard')).includes('subjetivas'), '西文：題型名稱空格寫法、主觀提醒');
+    await page.click('[data-act=lang][data-l=tc]');
+    const tt = await text(page, '#bbkCard');
+    ok(tt.includes('選人：誰比較＿？') && !tt.includes('誰比較…'), '題型名稱改成「選人：誰比較＿？」');
+    ok((await text(page, '#bbkCard .editor .notice')).includes('有些題目比較主觀'), '主題下面有主觀提醒（淡黃色提醒框）');
+    await page.click('[data-act=bbklv][data-k="2"]');
+    const t2 = await text(page, '#bbkCard');
+    ok(t2.includes('選人：誰比 A ＿？') && t2.includes('選人：A 比誰＿？') && t2.includes('選比較詞'), '第 2 關題型名稱：選人：誰比 A ＿？／選人：A 比誰＿？／選比較詞');
+    await shot(page, 's2_bbk_labels');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3)\b/.test(ix) && (ix.match(/\?v=6-4/g) || []).length >= 10 && ix.includes('js/help.js?v=6-4'), 'index.html 的 css／js 都改成 ?v=6-4（含 help.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4)\b/.test(ix) && (ix.match(/\?v=6-5/g) || []).length >= 10 && ix.includes('js/help.js?v=6-5'), 'index.html 的 css／js 都改成 ?v=6-5（含 help.js）'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

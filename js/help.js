@@ -96,9 +96,9 @@ window.HELP = {
      [
       "題型",
       [
-       "第 1 關：看句子找人、對錯題、看圖選句子、誰比較…",
-       "第 2 關：看句子找人、看圖選句子、誰比…、…比誰、填空",
-       "第 3 關：連鎖解碼、誰最…、誰比…、…比誰、看圖選句子"
+       "第 1 關：看句子找人、對錯題、看圖選句子、選人：誰比較＿？",
+       "第 2 關：看句子找人、看圖選句子、選人：誰比 A ＿？、選人：A 比誰＿？、選比較詞",
+       "第 3 關：連鎖解碼、選人：誰最＿？、選人：誰比 A ＿？、選人：A 比誰＿？、看圖選句子"
       ]
      ],
      [
@@ -220,9 +220,9 @@ window.HELP = {
      [
       "题型",
       [
-       "第 1 关：看句子找人、对错题、看图选句子、谁比较…",
-       "第 2 关：看句子找人、看图选句子、谁比…、…比谁、填空",
-       "第 3 关：连锁解码、谁最…、谁比…、…比谁、看图选句子"
+       "第 1 关：看句子找人、对错题、看图选句子、选人：谁比较＿？",
+       "第 2 关：看句子找人、看图选句子、选人：谁比 A ＿？、选人：A 比谁＿？、选比较词",
+       "第 3 关：连锁解码、选人：谁最＿？、选人：谁比 A ＿？、选人：A 比谁＿？、看图选句子"
       ]
      ],
      [
@@ -344,9 +344,9 @@ window.HELP = {
      [
       "Tipos de pregunta",
       [
-       "Nivel 1: encuentra a la persona, verdadero o falso, elige la frase, ¿quién es más…?",
-       "Nivel 2: encuentra a la persona, elige la frase, ¿quién … que X?, X … que ¿quién?, completa la frase",
-       "Nivel 3: decodifica en cadena, ¿quién es el más…?, ¿quién … que X?, X … que ¿quién?, elige la frase"
+       "Nivel 1: encuentra a la persona, verdadero o falso, elige la frase, elige: ¿quién es más ＿?",
+       "Nivel 2: encuentra a la persona, elige la frase, elige: ¿quién es más ＿ que A?, elige: ¿A es más ＿ que quién?, elige la palabra de comparación",
+       "Nivel 3: decodifica en cadena, elige: ¿quién es el más ＿?, elige: ¿quién es más ＿ que A?, elige: ¿A es más ＿ que quién?, elige la frase"
       ]
      ],
      [
@@ -468,9 +468,9 @@ window.HELP = {
      [
       "Question types",
       [
-       "Level 1: find the person, true or false, pick the sentence, who is more…?",
-       "Level 2: find the person, pick the sentence, who … than X?, … than whom?, fill in the blank",
-       "Level 3: chain decoding, who is the most…?, who … than X?, … than whom?, pick the sentence"
+       "Level 1: find the person, true or false, pick the sentence, pick: who is more ＿?",
+       "Level 2: find the person, pick the sentence, pick: who is more ＿ than A?, pick: A is more ＿ than whom?, pick the comparison word",
+       "Level 3: chain decoding, pick: who is the most ＿?, pick: who is more ＿ than A?, pick: A is more ＿ than whom?, pick the sentence"
       ]
      ],
      [

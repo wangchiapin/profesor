@@ -319,7 +319,7 @@ function bbkEditorHtml(){
     '<div class="field"><label>' + esc(T('bbkTheme')) + '</label><div class="row" style="margin-top:0">' +
     BBK.THEMES.map(x => x[2] ? '<button class="pill sm ' + (dr.th === x[0] ? 'on' : '') + '" data-act="bbkth" data-k="' + x[0] + '">' + x[1] + ' ' + esc(T('th_' + x[0])) + '</button>'
       : '<button class="pill sm thlock" data-act="bbkthsoon" data-k="' + x[0] + '">' + x[1] + ' ' + esc(T('th_' + x[0])) + ' · 🔒 ' + esc(T('thSoon')) + '</button>').join('') + '</div>' +
-    (S.bbkThNote ? '<p class="hint">🔒 ' + esc(T('thSoonNote')) + '</p>' : '') + '</div>' +
+    (S.bbkThNote ? '<p class="hint">🔒 ' + esc(T('thSoonNote')) + '</p>' : '') + '<div class="notice">' + esc(T('bbkSubjNote')) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bbkLevel')) + '</label><div class="row" style="margin-top:0">' +
     [1, 2, 3].map(n => '<button class="pill sm ' + (dr.lv === n ? 'on' : '') + '" data-act="bbklv" data-k="' + n + '">' + n + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>' + esc(T('bbkDims')) + '</label><div class="row" style="margin-top:0">' +
@@ -533,9 +533,9 @@ let bbkLoad = null;
 function loadBbk(){
   if(!bbkLoad) bbkLoad = (async () => {
     const add = src => new Promise((res, rej) => { const el = document.createElement('script'); el.src = BBK_BASE + src; el.onload = res; el.onerror = () => rej(new Error('load ' + src)); document.head.appendChild(el); });
-    if(!window.THEME_PACK) await add('themes/people.js?v=5-4');
-    if(!window.BBK_ENGINE) await add('engine.js?v=5-4');
-    if(!window.BBK_WORKSHEET) await add('worksheet.js?v=5-4');
+    if(!window.THEME_PACK) await add('themes/people.js?v=6-5');
+    if(!window.BBK_ENGINE) await add('engine.js?v=6-5');
+    if(!window.BBK_WORKSHEET) await add('worksheet.js?v=6-5');
     return window.BBK_ENGINE(window.THEME_PACK);
   })().catch(e => { bbkLoad = null; throw e; });
   return bbkLoad;
