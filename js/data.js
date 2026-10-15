@@ -153,14 +153,14 @@ async function ensureColoresSid(items, i){
 }
 
 // ---- 比比看：老師存的範圍設定 ----
-// bbk_sets/{uid} = { items:[{id, name, lv, d, t, n, sid?}], updatedAt }   d／t 空陣列 = 全部
+// bbk_sets/{uid} = { items:[{id, name, th, lv, d, t, n, sid?}], updatedAt }   d／t 空陣列 = 全部；th = 主題（目前只有 people，步驟 6-4）
 // shared_bbk/{sid} = { owner, name, th, lv, d, t, n, updatedAt }          學生連結 ?r=<sid> 讀這份（任何人可讀）
 // 有連結碼（sid）的設定一改，shared_bbk 跟著改，已發出去的連結就會用新的範圍。
 const BBK_FREE = 3, BBK_PRO = 15;
 const bbkMax = plan => plan && plan.active ? BBK_PRO : BBK_FREE;
 function validBbk(x){ return x && typeof x.id === 'string' && [1, 2, 3].indexOf(x.lv) >= 0 && Array.isArray(x.d) && Array.isArray(x.t) && typeof x.n === 'number'; }
-const bbkItem = x => { const o = { id: x.id, name: x.name, lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n }; if(x.sid) o.sid = x.sid; return o; };
-const bbkShared = x => ({ owner: uid(), name: x.name, th: 'people', lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n, updatedAt: serverTs() });
+const bbkItem = x => { const o = { id: x.id, name: x.name, th: x.th || 'people', lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n }; if(x.sid) o.sid = x.sid; return o; };
+const bbkShared = x => ({ owner: uid(), name: x.name, th: x.th || 'people', lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n, updatedAt: serverTs() });
 async function writeBbkList(items){
   const clean = items.map(bbkItem);
   await db.collection('bbk_sets').doc(uid()).set({ items: clean, updatedAt: serverTs() });

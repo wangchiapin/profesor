@@ -316,6 +316,10 @@ function bbkEditorHtml(){
   const E = S.bbkEdit, dr = E.dr;
   let h = '<div class="editor">' +
     '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="bbkName" maxlength="40" placeholder="' + esc(T('bbkNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
+    '<div class="field"><label>' + esc(T('bbkTheme')) + '</label><div class="row" style="margin-top:0">' +
+    BBK.THEMES.map(x => x[2] ? '<button class="pill sm ' + (dr.th === x[0] ? 'on' : '') + '" data-act="bbkth" data-k="' + x[0] + '">' + x[1] + ' ' + esc(T('th_' + x[0])) + '</button>'
+      : '<button class="pill sm thlock" data-act="bbkthsoon" data-k="' + x[0] + '">' + x[1] + ' ' + esc(T('th_' + x[0])) + ' · 🔒 ' + esc(T('thSoon')) + '</button>').join('') + '</div>' +
+    (S.bbkThNote ? '<p class="hint">🔒 ' + esc(T('thSoonNote')) + '</p>' : '') + '</div>' +
     '<div class="field"><label>' + esc(T('bbkLevel')) + '</label><div class="row" style="margin-top:0">' +
     [1, 2, 3].map(n => '<button class="pill sm ' + (dr.lv === n ? 'on' : '') + '" data-act="bbklv" data-k="' + n + '">' + n + '</button>').join('') + '</div></div>' +
     '<div class="field"><label>' + esc(T('bbkDims')) + '</label><div class="row" style="margin-top:0">' +
@@ -764,7 +768,9 @@ const actions = {
   // ---- 比比看範圍 ----
   bbknew(){ S.bbkEdit = { i: -1, dr: BBK.draftFrom(null) }; S.bbkMsg = ''; render(); const el = document.getElementById('bbkName'); if(el) el.focus(); },
   bbkedit(el){ S.bbkEdit = { i: +el.dataset.k, dr: BBK.draftFrom(S.a.bbk[+el.dataset.k]) }; S.bbkMsg = ''; render(); },
-  bbkcancel(){ S.bbkEdit = null; S.bbkMsg = ''; render(); },
+  bbkcancel(){ S.bbkEdit = null; S.bbkMsg = ''; S.bbkThNote = false; render(); },
+  bbkth(el){ S.bbkEdit.dr.th = el.dataset.k; S.bbkThNote = false; render(); },
+  bbkthsoon(){ S.bbkThNote = true; render(); },
   bbklv(el){ S.bbkEdit.dr = BBK.changeLevel(S.bbkEdit.dr, +el.dataset.k); render(); },
   bbkn(el){ S.bbkEdit.dr.n = +el.dataset.k; render(); },
   bbkd(el){ toggleIn(S.bbkEdit.dr.d, el.dataset.k); render(); },
@@ -778,7 +784,7 @@ const actions = {
     if(E.i < 0 && S.a.bbk.length >= DATA.bbkMax(S.a.plan)){ S.bbkMsg = T(S.a.plan.active ? 'bbkFullPro' : 'bbkFullFree'); render(); return; }
     try{
       S.a.bbk = await DATA.saveBbkSet(S.a.bbk, E.i, Object.assign(BBK.toSet(E.dr), { name: name.slice(0, 40) }));
-      S.bbkEdit = null; S.bbkMsg = ''; render(); toast(T('saved'));
+      S.bbkEdit = null; S.bbkMsg = ''; S.bbkThNote = false; render(); toast(T('saved'));
     }catch(e){ console.error(e); S.bbkMsg = err(e); render(); }
   }); },
   bbkdel(el){ return run(async () => {

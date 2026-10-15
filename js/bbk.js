@@ -6,6 +6,8 @@
 const DIM_LV = { height: 1, age: 1, build: 1, hair: 1, eyes: 1, nose: 1, muscle: 2, tex: 2, skin: 2 };
 const POOL = { 1: ['decode', 'tf', 'pick', 'more'], 2: ['decode', 'pick', 'whobi', 'biwho', 'fill'], 3: ['chain', 'most', 'whobi', 'biwho', 'pick'] };
 const NS = [5, 10, 15, 20];
+// 主題（步驟 6-4）：目前只有人物可以選；其他「🔒 陸續開放」。以後開放時，只有訂閱老師能在中心選新主題。
+const THEMES = [['people', '👤', true], ['fruit', '🍎', false], ['animal', '🐶', false], ['action', '🏃', false]];
 const dimsOf = lv => Object.keys(DIM_LV).filter(k => DIM_LV[k] <= lv);
 const typesOf = lv => POOL[lv].slice();
 
@@ -14,7 +16,7 @@ function draftFrom(set){
   const lv = set ? set.lv : 1;
   const d = set && set.d.length ? set.d.filter(k => dimsOf(lv).indexOf(k) >= 0) : dimsOf(lv);
   const t = set && set.t.length ? set.t.filter(k => typesOf(lv).indexOf(k) >= 0) : typesOf(lv);
-  return { name: set ? set.name : '', lv, d, t, n: set && NS.indexOf(set.n) >= 0 ? set.n : 10 };
+  return { name: set ? set.name : '', th: (set && set.th) || 'people', lv, d, t, n: set && NS.indexOf(set.n) >= 0 ? set.n : 10 };
 }
 function changeLevel(dr, lv){
   const wasAllD = dimsOf(dr.lv).every(k => dr.d.indexOf(k) >= 0), wasAllT = typesOf(dr.lv).every(k => dr.t.indexOf(k) >= 0);
@@ -26,9 +28,9 @@ function changeLevel(dr, lv){
 }
 function toSet(dr){
   const d = dimsOf(dr.lv).filter(k => dr.d.indexOf(k) >= 0), t = typesOf(dr.lv).filter(k => dr.t.indexOf(k) >= 0);
-  return { name: dr.name, lv: dr.lv, d: d.length === dimsOf(dr.lv).length ? [] : d, t: t.length === typesOf(dr.lv).length ? [] : t, n: dr.n };
+  return { name: dr.name, th: dr.th || 'people', lv: dr.lv, d: d.length === dimsOf(dr.lv).length ? [] : d, t: t.length === typesOf(dr.lv).length ? [] : t, n: dr.n };
 }
 const valid = dr => dr.d.length > 0 && dr.t.length > 0;
 
-window.BBK = { DIM_LV, POOL, NS, dimsOf, typesOf, draftFrom, changeLevel, toSet, valid };
+window.BBK = { DIM_LV, POOL, NS, THEMES, dimsOf, typesOf, draftFrom, changeLevel, toSet, valid };
 })();

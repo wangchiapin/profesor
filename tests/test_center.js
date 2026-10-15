@@ -927,9 +927,29 @@ server.listen(0, 'localhost', async () => {
     global.window = {}; eval(fs.readFileSync(path.join(ROOT, 'js', 'help.js'), 'utf8')); const H = global.window.HELP;
     const all = JSON.stringify(H);
     ok(all.includes('成績會依句庫、設定組或範圍分開記錄') && all.includes('成绩会依句库、设置组或范围分开记录') && all.includes('menú «Mostrar»') && all.includes('“Show” menu'), '說明頁「看成績」補上依設定分開（四語）'); }
+  { // 6-4 比比看主題：範圍編輯器
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('[data-act=bbknew]'); await page.click('[data-act=bbknew]'); await page.waitForSelector('[data-act=bbkth]');
+    const th = await page.$$eval('[data-act=bbkth], [data-act=bbkthsoon]', b => b.map(x => [x.dataset.k, x.classList.contains('on'), x.dataset.act, x.textContent]));
+    ok(JSON.stringify(th.map(x => x[0])) === JSON.stringify(['people', 'fruit', 'animal', 'action']) && th[0][1] && th[0][2] === 'bbkth' && th.slice(1).every(x => x[2] === 'bbkthsoon' && x[3].includes('陸續開放')),
+      '編輯器有「主題」：人物已選；水果、動物、動作上鎖「陸續開放」', th);
+    await page.click('[data-act=bbkthsoon][data-k=animal]');
+    ok((await text(page, '#bbkCard')).includes('這個主題還在準備中') && !!(await page.$('[data-act=bbkth][data-k=people].on')), '點上鎖的主題：提示，主題不變');
+    await shot(page, 's1_bbk_theme');
+    await page.fill('#bbkName', '主題測試'); await page.click('[data-act=bbksave]'); await page.waitForTimeout(150);
+    let d = await db(page); const it = d.bbk_sets.u1.items.find(x => x.name === '主題測試');
+    ok(it && it.th === 'people', '存檔：範圍記下主題 people', it);
+    const i = d.bbk_sets.u1.items.indexOf(it);
+    await page.click('[data-act=bbkpractice][data-k="' + i + '"]'); await page.waitForTimeout(200);
+    d = await db(page); const sid = d.bbk_sets.u1.items[i].sid;
+    ok(sid && d.shared_bbk[sid].th === 'people', '學生連結的範圍（shared_bbk）也記下主題', sid && d.shared_bbk[sid]);
+    await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=bbkedit][data-k="' + i + '"]');
+    ok((await text(page, '#bbkCard')).includes('Tema') && (await text(page, '#bbkCard')).includes('Próximamente'), '西文：Tema／Próximamente');
+    ok(await noOverflow(page), '手機寬度不會左右滑');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2)\b/.test(ix) && (ix.match(/\?v=6-3/g) || []).length >= 10 && ix.includes('js/help.js?v=6-3'), 'index.html 的 css／js 都改成 ?v=6-3（含 help.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3)\b/.test(ix) && (ix.match(/\?v=6-4/g) || []).length >= 10 && ix.includes('js/help.js?v=6-4'), 'index.html 的 css／js 都改成 ?v=6-4（含 help.js）'); }
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);
