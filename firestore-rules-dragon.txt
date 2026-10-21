@@ -1,0 +1,52 @@
+// 墨龍飛天：要貼到 subscription-48d3c 的 Firebase 規則（Firestore → 規則）
+// 做法：不要整份覆蓋，只做下面三件事，貼完按「發布」。
+// 在「墨龍飛天」正式開放之前，不貼也不會影響其他遊戲；貼完之後才能把遊戲的 RELEASE 和老師中心的 READY 改成 true。
+
+// ─────────────────────────────────────────────
+// 1) class_scores：把原本的
+//      d.game in ['corre','colores']
+//    改成（加上 'dragon'）：
+//      d.game in ['corre','colores','dragon']
+//    （如果你的規則裡這行還有其他遊戲，保留它們，只多加 'dragon'）
+// ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────
+// 2) 新增兩段，放在 match /databases/{database}/documents { ... } 裡面，
+//    跟其他 match 並排：
+// ─────────────────────────────────────────────
+
+    // 老師自己的墨龍設定（自訂主題、練習範圍）
+    match /dragon_sets/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['themes', 'sets', 'updatedAt'])
+        && request.resource.data.themes is list && request.resource.data.themes.size() <= 3
+        && request.resource.data.sets is list && request.resource.data.sets.size() <= 15
+        // 要訂閱才能新增或修改；沒訂閱只能縮減（刪除主題或範圍）
+        && (subActive(uid)
+            || (resource != null
+                && request.resource.data.themes.size() <= resource.data.themes.size()
+                && request.resource.data.sets.size() <= resource.data.sets.size()));
+      allow delete: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 老師發給學生的「練習範圍」連結（?d=碼）：知道碼的人才讀得到，不能列出全部
+    match /shared_dragon/{sid} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update: if request.auth != null
+        && sid.matches('^[a-z0-9]{12}$')
+        && request.resource.data.owner == request.auth.uid
+        && (resource == null || resource.data.owner == request.auth.uid)
+        && request.resource.data.keys().hasOnly(['owner', 'name', 'builtin', 'custom', 'updatedAt'])
+        && request.resource.data.builtin is list && request.resource.data.builtin.size() <= 10
+        && request.resource.data.custom is list && request.resource.data.custom.size() <= 3
+        && subActive(request.auth.uid);
+      allow delete: if request.auth != null && resource.data.owner == request.auth.uid;
+    }
+
+// ─────────────────────────────────────────────
+// 3) 注意：上面用到的 subActive(uid) 是「這位老師訂閱還有效」的檢查函式。
+//    如果你現有規則裡函式名稱不同（例如 class_scores 用來檢查 owner 訂閱的那個），
+//    請改成同一個名字；原本就有的那個，直接沿用即可。
+// ─────────────────────────────────────────────

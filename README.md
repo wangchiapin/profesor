@@ -82,6 +82,15 @@
 - 句庫編輯器「從公開句庫／主題包加入」改讀新句庫：A1、A2 免費、B1 與主題包訂閱。
 - 成績冊的設定名稱：`pool-A1`→「公開句庫 A1」、`pack-food-A1`→「🎯 飲食與點餐 · A1」、舊 `pool`→「舊公開題庫（改版前）」。
 
+## 墨龍飛天：主題、練習範圍、班級連結（**尚未開放，顯示維修中**）
+
+- 狀態開關：`js/dragon.js` 的 `READY=false`；只有網址帶 `?dev=dragon`（同一個分頁會記住）才看得到完整功能，其他人在首頁、遊戲設定、班級連結、列印頁、說明頁看到的是「🔧 維修中」或完全不出現。
+- 方案：免費＝練習連結，可用 5 個內建主題（食物、動物、顏色、交通、家裡）；訂閱＝10 個內建主題＋自訂主題（最多 3 個，每個 6～40 詞）＋練習範圍（最多 15 組）＋班級連結（成績進成績冊）＋學習單 PDF。
+- 資料：`dragon_sets/{uid}` = `{ themes:[{id,name,words}], sets:[{id,name,builtin,custom,sid?}], updatedAt }`；`shared_dragon/{sid}` = `{ owner, name, builtin, custom:[{id,name,words}], updatedAt }`，學生連結（`?d=<sid>`）讀這份，範圍一改就跟著改。詞的格式 `[繁, 簡, 拼音, 西, 英]`，簡體和拼音用 opencc-js／pinyin-pro 自動產生，可手改。
+- 成績：`class_scores` 的 `game='dragon'`，`k`＝主題 id，`extra = {c: 吃對數, a: 飛行高度, wr: 錯字（最多 5 個）}`。
+- **新規則在 `firestore-rules-dragon.txt`**（`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`）。要先貼到 subscription-48d3c 的 Firebase 規則，才能開放。
+- 開放步驟：① 貼規則 ② 遊戲 `el-dragon-de-tinta/index.html` 的 `RELEASE` 改 `true`（公開頁會從 10 個主題縮成 3 個）③ 這裡 `js/dragon.js` 的 `READY` 改 `true` ④ 分享區墨龍卡片（desc、guide、訂閱比較表那一列）換成正式文字 ⑤ 用真實帳號走一遍：快速連結、班級連結、成績回傳。
+
 ## 檔案
 
 ```
@@ -91,6 +100,7 @@ js/i18n.js        四語詞條（每個詞條 = [繁, 简, es, en]）
 js/data.js        Firebase：登入、方案、班級、成績、比比看範圍
 js/bbk.js         比比看的特徵／題型清單與範圍草稿
 js/colores.js     色數的顏色、數字、設定格式與三種學習單
+js/dragon.js      墨龍飛天：主題、練習範圍、學習單（READY 開關）
 js/pubbank.js     公開句庫（A1／A2／B1、題包）的讀取
 js/corre.js       跑吧句庫編輯器、句庫 QR、學習單 PDF
 js/corre-text.js  句庫編輯器的四語文字
@@ -105,6 +115,7 @@ tests/            Playwright 測試（模擬 Firebase，不會碰真的資料庫
 ```
 npm i -D playwright && npx playwright install chromium   # 第一次
 node tests/test_center.js [截圖資料夾]
+node tests/test_dragon.js [截圖資料夾]   # 墨龍（需 CORRE_LIBS，遊戲 repo 在旁邊的 el-dragon-de-tinta）
 ```
 
 「自動產生」的測試要本機有 `opencc-js@1.4.1`、`pinyin-pro@3.20.0`（`npm i` 在這個資料夾，或用環境變數 `CORRE_LIBS` 指到有 node_modules 的資料夾）；沒有的話會自動略過那幾項。

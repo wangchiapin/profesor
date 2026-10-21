@@ -14,9 +14,10 @@ const PORTAL_URL = 'https://wangchiapin.github.io/cadadiaunosminutos-share-zone/
 const GAME_URL = {
   corre: 'https://wangchiapin.github.io/corre/',
   colores: 'https://wangchiapin.github.io/pop-colores-numeros/',
-  bbk: 'https://wangchiapin.github.io/compara-y-adivina/'
+  bbk: 'https://wangchiapin.github.io/compara-y-adivina/',
+  dragon: 'https://wangchiapin.github.io/el-dragon-de-tinta/'
 };
-const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colores, bbk: GAME_URL.bbk };
+const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colores, bbk: GAME_URL.bbk, dragon: GAME_URL.dragon };
 const MAX_CLASSES = 3;
 const PLAN_OK = ['month', 'year', 'trial', 'pro'];
 let auth = null, db = null;
@@ -60,7 +61,7 @@ async function loadAccount(user){
   const d = p.exists ? p.data() : {};
   const plan = { plan: d.plan || 'free', expiresAt: tsMs(d.expiresAt) };
   plan.active = planActive(plan);
-  const acct = { plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, bbk: [], bbkReady: true };
+  const acct = { plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true };
   try{
     const ix = await db.collection('teacher_classes').doc(user.uid).get();
     acct.cslots = ix.exists ? (ix.data().slots || {}) : {};
@@ -88,6 +89,10 @@ async function loadAccount(user){
     const bx = await db.collection('bbk_sets').doc(user.uid).get();
     acct.bbk = bx.exists ? (bx.data().items || []).filter(validBbk) : [];
   }catch(e){ console.warn('bbk sets unavailable', e); acct.bbkReady = false; }
+  try{
+    const dx = await db.collection('dragon_sets').doc(user.uid).get();
+    if(dx.exists){ const d = dx.data(); acct.dragon = { themes: Array.isArray(d.themes) ? d.themes.filter(validDragonTheme) : [], sets: Array.isArray(d.sets) ? d.sets.filter(validDragonSet) : [] }; }
+  }catch(e){ console.warn('dragon sets unavailable', e); acct.dragonReady = false; }
   return acct;
 }
 
@@ -190,6 +195,57 @@ async function ensureBbkSid(items, i){
   return writeBbkList(next);
 }
 
+// ---- 墨龍飛天：自訂主題與練習範圍（訂閱功能）----
+// dragon_sets/{uid} = { themes:[{id,name,words:[[繁,簡,拼音,西,英]]}], sets:[{id,name,builtin:[內建主題id],custom:[自訂主題id],sid?}], updatedAt }
+// shared_dragon/{sid} = { owner, name, builtin, custom:[{id,name,words}], updatedAt }   學生連結 ?d=<sid> 讀這份（任何人可讀單筆）
+// 有連結碼（sid）的範圍，只要範圍或它用到的自訂主題一改，shared_dragon 就跟著改，已發出去的連結用新內容。
+const DRAGON_THEMES_MAX = 3, DRAGON_WORDS_MAX = 40, DRAGON_WORDS_MIN = 6, DRAGON_SETS_MAX = 15;
+function validDragonTheme(x){ return x && typeof x.id === 'string' && /^c[a-z0-9]{1,31}$/.test(x.id) && typeof x.name === 'string' && Array.isArray(x.words); }
+function validDragonSet(x){ return x && typeof x.id === 'string' && typeof x.name === 'string' && Array.isArray(x.builtin) && Array.isArray(x.custom); }
+const dragonSetClean = x => { const o = { id: x.id, name: x.name, builtin: x.builtin.slice(), custom: x.custom.slice() }; if(x.sid) o.sid = x.sid; return o; };
+const dragonShared = (set, themes) => ({ owner: uid(), name: set.name, builtin: set.builtin.slice(),
+  custom: set.custom.map(id => themes.find(t => t.id === id)).filter(Boolean).map(t => ({ id: t.id, name: t.name, words: t.words })), updatedAt: serverTs() });
+// 寫入整份（自訂主題＋範圍），再把有連結碼的範圍同步到 shared_dragon
+async function writeDragon(themes, sets){
+  const cleanSets = sets.map(dragonSetClean);
+  await db.collection('dragon_sets').doc(uid()).set({ themes, sets: cleanSets, updatedAt: serverTs() });
+  await Promise.all(cleanSets.filter(x => x.sid).map(x =>
+    db.collection('shared_dragon').doc(x.sid).set(dragonShared(x, themes)).catch(e => console.warn('shared_dragon update failed', e))));
+  return { themes, sets: cleanSets };
+}
+async function saveDragonTheme(cur, i, theme){
+  const themes = cur.themes.slice();
+  if(i < 0) themes.push(Object.assign({ id: 'c' + newId(10) }, theme)); else themes[i] = Object.assign({}, themes[i], theme, { id: themes[i].id });
+  return writeDragon(themes, cur.sets);
+}
+async function deleteDragonTheme(cur, i){
+  const t = cur.themes[i]; if(!t) return cur;
+  const sets = cur.sets.map(x => Object.assign({}, x, { custom: x.custom.filter(id => id !== t.id) }));
+  return writeDragon(cur.themes.filter((_, k) => k !== i), sets);
+}
+async function saveDragonSet(cur, i, set){
+  const sets = cur.sets.slice();
+  if(i < 0) sets.push(Object.assign({ id: newId(8) }, set)); else sets[i] = Object.assign({}, cur.sets[i], set, { id: cur.sets[i].id, sid: cur.sets[i].sid });
+  return writeDragon(cur.themes, sets);
+}
+async function deleteDragonSet(cur, i){
+  const it = cur.sets[i]; if(!it) return cur;
+  if(it.sid){ try{ await db.collection('shared_dragon').doc(it.sid).delete(); }catch(e){ console.warn('shared_dragon delete failed', e); } }
+  return writeDragon(cur.themes, cur.sets.filter((_, k) => k !== i));
+}
+async function ensureDragonSid(cur, i){
+  const it = cur.sets[i]; if(!it) return cur;
+  if(it.sid) return cur;
+  const sid = newId(12);
+  const sets = cur.sets.map((x, k) => k === i ? Object.assign({}, x, { sid }) : x);
+  await db.collection('shared_dragon').doc(sid).set(dragonShared(sets[i], cur.themes));
+  return writeDragon(cur.themes, sets);
+}
+// 內建主題練習連結（?th=，不用存資料庫）；範圍連結（?d=）；班級連結（?class=，可再帶 &d=）
+const linkDragonQuick = ids => GAME_URL.dragon + '?th=' + ids.join('-');
+const linkDragonSet = sid => GAME_URL.dragon + '?d=' + sid;
+const linkDragon = (cid, sid) => GAME_URL.dragon + '?class=' + cid + (sid ? '&d=' + sid : '');
+
 // ---- 色數：設定組（teacher_configs/{uid}.items[{id,cfg,sid?}]），格式與遊戲教師區完全相同 ----
 async function writeColoresList(items){
   const clean = items.map(x => { const o = { id: x.id, cfg: x.cfg }; if(x.sid) o.sid = x.sid; return o; });
@@ -281,5 +337,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

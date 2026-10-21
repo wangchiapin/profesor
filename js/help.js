@@ -13,6 +13,7 @@ window.HELP = {
    "📚 跑吧",
    "🎨 色數",
    "📐 比比看",
+   "🐉 墨龍飛天",
    "訂閱"
   ],
   "sections": [
@@ -116,6 +117,24 @@ window.HELP = {
     ]
    },
    {
+    "id": "hDragon",
+    "h": "🐉 墨龍飛天：主題與練習範圍",
+    "intro": "學生玩墨龍飛天時，只會吃你選的主題裡的字。免費和訂閱開放的主題不一樣。",
+    "items": [
+     "<b>內建主題（10 個）</b>：食物、水果、動物、顏色、交通、身體、衣服、職業、天氣、家裡",
+     "<b>誰能用哪些主題</b>：公開頁面只開放食物、動物、顏色；免費老師的練習連結可以再加交通、家裡，共 5 個；訂閱老師 10 個主題全開",
+     "<b>自訂主題</b>（訂閱）：最多 3 個，每個 6～40 個詞。一行一個詞，可以直接寫「機場，aeropuerto，airport」；簡體、拼音和翻譯會自動產生，產生後也可以自己修改。",
+     "<b>練習範圍</b>（訂閱）：把內建主題和自訂主題組成一組，最多 15 組，再產生連結給學生。",
+     "<b>連結</b>：練習連結（免費）不記成績；班級連結（訂閱）請學生輸入暱稱，成績（分數、吃對幾個、飛行高度、常吃錯的字）會自動回到成績冊。",
+     "<b>學習單</b>（訂閱）：單字表、配對練習和答案頁，可選繁體或簡體，以及西文或英文輔助。"
+    ],
+    "note": "改了自訂主題的單字，已經傳出去的練習範圍連結會自動換成新單字。",
+    "plan": [
+     "5 個內建主題的練習連結",
+     "10 個內建主題、3 個自訂主題、15 組練習範圍、班級連結、學習單"
+    ]
+   },
+   {
     "id": "hSub",
     "h": "訂閱後還可以",
     "items": [
@@ -138,6 +157,7 @@ window.HELP = {
    "📚 跑吧",
    "🎨 色数",
    "📐 比比看",
+   "🐉 墨龙飞天",
    "订阅"
   ],
   "sections": [
@@ -241,6 +261,24 @@ window.HELP = {
     ]
    },
    {
+    "id": "hDragon",
+    "h": "🐉 墨龙飞天：主题与练习范围",
+    "intro": "学生玩墨龙飞天时，只会吃你选的主题里的字。免费和订阅开放的主题不一样。",
+    "items": [
+     "<b>内建主题（10 个）</b>：食物、水果、动物、颜色、交通、身体、衣服、职业、天气、家里",
+     "<b>谁能用哪些主题</b>：公开页面只开放食物、动物、颜色；免费老师的练习连结可以再加交通、家里，共 5 个；订阅老师 10 个主题全开",
+     "<b>自定义主题</b>（订阅）：最多 3 个，每个 6～40 个词。一行一个词，可以直接写「机场，aeropuerto，airport」；简体、拼音和翻译会自动产生，产生后也可以自己修改。",
+     "<b>练习范围</b>（订阅）：把内建主题和自定义主题组成一组，最多 15 组，再产生连结给学生。",
+     "<b>连结</b>：练习连结（免费）不记成绩；班级连结（订阅）请学生输入暱称，成绩（分数、吃对几个、飞行高度、常吃错的字）会自动回到成绩册。",
+     "<b>学习单</b>（订阅）：单字表、配对练习和答案页，可选繁体或简体，以及西文或英文辅助。"
+    ],
+    "note": "改了自定义主题的单字，已经传出去的练习范围连结会自动换成新单字。",
+    "plan": [
+     "5 个内建主题的练习连结",
+     "10 个内建主题、3 个自定义主题、15 组练习范围、班级连结、学习单"
+    ]
+   },
+   {
     "id": "hSub",
     "h": "订阅后还可以",
     "items": [
@@ -263,6 +301,7 @@ window.HELP = {
    "📚 Corre",
    "🎨 Pop Colores",
    "📐 Compara",
+   "🐉 Dragón de tinta",
    "Suscripción"
   ],
   "sections": [
@@ -366,6 +405,24 @@ window.HELP = {
     ]
    },
    {
+    "id": "hDragon",
+    "h": "🐉 El dragón de tinta: temas y rangos de práctica",
+    "intro": "En este juego el alumno solo come las palabras de los temas que tú elijas. Los temas disponibles cambian entre gratis y suscripción.",
+    "items": [
+     "<b>Temas incluidos (10)</b>: comida, fruta, animales, colores, transporte, cuerpo, ropa, profesiones, clima y casa",
+     "<b>Quién puede usar qué</b>: la página pública solo ofrece comida, animales y colores; con un profesor gratuito, el enlace de práctica puede añadir transporte y casa (5 en total); con suscripción están los 10 temas",
+     "<b>Temas propios</b> (suscripción): hasta 3, de 6 a 40 palabras cada uno. Escribe una palabra por línea, por ejemplo «機場，aeropuerto，airport»; el chino simplificado, el pinyin y las traducciones se generan solos y puedes corregirlos.",
+     "<b>Rangos de práctica</b> (suscripción): combina temas incluidos y propios en un grupo (hasta 15) y genera el enlace para tus alumnos.",
+     "<b>Enlaces</b>: el enlace de práctica (gratis) no guarda notas; el enlace de clase (suscripción) pide un apodo y envía solo las notas (puntos, aciertos, altura y palabras falladas) al libro de notas.",
+     "<b>Fichas</b> (suscripción): lista de palabras, ejercicio de emparejar y hoja de respuestas; con chino tradicional o simplificado y ayuda en español o inglés."
+    ],
+    "note": "Si cambias las palabras de un tema propio, los enlaces de rango que ya enviaste se actualizan solos.",
+    "plan": [
+     "Enlace de práctica con 5 temas incluidos",
+     "10 temas incluidos, 3 propios, 15 rangos, enlace de clase y fichas"
+    ]
+   },
+   {
     "id": "hSub",
     "h": "Con la suscripción, además",
     "items": [
@@ -388,6 +445,7 @@ window.HELP = {
    "📚 Run Hanzi",
    "🎨 Pop Colors",
    "📐 Compare",
+   "🐉 Ink Dragon",
    "Subscription"
   ],
   "sections": [
@@ -488,6 +546,24 @@ window.HELP = {
     "plan": [
      "3",
      "15"
+    ]
+   },
+   {
+    "id": "hDragon",
+    "h": "🐉 Ink Dragon: themes and practice sets",
+    "intro": "In this game students only eat words from the themes you choose. Free and subscription teachers get different themes.",
+    "items": [
+     "<b>Built-in themes (10)</b>: food, fruit, animals, colors, transport, body, clothes, jobs, weather and home",
+     "<b>Who gets which themes</b>: the public page offers only food, animals and colors; a free teacher's practice link can add transport and home (5 in all); subscribers get all 10",
+     "<b>Custom themes</b> (subscription): up to 3, with 6–40 words each. Type one word per line, for example \"機場，aeropuerto，airport\"; simplified Chinese, pinyin and translations are generated for you and you can edit them.",
+     "<b>Practice sets</b> (subscription): combine built-in and custom themes into a set (up to 15) and make a link for your students.",
+     "<b>Links</b>: a practice link (free) does not record scores; a class link (subscription) asks for a nickname and sends the results (score, correct count, altitude, commonly missed words) to the gradebook.",
+     "<b>Worksheets</b> (subscription): word list, matching exercise and answer page, in traditional or simplified Chinese with Spanish or English help."
+    ],
+    "note": "If you change the words of a custom theme, practice-set links you already sent update automatically.",
+    "plan": [
+     "Practice link with 5 built-in themes",
+     "10 built-in themes, 3 custom themes, 15 practice sets, class links and worksheets"
     ]
    },
    {

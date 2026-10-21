@@ -33,6 +33,10 @@ function detailOf(game, r){
     const diff = ex.diff && I18N.D['diff_' + ex.diff] ? T('diff_' + ex.diff) : (ex.diff || '');
     return ex.sent != null ? T('detailCorre', { n: ex.sent, diff }).replace(/ · $/, '') : diff;
   }
+  if(game === 'dragon'){
+    if(ex.c == null) return '';
+    return T('detailDragon', { n: ex.c, a: ex.a || 0 }) + (Array.isArray(ex.wr) && ex.wr.length ? ' · ' + T('dragonWrongTag', { w: ex.wr.join(' ') }) : '');
+  }
   if(ex.secs == null) return '';
   return T('detailColores', { time: mmss(+ex.secs), cleared: ex.cleared ? T('clearedTag') : '' });
 }

@@ -733,13 +733,13 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('#correCard'); await vshot(page, 'n0a_settings_top');
     ok((await text(page, '.nav')).includes('學習單') && !(await text(page, '.nav')).includes('列印'), '上方選單：「列印」改名「學習單」');
     const jb = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k + ':' + x.innerText));
-    ok(jb.join('|') === 'correCard:📚 跑吧句庫|pubCard:🔗 公開句庫連結|bbkCard:📐 比比看範圍|colCard:🎨 色數設定', '遊戲設定頁：四個快速按鈕', jb);
+    ok(jb.join('|') === 'correCard:📚 跑吧句庫|pubCard:🔗 公開句庫連結|bbkCard:📐 比比看範圍|colCard:🎨 色數設定|dragonCard:🐉 墨龍主題', '遊戲設定頁：五個快速按鈕', jb);
     await page.click('.jump [data-k=colCard]'); await page.waitForTimeout(700);
     ok(await page.evaluate(() => { const t = document.getElementById('colCard').getBoundingClientRect().top; return window.scrollY > 0 && t >= 0 && t < window.innerHeight / 2; }), '按「色數設定」捲到色數卡片');
     await vshot(page, 'n0b_settings_jumped');
     await page.evaluate(() => window.__profesor.go('print')); await page.waitForSelector('#wsCard');
     const jp = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k));
-    ok(jp.join() === 'cwsCard,wsCard,bbkWsCard' && await page.$('#bbkWsCard') !== null, '學習單頁：三個快速按鈕', jp);
+    ok(jp.join() === 'cwsCard,wsCard,bbkWsCard,dragonWsCard' && await page.$('#bbkWsCard') !== null, '學習單頁：四個快速按鈕', jp);
     ok(!(await text(page, '#app')).includes('之後會搬到這裡') && !(await text(page, '#app')).includes('老師設定'), '學習單頁：不再叫老師去遊戲裡做練習紙');
     ok((await text(page, 'h2')) === '學習單', '學習單頁標題');
     // 意見回饋

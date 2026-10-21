@@ -50,6 +50,29 @@
       if(!ok) deny();
       return;
     }
+    // 墨龍：照 firestore-rules-dragon.txt 的重點模擬（自訂主題最多 3 個、範圍最多 15 個；要訂閱中才能寫；shared_dragon 只有本人能改）
+    if(c === 'dragon_sets'){
+      if(!user || user.uid !== id) deny();
+      const p = col(pid, 'site_plans')[id], pro = !!(p && p.expiresAt > NOW());
+      const before = col(pid, c)[id], nSets = data.sets.length, nTh = data.themes.length;
+      const okQuota = nTh <= 3 && nSets <= 15;
+      if(!okQuota || !(pro || (before && nSets <= before.sets.length && nTh <= before.themes.length))) deny();
+      return;
+    }
+    if(c === 'shared_dragon'){
+      if(!user || data.owner !== user.uid) deny();
+      const old = col(pid, c)[id]; if(old && old.owner !== user.uid) deny();
+      if(!old && !/^[a-z0-9]{12}$/.test(id)) deny();
+      if(Object.keys(data).sort().join() !== ['builtin','custom','name','owner','updatedAt'].join()) deny();
+      if(data.custom.length > 3 || data.builtin.length > 10 || !(data.name.length >= 1 && data.name.length <= 40)) deny();
+      return;
+    }
+    if(c === 'class_scores' && data.game === 'dragon'){
+      const cls = col(pid, 'classes')[data.cid]; if(!cls || cls.owner !== data.owner) deny();
+      const p = col(pid, 'site_plans')[data.owner]; if(!p || !(p.expiresAt > NOW())) deny();
+      if(id !== data.cid + '_dragon_' + data.k + '_' + data.h || !/^[a-z0-9]{1,32}$/.test(data.k)) deny();
+      return;
+    }
     if(c !== 'class_plays') return;
     const d = data, keys = Object.keys(d).sort().join();
     if(keys !== ['at','cid','game','h','lv','max','nick','owner','qs','rg','score','th'].sort().join()) deny();

@@ -5,8 +5,11 @@ const T = (k, p) => I18N.t(k, p);
 const esc = BOOKS.esc;
 const app = document.getElementById('app');
 const GAMES = ['corre', 'colores', 'bbk'];
-const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk' };
-const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc' };
+const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon' };
+const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc' };
+const DR = window.DRAGON;
+const bookGames = () => DR.ready() ? GAMES.concat(['dragon']) : GAMES;     // 成績冊的遊戲分頁（墨龍正式開放前不顯示）
+const maintBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>：' + esc(T('maintNote')) + '</div>';
 
 const S = {
   authSeen: false, user: null, acct: '', msg: '', a: null,          // a = loadAccount 的結果
@@ -14,6 +17,7 @@ const S = {
   game: 'corre', days: 0, tab: 'stu', sel: null,
   scores: [], scoresState: '', plays: [], playsState: '', msg2: '',
   correSrc: 'L:A1', correLv: '', pubSrc: 'L:A1', pubLv: '', colCfg: '', bbkSel: '', busy: false, setK: '',     // setK = 成績冊只看哪個設定（'' = 全部）
+  dragonSel: '', dragonEdit: null, dragonSetEdit: null, dragonMsg: '', dragonQuick: ['food', 'animal', 'color'], dws: null,   // 墨龍：班級連結選的範圍、自訂主題／範圍編輯、快速連結勾的主題、學習單選項
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
@@ -92,13 +96,13 @@ async function onRoute(){
   lastHash = location.hash;
   S.route = r.route; S.cur = r.cur;
   if(S.route === 'class'){
-    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = '';
+    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = '';
     render(); window.scrollTo(0, 0);
     if(S.acct === 'ok' && classOf(S.cur)) await loadBook();
     return;
   }
   if(classesRedirect()) return;
-  if(S.route !== 'settings'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; }
+  if(S.route !== 'settings'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = ''; }
   if(S.route !== 'print') S.wsSheet = null;
   render(); window.scrollTo(0, 0);
 }
@@ -172,10 +176,14 @@ function homeHtml(){
     '<div class="kv"><span>' + esc(T('usageClasses')) + '</span><b>' + nCls + ' / ' + DATA.MAX_CLASSES + '</b></div>' +
     '<div class="kv"><span>' + esc(T('usageCorre')) + '</span><b>' + (A.extrasReady ? A.banks.length + ' / ' + banksMax : '–') + '</b></div>' +
     '<div class="kv"><span>' + esc(T('usageColores')) + '</span><b>' + (A.extrasReady ? A.configs.length + ' / ' + cfgMax : '–') + '</b></div>' +
-    '<div class="kv"><span>' + esc(T('usageBbk')) + '</span><b>' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–') + '</b></div></div>';
+    '<div class="kv"><span>' + esc(T('usageBbk')) + '</span><b>' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–') + '</b></div>' +
+    (DR.ready() ? '<div class="kv"><span>' + esc(T('usageDragonThemes')) + '</span><b>' + (A.dragonReady ? A.dragon.themes.length + ' / ' + DATA.DRAGON_THEMES_MAX : '–') + '</b></div>' +
+      '<div class="kv"><span>' + esc(T('usageDragonSets')) + '</span><b>' + (A.dragonReady ? A.dragon.sets.length + ' / ' + DATA.DRAGON_SETS_MAX : '–') + '</b></div>' : '') + '</div>';
   const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3>' + GAMES.map(g =>
     '<div class="kv" style="align-items:center"><span><b>' + esc(T(GAME_KEY[g])) + '</b><br><small>' + esc(T(GAME_DESC[g])) + '</small></span>' +
-    '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>').join('') + '</div>';
+    '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>').join('') +
+    '<div class="kv" style="align-items:center"><span><b>' + esc(T('gameDragon')) + '</b><br><small>' + esc(T('gameDragonDesc')) + '</small></span>' +
+    (DR.ready() ? '<a class="pill sm" href="' + DATA.GAME_URL.dragon + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a>' : '<span class="badge">🔧 ' + esc(T('maint')) + '</span>') + '</div></div>';
   return plan + usage + games;
 }
 // 班級頁最上面的分頁：每班一個（顯示班名），最後是「＋ 建立班級」（還沒滿 3 班才有）
@@ -248,7 +256,19 @@ function linkCardHtml(game){
   const c = classOf(S.cur), A = S.a;
   let h = '<div class="link"><h3>' + esc(T(GAME_KEY[game])) + '</h3>';
   let url = '';
-  if(game === 'corre'){
+  if(game === 'dragon'){
+    if(!DR.ready()) return h + maintBox() + '</div>';
+    if(!A.dragonReady) return h + '<p class="hint">' + esc(T('bbkUnavailable')) + '</p></div>';
+    const D = A.dragon;
+    h += '<div class="field"><label>' + esc(T('dragonRangeLabel')) + '</label><select data-sel="dragonsel"><option value="">' + esc(T('dragonRangeAll')) + '</option>' +
+      D.sets.map((it, i) => '<option value="' + i + '" ' + (S.dragonSel === String(i) ? 'selected' : '') + '>🐉 ' + esc(it.name) + '</option>').join('') + '</select></div>';
+    const it = S.dragonSel !== '' ? D.sets[+S.dragonSel] : null;
+    if(it){
+      h += '<p class="hint">' + esc(DR.setSummary(it, D.themes)) + '</p>';
+      if(!it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="dragonmake">🔗 ' + esc(T('makeLink')) + '</button></div>' + (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
+    }else if(!D.sets.length) h += '<p class="hint">' + esc(T('dragonNoSets')) + '</p>';
+    url = DATA.linkDragon(c.cid, it ? it.sid : '');
+  }else if(game === 'corre'){
     ensurePacks();
     S.correSrc = srcCur(S.correSrc);
     h += srcFieldsHtml('corre', S.correSrc, S.correLv, true);
@@ -298,6 +318,7 @@ function setLabel(game, k){
     if(k === 'link') return T('setOldLink');
     const it = (A.configs || []).find(x => x.sid === k); return it ? '🎨 ' + ((it.cfg && it.cfg.name) || '#') : T('setDeleted');
   }
+  if(game === 'dragon'){ const l = DR.themeLabel(k, (A.dragon || {}).themes); return l ? '🐉 ' + l : T('setDeleted'); }
   if(k === 'normal') return T('rangeNormal');
   if(k === 'other') return T('setOther');
   const it = (A.bbk || []).find(x => x.sid === k); return it ? '📐 ' + it.name : T('setDeleted');
@@ -311,7 +332,7 @@ function setPickHtml(g, keys, sk){
 function bookHtml(){
   const g = S.game;
   let h = '<h3>' + esc(T('resultsTitle')) + '</h3><div class="row">' +
-    GAMES.map(x => '<button class="pill sm ' + (g === x ? 'on' : '') + '" data-act="game" data-g="' + x + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>';
+    bookGames().map(x => '<button class="pill sm ' + (g === x ? 'on' : '') + '" data-act="game" data-g="' + x + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>';
   const state = g === 'bbk' ? S.playsState : S.scoresState;
   if(state === 'loading' || state === '') return h + '<p class="hint">' + esc(T('loading')) + '</p>';
   if(state === 'error') return h + '<div class="err">' + esc(S.msg2) + '</div><div class="row"><button class="pill" data-act="refresh">' + esc(T('retry')) + '</button></div>';
@@ -343,7 +364,7 @@ function classHtml(){
     '<div class="row"><button class="pill sm" data-act="classdelete">🗑 ' + esc(T('deleteClass')) + '</button></div>' +
     (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
   h += '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T('linksHint')) + '</p>' +
-    '<div class="notice alert">⚠️ ' + esc(T('linksNick')) + '</div>' + GAMES.map(linkCardHtml).join('') + '</div>';
+    '<div class="notice alert">⚠️ ' + esc(T('linksNick')) + '</div>' + GAMES.concat(['dragon']).map(linkCardHtml).join('') + '</div>';
   h += '<div class="card" id="bookCard">' + bookHtml() + '</div>';
   return h;
 }
@@ -504,6 +525,74 @@ function pubCardHtml(){
   if(!A.plan.active) h += '<div class="notice">' + esc(T('pubFreeNote')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
   return h + '<p class="hint">' + esc(T('pubPracticeHint')) + '</p></div>';
 }
+// ---- 墨龍飛天：快速練習連結、自訂主題、練習範圍 ----
+const lockedNote = () => '<div class="notice">🔒 ' + esc(T('dragonSubOnly')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
+function dragonThemeEditorHtml(){
+  const E = S.dragonEdit, dr = E.dr;
+  let h = '<div class="editor"><div class="field"><label>' + esc(T('dragonThemeName')) + '</label><input type="text" id="dgName" maxlength="12" placeholder="' + esc(T('dragonThemeNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
+    '<div class="field"><label>' + esc(T('dragonWordsLabel')) + '</label><textarea id="dgText" rows="8" placeholder="' + esc(T('dragonWordsPh')) + '">' + esc(dr.text) + '</textarea><p class="hint">' + esc(T('dragonTextHint', { min: DR.MIN_W, max: DR.MAX_W })) + '</p></div>' +
+    '<div class="row"><button class="pill sm" data-act="dggen" ' + (S.busy ? 'disabled' : '') + '>⚙️ ' + esc(T(dr.rows ? 'dragonRegen' : 'dragonGen')) + '</button></div>';
+  if(dr.rows){
+    h += '<p class="hint">' + esc(T('dragonRowsHint')) + '</p><div class="tablewrap"><table class="t nw dgt"><tr><th>' + [T('dragonColTrad'), T('dragonColSimp'), T('dragonColPy'), 'ES', 'EN', ''].map(esc).join('</th><th>') + '</th></tr>' +
+      dr.rows.map((r, i) => '<tr><td><b>' + esc(r.t) + '</b></td>' + ['s', 'p', 'es', 'en'].map(f => '<td><input type="text" data-dgr="' + i + '" data-f="' + f + '" maxlength="60" value="' + esc(r[f]) + '"></td>').join('') +
+        '<td><button class="x" data-act="dgrowdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></td></tr>').join('') + '</table></div>';
+  }
+  if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
+  return h + '<div class="row"><button class="pill fill sm" data-act="dgsave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dgcancel">' + esc(T('cancel')) + '</button></div></div>';
+}
+function dragonSetEditorHtml(){
+  const E = S.dragonSetEdit, dr = E.dr, D = S.a.dragon;
+  let h = '<div class="editor"><div class="field"><label>' + esc(T('dragonSetName')) + '</label><input type="text" id="dsName" maxlength="40" placeholder="' + esc(T('dragonSetNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
+    '<div class="field"><label>' + esc(T('dragonSetPick')) + '</label><div class="row" style="margin-top:0">' +
+    DR.IDS.map(id => chip(dr.builtin.indexOf(id) >= 0, DR.builtinName(id), 'dsb', id)).join('') +
+    D.themes.map(t => chip(dr.custom.indexOf(t.id) >= 0, '★ ' + t.name, 'dsc', t.id)).join('') + '</div></div>';
+  if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
+  return h + '<div class="row"><button class="pill fill sm" data-act="dssave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dscancel">' + esc(T('cancel')) + '</button></div></div>';
+}
+function dragonCardHtml(){
+  let h = '<div class="card" id="dragonCard"><h3>🐉 ' + esc(T('dragonTitle')) + '</h3>';
+  if(!DR.ready()) return h + maintBox() + '</div>';
+  const A = S.a, P = A.plan, D = A.dragon, E = S.dragonEdit, SE = S.dragonSetEdit;
+  h += '<p class="hint">' + esc(T('dragonHint')) + '</p>';
+  if(!A.dragonReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  // 1. 快速練習連結（內建主題，不用存資料；不收成績）
+  const sel = S.dragonQuick.filter(id => P.active || DR.isFreeId(id)), url = sel.length ? DATA.linkDragonQuick(sel) : '';
+  h += '<h4>' + esc(T('dragonQuickTitle')) + '</h4><p class="hint">' + esc(T(P.active ? 'dragonQuickHintPro' : 'dragonQuickHintFree')) + '</p><div class="row" style="margin-top:0">' +
+    DR.IDS.map(id => (P.active || DR.isFreeId(id)) ? chip(sel.indexOf(id) >= 0, DR.builtinName(id), 'dqk', id)
+      : '<button class="pill sm chip lockbtn" data-act="needsub">🔒 ' + esc(DR.builtinName(id)) + '</button>').join('') + '</div>';
+  h += url ? '<div class="url" data-url="dragon">' + esc(url) + '</div><div class="row"><button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
+    '<button class="pill sm" data-act="dragonqr" data-url="' + esc(url) + '">' + esc(T('qr')) + '</button><a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>'
+    : '<p class="hint">' + esc(T('dragonQuickNone')) + '</p>';
+  // 2. 自訂主題（訂閱）
+  h += '<h4>' + esc(T('dragonCustomTitle')) + '</h4>';
+  if(!P.active){ h += lockedNote(); }
+  else{
+    h += '<p class="hint">' + esc(T('dragonCustomHint', { max: DR.MAX_W })) + ' <b>' + esc(T('bbkQuota', { n: D.themes.length, max: DR.MAX_T })) + '</b></p>';
+    D.themes.forEach((t, i) => {
+      if(E && E.i === i){ h += dragonThemeEditorHtml(); return; }
+      h += '<div class="setrow"><div><b>★ ' + esc(t.name) + '</b><small>' + esc(T('dragonWordCount', { n: t.words.length })) + '</small></div><div class="row">' +
+        '<button class="pill sm" data-act="dgedit" data-k="' + i + '">' + esc(T('edit')) + '</button><button class="pill sm" data-act="dgdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+    });
+    if(E && E.i < 0) h += dragonThemeEditorHtml();
+    else if(!E && D.themes.length < DR.MAX_T) h += '<div class="row"><button class="pill fill sm" data-act="dgnew">＋ ' + esc(T('dragonThemeNew')) + '</button></div>';
+    else if(!E) h += '<div class="notice">' + esc(T('dragonThemeFull')) + '</div>';
+    // 3. 練習範圍（訂閱）：選好主題，產生固定的連結，也能放進班級連結
+    h += '<h4>' + esc(T('dragonSetsTitle')) + '</h4><p class="hint">' + esc(T('dragonSetsHint')) + ' <b>' + esc(T('bbkQuota', { n: D.sets.length, max: DR.MAX_SETS })) + '</b></p>';
+    D.sets.forEach((it, i) => {
+      if(SE && SE.i === i){ h += dragonSetEditorHtml(); return; }
+      h += '<div class="setrow"><div><b>🐉 ' + esc(it.name) + '</b><small>' + esc(DR.setSummary(it, D.themes)) + '</small></div><div class="row">' +
+        '<button class="pill sm" data-act="dsedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
+        '<button class="pill sm" data-act="dspractice" data-k="' + i + '">🔗 ' + esc(T('bbkPractice')) + '</button>' +
+        (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkDragonSet(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '') +
+        '<button class="pill sm" data-act="dsdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+    });
+    if(SE && SE.i < 0) h += dragonSetEditorHtml();
+    else if(!SE && D.sets.length < DR.MAX_SETS) h += '<div class="row"><button class="pill fill sm" data-act="dsnew">＋ ' + esc(T('dragonSetNew')) + '</button></div>';
+    else if(!SE) h += '<div class="notice">' + esc(T('bbkFullPro')) + '</div>';
+  }
+  if(S.dragonMsg && !E && !SE) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
+  return h + '<p class="hint">' + esc(T('dragonPracticeHint')) + '</p></div>';
+}
 function bankRouteHtml(){
   const why = CORRE.open(S.a, +S.cur);
   if(!why) return '<div id="correEd"></div>';
@@ -513,7 +602,7 @@ function bankRouteHtml(){
 function settingsHtml(){
   return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' +
     '<div class="row"><button class="pill fill" data-act="nav" data-r="help">' + esc(helpLang().btn) + '</button></div>' +
-    jumpHtml([['correCard', 'jumpCorre'], ['pubCard', 'jumpPub'], ['bbkCard', 'jumpBbk'], ['colCard', 'jumpColores']]) + correCardHtml() + pubCardHtml() + bbkCardHtml() + colCardHtml();
+    jumpHtml([['correCard', 'jumpCorre'], ['pubCard', 'jumpPub'], ['bbkCard', 'jumpBbk'], ['colCard', 'jumpColores'], ['dragonCard', 'jumpDragon']]) + correCardHtml() + pubCardHtml() + bbkCardHtml() + colCardHtml() + dragonCardHtml();
 }
 // ---- 遊戲設定說明（#/help）：內容在 js/help.js（靜態文字，四種語言）----
 function helpLang(){ const H = window.HELP || {}; return H[I18N.getLang()] || H.tc || { btn: '', sections: [], jump: [] }; }
@@ -529,10 +618,12 @@ function helpHtml(){
     (x.note ? '<div class="notice">' + x.note + '</div>' : '') +
     (x.plan ? '<div class="hplan"><div><span class="badge">' + esc(H.free) + '</span><span>' + esc(x.plan[0]) + '</span></div><div><span class="badge pro">' + esc(H.pro) + '</span><span>' + esc(x.plan[1]) + '</span></div></div>' : '') +
     '</div>';
+  // 墨龍還沒開放時，說明裡先不出現墨龍那一段
+  const secs = H.sections.map((x, i) => ({ x, j: H.jump[i] })).filter(o => o.x.id !== 'hDragon' || DR.ready());
   return '<div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(H.back) + '</button></div>' +
     '<h2>' + esc(H.title) + '</h2><p class="hint">' + esc(H.intro) + '</p>' +
-    '<div class="jump">' + H.sections.map((x, i) => '<button class="pill sm" data-act="jump" data-k="' + x.id + '">' + esc(H.jump[i] || x.h) + '</button>').join('') + '</div>' +
-    H.sections.map(sec).join('');
+    '<div class="jump">' + secs.map(o => '<button class="pill sm" data-act="jump" data-k="' + o.x.id + '">' + esc(o.j || o.x.h) + '</button>').join('') + '</div>' +
+    secs.map(o => sec(o.x)).join('');
 }
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
@@ -641,10 +732,30 @@ async function bwsMake(){
   S.wsSheet = window.BBK_WORKSHEET(E, qs, { range, title: rg.name, simp: W.simp, lang: W.lang, phon: W.phon, answers: W.answers, base: BBK_BASE });
   render(); window.scrollTo(0, 0);
 }
+// ---- 列印：墨龍飛天詞表學習單 PDF ----
+function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, busy: false, msg: '', ok: false }; }
+function dwsFormHtml(){
+  let h = '<div class="card" id="dragonWsCard"><h3>🐉 ' + esc(T('gameDragon')) + '</h3>';
+  if(!DR.ready()) return h + maintBox() + '</div>';
+  const A = S.a, W = S.dws || (S.dws = dwsDefaults());
+  h += '<p class="hint">' + esc(T('dragonWsHint')) + '</p>';
+  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
+  const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
+  const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
+  h += '<div class="field"><label>' + esc(T('dragonWsThemes')) + '</label><div class="row" style="margin-top:0">' +
+    DR.IDS.map(id => chip(W.sel.indexOf(id) >= 0, DR.builtinName(id), 'dwst', id)).join('') + A.dragon.themes.map(t => chip(W.sel.indexOf(t.id) >= 0, '★ ' + t.name, 'dwst', t.id)).join('') + '</div></div>' +
+    '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('dwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('dwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
+    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'dwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'dwszy') + '</div>' +
+    '<div class="row">' + (W.lang === 'zh' ? '' : chipB(W.match, T('dragonWsMatch'), 'dwsmatch') + (W.match ? chipB(W.answers, T('wsAnswersOpt'), 'dwsans') : '')) + '</div></div>' +
+    '<div class="row"><button class="pill fill" data-act="dwsmake" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
+    (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
+  return h + '</div>';
+}
 function printHtml(){
   if(S.wsSheet) return wsSheetHtml();
   return '<h2>' + esc(T('printTitle')) + '</h2><p class="hint">' + esc(T('printHint')) + '</p>' +
-    jumpHtml([['cwsCard', 'jumpCorreWs'], ['wsCard', 'jumpColoresWs'], ['bbkWsCard', 'jumpBbkWs']]) + cwsFormHtml() + wsFormHtml() + bwsFormHtml();
+    jumpHtml([['cwsCard', 'jumpCorreWs'], ['wsCard', 'jumpColoresWs'], ['bbkWsCard', 'jumpBbkWs'], ['dragonWsCard', 'jumpDragonWs']]) + cwsFormHtml() + wsFormHtml() + bwsFormHtml() + dwsFormHtml();
 }
 function bodyHtml(){
   if(S.acct === 'loading' || S.acct === '') return '<p class="hint center">' + esc(T('loading')) + '</p>';
@@ -939,6 +1050,90 @@ const actions = {
     }catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
     render();
   }); },
+  // ---- 墨龍：快速連結、自訂主題、範圍、學習單 ----
+  dqk(el){ toggleIn(S.dragonQuick, el.dataset.k); render(); },
+  dragonqr(el){ qrModal(qrCanvas(el.dataset.url), T('gameDragon'), 'dragon-qr.png', el.dataset.url); },
+  dgnew(){ if(S.a.dragon.themes.length >= DR.MAX_T) return; S.dragonEdit = { i: -1, dr: DR.draftFrom(null) }; S.dragonMsg = ''; render(); const el = document.getElementById('dgName'); if(el) el.focus(); },
+  dgedit(el){ const t = S.a.dragon.themes[+el.dataset.k]; S.dragonEdit = { i: +el.dataset.k, dr: DR.draftFrom(t) }; S.dragonMsg = ''; render(); },
+  dgcancel(){ S.dragonEdit = null; S.dragonMsg = ''; render(); },
+  dgrowdel(el){ const dr = S.dragonEdit.dr; dr.rows.splice(+el.dataset.k, 1); dr.text = dr.rows.map(r => [r.t, r.es, r.en].join('，').replace(/[，]+$/, '')).join('\n'); render(); },
+  dggen(){ return run(async () => {
+    const dr = S.dragonEdit && S.dragonEdit.dr; if(!dr) return;
+    S.dragonMsg = T('dragonGenerating'); render();
+    let r;
+    try{ r = await DR.generate(dr); }catch(e){ console.error(e); r = { err: T('dragonGenFail') }; }
+    if(r.err){ S.dragonMsg = r.err; render(); return; }
+    dr.rows = r.rows; S.dragonMsg = ''; render();
+  }); },
+  dgsave(){ return run(async () => {
+    const E = S.dragonEdit; if(!E) return;
+    const bad = DR.draftValid(E.dr); if(bad){ S.dragonMsg = bad; render(); return; }
+    if(E.i < 0 && S.a.dragon.themes.length >= DR.MAX_T){ S.dragonMsg = T('dragonThemeFull'); render(); return; }
+    try{ S.a.dragon = await DATA.saveDragonTheme(S.a.dragon, E.i, DR.toTheme(E.dr)); S.dragonEdit = null; S.dragonMsg = ''; render(); toast(T('saved')); }
+    catch(e){ console.error(e); S.dragonMsg = err(e); render(); }
+  }); },
+  dgdel(el){ return run(async () => {
+    const i = +el.dataset.k, t = S.a.dragon.themes[i]; if(!t || !confirm(T('dragonConfirmDelTheme', { name: t.name }))) return;
+    try{ S.a.dragon = await DATA.deleteDragonTheme(S.a.dragon, i); S.dragonMsg = ''; if(S.dws) S.dws.sel = S.dws.sel.filter(id => id !== t.id); }
+    catch(e){ console.error(e); S.dragonMsg = err(e); }
+    render();
+  }); },
+  dsnew(){ S.dragonSetEdit = { i: -1, dr: { name: '', builtin: [], custom: [] } }; S.dragonMsg = ''; render(); const el = document.getElementById('dsName'); if(el) el.focus(); },
+  dsedit(el){ const it = S.a.dragon.sets[+el.dataset.k]; S.dragonSetEdit = { i: +el.dataset.k, dr: { name: it.name, builtin: it.builtin.slice(), custom: it.custom.slice() } }; S.dragonMsg = ''; render(); },
+  dscancel(){ S.dragonSetEdit = null; S.dragonMsg = ''; render(); },
+  dsb(el){ toggleIn(S.dragonSetEdit.dr.builtin, el.dataset.k); render(); },
+  dsc(el){ toggleIn(S.dragonSetEdit.dr.custom, el.dataset.k); render(); },
+  dssave(){ return run(async () => {
+    const E = S.dragonSetEdit; if(!E) return;
+    if(!E.dr.builtin.length && !E.dr.custom.length){ S.dragonMsg = T('dragonSetNeedPick'); render(); return; }
+    if(E.i < 0 && S.a.dragon.sets.length >= DR.MAX_SETS){ S.dragonMsg = T('bbkFullPro'); render(); return; }
+    const name = (E.dr.name || '').trim() || T('dragonSetDefault', { n: E.i < 0 ? S.a.dragon.sets.length + 1 : E.i + 1 });
+    const order = DR.IDS.filter(id => E.dr.builtin.indexOf(id) >= 0);
+    try{ S.a.dragon = await DATA.saveDragonSet(S.a.dragon, E.i, { name: name.slice(0, 40), builtin: order, custom: E.dr.custom.slice() }); S.dragonSetEdit = null; S.dragonMsg = ''; render(); toast(T('saved')); }
+    catch(e){ console.error(e); S.dragonMsg = err(e); render(); }
+  }); },
+  dsdel(el){ return run(async () => {
+    const i = +el.dataset.k, it = S.a.dragon.sets[i]; if(!it || !confirm(T('dragonConfirmDelSet', { name: it.name }))) return;
+    try{ S.a.dragon = await DATA.deleteDragonSet(S.a.dragon, i); S.dragonMsg = ''; S.dragonSel = ''; }
+    catch(e){ console.error(e); S.dragonMsg = err(e); }
+    render();
+  }); },
+  dspractice(el){ return run(async () => {
+    const i = +el.dataset.k;
+    try{ S.a.dragon = await DATA.ensureDragonSid(S.a.dragon, i); S.dragonMsg = ''; render(); await copyText(DATA.linkDragonSet(S.a.dragon.sets[i].sid)); }
+    catch(e){ console.error(e); S.dragonMsg = T('configFail', { m: err(e) }); render(); }
+  }); },
+  dragonmake(){ return run(async () => {
+    try{ S.a.dragon = await DATA.ensureDragonSid(S.a.dragon, +S.dragonSel); S.msg = ''; }
+    catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
+    render();
+  }); },
+  dwst(el){ toggleIn(S.dws.sel, el.dataset.k); S.dws.msg = ''; render(); },
+  dwssimp(el){ S.dws.simp = el.dataset.k === '1'; render(); },
+  dwslang(el){ S.dws.lang = el.dataset.k; render(); },
+  dwspy(){ S.dws.pinyin = !S.dws.pinyin; render(); },
+  dwszy(){ S.dws.zhuyin = !S.dws.zhuyin; render(); },
+  dwsmatch(){ S.dws.match = !S.dws.match; render(); },
+  dwsans(){ S.dws.answers = !S.dws.answers; render(); },
+  async dwsmake(){
+    const W = S.dws; if(!W || W.busy || !W.sel.length || !S.a.plan.active || !DR.ready()) return;
+    W.busy = true; W.msg = ''; render();
+    try{
+      let built = null;
+      if(W.sel.some(id => DR.IDS.indexOf(id) >= 0)){
+        try{ built = await DR.loadBuiltin(); }catch(e){ console.error(e); throw new Error(T('dragonLibFail')); }
+      }
+      const themes = W.sel.map(id => {
+        if(DR.IDS.indexOf(id) >= 0){ const b = (built || []).find(x => x.id === id); return b ? { name: DR.builtinName(id), words: b.words } : null; }
+        const t = S.a.dragon.themes.find(x => x.id === id); return t ? { name: t.name, words: t.words } : null;
+      }).filter(Boolean);
+      if(!themes.length) throw new Error(T('dragonLibFail'));
+      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, match: W.match, answers: W.answers, count: 10 });
+      saveBlob(r.blob, 'dragon-worksheet.pdf');
+      W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;
+    }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
+    W.busy = false; render();
+  },
   game(el){ S.game = el.dataset.g; S.sel = null; S.setK = ''; render(); },
   days(el){ S.days = +el.dataset.d; render(); },
   tab(el){ S.tab = el.dataset.tab; render(); },
@@ -987,6 +1182,7 @@ document.addEventListener('change', e => {
     } }
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
+  if(s.dataset.sel === 'dragonsel'){ S.dragonSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'setk'){ S.setK = s.value; S.sel = null; }
   if(s.dataset.sel === 'wscfg') S.ws.cfg = s.value;
   if(s.dataset.sel === 'bwssel'){
@@ -1002,6 +1198,13 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('input', e => {
   if(e.target.id === 'bbkName' && S.bbkEdit) S.bbkEdit.dr.name = e.target.value;
+  if(S.dragonEdit){
+    const dr = S.dragonEdit.dr;
+    if(e.target.id === 'dgName') dr.name = e.target.value;
+    if(e.target.id === 'dgText') dr.text = e.target.value;
+    if(e.target.dataset && e.target.dataset.dgr != null && dr.rows && dr.rows[+e.target.dataset.dgr]) dr.rows[+e.target.dataset.dgr][e.target.dataset.f] = e.target.value;
+  }
+  if(e.target.id === 'dsName' && S.dragonSetEdit) S.dragonSetEdit.dr.name = e.target.value;
   if(S.colEdit){
     if(e.target.id === 'colName') S.colEdit.dr.name = e.target.value;
     if(e.target.id === 'colList') S.colEdit.dr.list = e.target.value;
