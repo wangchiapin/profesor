@@ -161,9 +161,7 @@ function headerHtml(){
     (S.user ? '<div class="langs"><button class="pill xs" data-act="feedback">' + esc(T('fbBtn')) + '</button><button class="pill xs" data-act="logout">' + esc(T('logout')) + '</button></div>' : '') + '</div></div>';
 }
 function navHtml(){
-  const items = [['home', 'navHome'], ['classes', 'navClasses']];
-  const cur = (S.route === 'class' || S.route === 'classes') ? 'classes' : 'home';
-  return '<div class="nav">' + items.map(i => '<button class="pill ' + (cur === i[0] ? 'on' : '') + '" data-act="nav" data-r="' + i[0] + '">' + esc(T(i[1])) + '</button>').join('') + '</div>';
+  return '<div class="nav"><button class="pill sm" data-act="nav" data-r="home">← ' + esc(T('navHome')) + '</button></div>';
 }
 function loginHtml(){
   return '<div class="card center"><h2>' + esc(T('appTitle')) + '</h2><p class="hint">' + esc(T('loginHint')) + '</p>' +

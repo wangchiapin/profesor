@@ -572,7 +572,7 @@ server.listen(0, 'localhost', async () => {
     // 建立第 2 個句庫
     await page.click('#correCard [data-act=bankedit][data-k="1"]'); await page.waitForSelector('#ce-sent');
     ok(await page.evaluate(() => location.hash) === '#/bank/1', '網址 #/bank/1');
-    ok((await text(page, '.nav')).length > 0 && await page.$eval('.nav .pill.on', b => b.dataset.r) === 'home', '句庫編輯頁：上方「首頁」亮著');
+    ok((await text(page, '.nav')).includes('首頁'), '句庫編輯頁：上方有「← 首頁」');
     ok((await text(page)).includes('(0 / 80)'), '訂閱：每庫 80 句');
     if(LIBS){
       await page.fill('#ce-sent', '我 不 要 一 個 蘋果');
@@ -757,7 +757,7 @@ server.listen(0, 'localhost', async () => {
   console.log('\n[N] 步驟 5-1：學習單改名、快速跳轉、建議訂閱、意見回饋、干擾字');
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/corre/content' });
     await page.waitForSelector('#correCard'); await vshot(page, 'n0a_settings_top');
-    ok((await page.$$eval('.nav [data-act=nav]', b => b.map(x => x.dataset.r))).join() === 'home,classes', '上方選單只剩「首頁」「班級」');
+    ok((await page.$$eval('.nav [data-act=nav]', b => b.map(x => x.dataset.r + ':' + x.textContent.trim()))).join() === 'home:← 首頁', '遊戲頁上方只有「← 首頁」；首頁沒有選單');
     const tabs = await page.$$eval('.gtabs [data-act=gtab]', b => b.map(x => x.dataset.t + ':' + x.innerText));
     ok(tabs.join('|') === 'content:📚 句庫|links:連結|scores:成績|sheet:學習單|help:說明'.replace('📚 句庫', tabs[0].split(':')[1]), '遊戲頁分頁：內容｜連結｜成績｜學習單｜說明', tabs);
     ok((await page.$$eval('.gsw [data-act=togame]', b => b.map(x => x.dataset.g))).join() === 'corre,colores,bbk,dragon', '遊戲切換：四款');
@@ -1078,7 +1078,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8)\b/.test(ix) && (ix.match(/\?v=7-9/g) || []).length >= 11 && ix.includes('js/help.js?v=7-9') && ix.includes('js/pubbank.js?v=7-9'), 'index.html 的 css／js 都改成 ?v=7-9（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9)\b/.test(ix) && (ix.match(/\?v=7-10/g) || []).length >= 11 && ix.includes('js/help.js?v=7-10') && ix.includes('js/pubbank.js?v=7-10'), 'index.html 的 css／js 都改成 ?v=7-10（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
