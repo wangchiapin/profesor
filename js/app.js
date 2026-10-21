@@ -655,7 +655,8 @@ function gameHtml(){
   const g = S.g;
   ensureCls();
   let h = '<div class="ctabs gsw">' + GAME_IDS.map(x => '<button class="pill ' + (g === x ? 'on' : '') + '" data-act="togame" data-g="' + x + '" data-t="' + S.gt + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>' +
-    '<div class="gtitle"><a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">▶ ' + esc(T('openGame')) + '</a></div>';
+    '<div class="card ghead"><div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small></div>' +
+    '<div class="row" style="margin:0"><a class="pill fill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">▶ ' + esc(T('openGame')) + '</a></div></div></div>';
   if(g === 'dragon' && !DR.ready()) return h + maintBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]], ['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]].map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';

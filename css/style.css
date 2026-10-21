@@ -281,3 +281,35 @@ details.hsec[open]>summary::after{content:"－"}
 details.hsec[open]>summary{margin-bottom:8px}
 
 .backhome{border:0;background:none;padding:0;font:inherit;font-size:1.5rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
+
+/* ---- 手機版：遊戲管理頁照主頁的樣子排（左邊名稱＋說明、右邊主要按鈕；次要按鈕排第二行）---- */
+.ghead{padding:6px 16px;margin:6px 0 4px}
+.ghead .grow{border-bottom:0}
+@media (max-width:600px){
+  #app{padding:10px 12px 56px}
+  /* 遊戲切換：四顆平均排滿一行 */
+  .gsw{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;overflow:visible}
+  .gsw .pill{padding:4px 2px;font-size:.8rem;min-height:38px;white-space:normal;line-height:1.2;text-align:center}
+  /* 標題列：跟主頁的遊戲列一樣 */
+  .ghead{padding:0 14px}
+  .ghead .pill{padding:4px 12px}
+  /* 分頁：五個平均排滿一行，第一個（句庫／設定組…）寬一點 */
+  .gtabs{gap:4px;overflow-x:auto}
+  .gtabs .pill{flex:1 1 0;min-width:0;padding:4px 2px;font-size:.8rem;min-height:38px;white-space:normal;line-height:1.2;text-align:center}
+  .gtabs .pill:first-child{flex:1.7 1 0}
+  /* 項目列（句庫、設定組、範圍、主題）：第一行名稱＋編輯，第二行其他按鈕 */
+  .setrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:center;padding:10px 12px}
+  .setrow>div:first-child{grid-column:1 / 4;grid-row:1;min-width:0}
+  .setrow>.row{display:contents}
+  .setrow>.row>.pill:first-child{grid-column:4;grid-row:1;justify-self:end;background:var(--brown);color:#fff;padding:4px 16px}
+  .setrow>.row>.pill:not(:first-child){grid-row:auto;min-width:0;min-height:36px;padding:4px 1px;gap:3px;font-size:.74rem;white-space:normal;line-height:1.2;text-align:center}
+  .setrow>.row>.pill:first-child:only-child{grid-column:4}
+  /* 表格：字和間距縮小 */
+  table.t{font-size:.82rem}
+  table.t th{font-size:.8rem;padding:6px 6px}
+  table.t td{padding:7px 6px}
+  .tablewrap{margin:8px -4px}
+  table.t.dgt input[type=text]{min-width:84px;min-height:36px;padding:4px 8px;font-size:.9rem}
+  .card{padding:14px}
+  .card>h2:first-child,.card>h3:first-child{margin:-14px -14px 10px;padding:10px 14px;font-size:1.1rem}
+}
