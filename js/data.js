@@ -246,7 +246,20 @@ async function deleteCorreBank(bslots, slot, sid){
 function linkCorrePractice(sid){ return GAME_URL.corre + '?bank=' + sid; }
 
 // ---- 學生連結 ----
-function linkCorre(cid, bankSid){ return GAME_URL.corre + '?class=' + cid + (bankSid ? '&bank=' + bankSid : ''); }
+// 跑吧班級連結：o = { bank } 老師句庫｜{ pack, level? } 題包（可再指定等級）｜{ level } 公開句庫某等級（沒給＝A1）
+function linkCorre(cid, o){
+  o = typeof o === 'string' ? { bank: o } : (o || {});
+  const u = GAME_URL.corre + '?class=' + cid;
+  if(o.bank) return u + '&bank=' + o.bank;
+  if(o.pack) return u + '&pack=' + o.pack + (o.level ? '&level=' + o.level : '');
+  return u + '&level=' + (o.level || 'A1');
+}
+// 公開句庫練習連結（不收成績）：公開頁本來就只有 A1／A2；B1、題包用隱藏參數
+function linkCorrePublic(o){
+  o = o || {};
+  if(o.pack) return GAME_URL.corre + '?pack=' + o.pack + (o.level ? '&level=' + o.level : '');
+  return GAME_URL.corre + '?level=' + (o.level || 'A1');
+}
 function linkColores(cid, sid){ return GAME_URL.colores + '?c=' + sid + '&class=' + cid; }
 function linkBbk(cid, sid){ return GAME_URL.bbk + '?' + (sid ? 'r=' + sid + '&' : '') + 'class=' + cid; }
 function linkBbkPractice(sid){ return GAME_URL.bbk + '?r=' + sid; }
@@ -268,5 +281,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

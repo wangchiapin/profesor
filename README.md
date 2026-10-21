@@ -24,14 +24,14 @@
 |---|---|
 | `site_members/{uid}`、`site_plans/{uid}` | 會員、方案（`month`／`year`／`trial`／`pro` 且 `expiresAt` 還沒到才算訂閱） |
 | `teacher_classes/{uid}`、`classes/{cid}` | 班級（三款共用，最多 3 班） |
-| `class_scores/{cid}_{game}_{k}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生×每個設定一筆；`k`＝句庫碼（公開題庫 `pool`）／設定碼（舊式連結 `link`）（步驟 6-2，規則見 `firestore-rules-step6-2.txt`） |
+| `class_scores/{cid}_{game}_{k}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生×每個設定一筆；`k`＝設定名稱：跑吧（公開句庫 `pool-A1`／`pool-A2`／`pool-B1`、題包 `pack-<代碼>` 或 `pack-<代碼>-<等級>`、老師句庫＝句庫碼；改版前的舊公開題庫 `pool`）／色數（設定碼；舊式連結 `link`）（步驟 6-2，規則見 `firestore-rules-step6-2.txt`） |
 | `class_plays/{自動 id}` | 比比看每回合每題的紀錄；`r`＝範圍碼（一般模式 `''`），成績冊依它分開 |
 | `teacher_banks`、`shared_banks` | 跑吧句庫（步驟 4 起在中心編輯） |
 | `teacher_configs`、`shared_configs` | 色數設定組（讀；沒有連結碼時，照色數教師區的做法寫入連結碼） |
 
 學生連結格式：
 
-- 跑吧：`corre/?class=<班級碼>`，可加 `&bank=<句庫碼>`
+- 跑吧：`corre/?class=<班級碼>&level=A1`（A1／A2／B1）、`&pack=<題包代碼>`（可再加 `&level=`）、或 `&bank=<句庫碼>`（老師自己的句庫）。沒指定等級的舊連結，遊戲會當作 A1
 - 色數：`pop-colores-numeros/?c=<設定碼>&class=<班級碼>`（只有 `?class=` 不會進班級模式，一定要帶設定碼）
 - 比比看：`compara-y-adivina/?class=<班級碼>`（一般模式）或 `compara-y-adivina/?r=<範圍碼>&class=<班級碼>`（老師範圍）
 - 比比看練習連結（不收成績）：`compara-y-adivina/?r=<範圍碼>`
@@ -73,6 +73,15 @@
 - 跑吧句庫：每一句可以選填「干擾字」（訂閱功能，最多 5 個、每個 1～4 字），存成 `sentences[].decoy`（繁）和 `decoySimp`（自動轉簡）。既有規則不檢查句子內的欄位，所以不用改句庫規則。遊戲讀取干擾字在步驟 5-2 做。
   - 注意：舊的 `corre/teacher/` 頁存檔時會把干擾字拿掉；步驟 5-2 會把它改成自動跳到中心。
 
+## 公開句庫與題包（步驟 7）
+
+- 跑吧！漢字網站（`corre/bank/`）有 `A1.json`、`A2.json`、`B1.json`（每個等級一個檔）和 `packs.json`（題包規則）。老師中心用 `js/pubbank.js` 直接讀這些靜態檔，不用 Firebase。
+- **免費版：A1、A2；訂閱版：再加 B1 和主題包。只擋入口**（連結產生器、挑句子的畫面）：免費版選 B1／題包會跳「建議訂閱」，選項維持原樣。檔案本身是公開的。
+- 班級頁的跑吧連結「題目來源」：公開句庫 A1／A2／B1、主題包（可再限定等級）、我的句庫。
+- 「遊戲設定」頁的「公開句庫練習連結」：選等級或題包 → 複製連結、QR code、試玩（不收成績，不進公開排行榜）。
+- 句庫編輯器「從公開句庫／主題包加入」改讀新句庫：A1、A2 免費、B1 與主題包訂閱。
+- 成績冊的設定名稱：`pool-A1`→「公開句庫 A1」、`pack-food-A1`→「🎯 飲食與點餐 · A1」、舊 `pool`→「舊公開題庫（改版前）」。
+
 ## 檔案
 
 ```
@@ -82,6 +91,7 @@ js/i18n.js        四語詞條（每個詞條 = [繁, 简, es, en]）
 js/data.js        Firebase：登入、方案、班級、成績、比比看範圍
 js/bbk.js         比比看的特徵／題型清單與範圍草稿
 js/colores.js     色數的顏色、數字、設定格式與三種學習單
+js/pubbank.js     公開句庫（A1／A2／B1、題包）的讀取
 js/corre.js       跑吧句庫編輯器、句庫 QR、學習單 PDF
 js/corre-text.js  句庫編輯器的四語文字
 js/books.js       成績簿表格與比比看常錯統計（只產生 HTML）

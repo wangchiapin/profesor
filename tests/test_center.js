@@ -8,6 +8,7 @@ let pass = 0, fail = 0;
 function ok(c, name, extra){ if(c){ pass++; console.log('  ✓', name); } else { fail++; console.log('  ✗', name, extra !== undefined ? '→ ' + JSON.stringify(extra) : ''); } }
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css', '.webp': 'image/webp' };
 // 比比看的學習單會讀遊戲那邊的 engine.js／worksheet.js／人物圖：/compara-y-adivina/ 對到旁邊的資料夾（或用 BBK_DIR 指定）
+const CORRE_DIR = process.env.CORRE_DIR || path.join(ROOT, '..', 'corre');
 const BBK_DIR = process.env.BBK_DIR || path.join(ROOT, '..', 'compara-y-adivina');
 const server = http.createServer((req, res) => {
   const url = decodeURIComponent(req.url.split('?')[0]);
@@ -74,6 +75,8 @@ async function open(browser, { seedOpt, user = TEACH, ls = {}, hash = '' } = {})
     if(LIBS && u.includes('cdn.jsdelivr.net/npm/opencc-js')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.opencc });
     if(LIBS && u.includes('cdn.jsdelivr.net/npm/pinyin-pro')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.pinyin });
     if(u.includes('api.mymemory.translated.net')){ const q = new URL(u).searchParams; return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ responseData: { translatedText: '[' + q.get('langpair').slice(-2) + '] ' + q.get('q') } }) }); }
+    { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/corre\/bank\/([A-Za-z0-9]+\.json)$/);   // 公開句庫：讀本機 corre 資料夾（CORRE_DIR 可指定）
+      if(m){ const f = path.join(CORRE_DIR, 'bank', m[1]); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: 'no' }); } }
     return r.abort();
   });
   await page.addInitScript(`window.__SEED=${JSON.stringify(seed(seedOpt))};window.__USER=${JSON.stringify(user)};window.__GOOGLE=${JSON.stringify(TEACH)};` +
@@ -191,8 +194,15 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('.link'); await page.waitForSelector('table.t');
     const urls = () => page.$$eval('.url', e => e.map(x => x.textContent));
     let u = await urls();
-    ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID, '跑吧：公開題庫連結', u);
-    await page.selectOption('[data-sel=correbank]', 'bank00001111'); u = await urls();
+    ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&level=A1', '跑吧：預設公開句庫 A1', u);
+    await page.waitForFunction(() => document.querySelector('[data-sel=corresrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
+    await page.selectOption('[data-sel=corresrc]', 'L:B1'); u = await urls();
+    ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&level=B1', '跑吧：訂閱版可選 B1 → &level=B1', u);
+    await page.selectOption('[data-sel=corresrc]', 'P:food'); u = await urls();
+    ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&pack=food', '跑吧：選題包 → &pack=food', u);
+    await page.selectOption('[data-sel=correlv]', 'A1'); u = await urls();
+    ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&pack=food&level=A1', '跑吧：題包限定等級 → &pack=food&level=A1', u);
+    await page.selectOption('[data-sel=corresrc]', 'B:bank00001111'); u = await urls();
     ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&bank=bank00001111', '跑吧：選句庫後帶 &bank=', u);
     ok(u.length === 2 && u[1] === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID, '比比看連結（色數還沒選設定組不顯示）', u);
     await page.selectOption('[data-sel=colcfg]', '0'); u = await urls();
@@ -228,7 +238,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('table.t');
     let rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
     ok(rows[0].startsWith('暱稱 最高分 次數 詳細 最近'), '欄位：暱稱｜最高分｜次數｜詳細｜最近', rows[0]);
-    ok(rows.length === 3 && rows[1].startsWith('Ana 公開題庫（一般句子） 900 3 12 句 · 普通') && rows[2].startsWith('Beto 📚 點飲料 400 5 6 句 · 困難'), '跑吧：依最高分排序、詳細=句數·難度、別的老師不出現', rows);
+    ok(rows.length === 3 && rows[1].startsWith('Ana 舊公開題庫（改版前） 900 3 12 句 · 普通') && rows[2].startsWith('Beto 📚 點飲料 400 5 6 句 · 困難'), '跑吧：依最高分排序、詳細=句數·難度、別的老師不出現', rows);
     ok(!(await text(page)).includes('別人老師的學生') && !(await text(page)).includes('Zoe'), '別的班、別人的學生不出現');
     await shot(page, 'f1_corre');
     await page.click('[data-act=days][data-d="30"]'); rows = await page.$$eval('table.t tr', t => t.length);
@@ -564,17 +574,19 @@ server.listen(0, 'localhost', async () => {
     // 公開題庫
     await page.click('[data-pick=pool]'); await page.waitForSelector('#ce-pickList label');
     const n0 = (await page.$$('#ce-pickList label')).length;
-    ok(n0 === 20, '公開題庫一次載入 20 句', n0);
-    await page.click('#ce-pickMore'); await page.waitForTimeout(100);
-    ok((await page.$$('#ce-pickList label')).length === 30, '「載入更多」到 30 句（全部）');
-    await page.fill('#ce-pickFilter', 'Tengo 3'); await page.waitForTimeout(50);
+    ok(n0 === 100, '公開句庫 A1：一次顯示 100 句', n0);
+    await page.selectOption('#ce-lvlSel', 'B1'); await page.waitForTimeout(300);
+    ok((await page.$$('#ce-pickList label')).length === 100 && (await text(page, '#ce-pickList')).includes('Tengo') === false, '訂閱版可切到 B1（100 句）');
+    await page.selectOption('#ce-lvlSel', 'A1'); await page.waitForTimeout(100);
+    const A1 = JSON.parse(fs.readFileSync(path.join(CORRE_DIR, 'bank', 'A1.json'), 'utf8')).sentences;
+    await page.fill('#ce-pickFilter', 'Hoy hace muy buen tiempo'); await page.waitForTimeout(50);
     const shown = await page.$$eval('#ce-pickList label', l => l.length);
-    ok(shown === 1, '關鍵字篩選', shown);
+    ok(shown === A1.filter(x => x.es.toLowerCase().includes('hoy hace muy buen tiempo')).length && shown >= 1, '關鍵字篩選', shown);
     await page.check('#ce-pickList label input'); await page.click('#ce-pickAdd');
     ok((await text(page, '#ce-pickSt')).includes('已加入 1 句'), '從公開題庫加入 1 句');
     // 主題包
     await page.click('[data-pick=pack]'); await page.waitForSelector('#ce-packSel option', { state: 'attached' });
-    ok((await page.$eval('#ce-packSel', s => s.options[0].textContent)).includes('食物'), '主題包名稱');
+    ok((await page.$eval('#ce-packSel', s => s.options[0].textContent)).includes('飲食與點餐'), '主題包名稱（新句庫的題包）');
     await page.click('#ce-pickAll');
     ok((await text(page, '#ce-pickSt')).includes('已加入'), '主題包整包加入');
     // 切語言：句子和還沒加入的輸入都要留著
@@ -615,8 +627,9 @@ server.listen(0, 'localhost', async () => {
     t = await text(page, '#correCard');
     ok(t.includes('第二課（改）') && t.includes('已用 2 / 5 個句庫'), '回到卡片：新句庫出現');
     // 班級頁的題目來源
-    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('[data-sel=correbank]');
-    ok((await page.$$eval('[data-sel=correbank] option', o => o.map(x => x.textContent))).some(x => x.includes('第二課（改）')), '班級連結的題目來源有新句庫');
+    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('[data-sel=corresrc]');
+    ok((await page.$$eval('[data-sel=corresrc] option', o => o.map(x => x.textContent))).some(x => x.includes('第二課（改）')), '班級連結的題目來源有新句庫');
+    ok((await page.$$eval('[data-sel=corresrc] optgroup', g => g.map(x => x.label))).join('|') === '公開句庫|主題包（訂閱）|我的句庫', '來源選單分三組：公開句庫、主題包、我的句庫');
     // 列印：學習單 PDF
     await page.click('[data-act=nav][data-r=print]'); await page.waitForSelector('#cwsCard');
     await page.selectOption('[data-sel=cwsbank]', '1');
@@ -634,6 +647,45 @@ server.listen(0, 'localhost', async () => {
     ok(!d.shared_banks[sid] && !d.teacher_banks.u1.slots['1'] && d.teacher_banks.u1.slots['0'] === 'bank00001111', '刪除：句庫和位置都移除');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
+  { // 免費老師：班級連結與公開句庫連結只能選 A1、A2（B1、題包跳「建議訂閱」）
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/class/0' });
+    await page.waitForSelector('.link');
+    await page.waitForFunction(() => document.querySelector('[data-sel=corresrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
+    const url0 = () => page.$eval('.url', e => e.textContent);
+    ok((await page.$$eval('[data-sel=corresrc] option', o => o.map(x => x.textContent))).slice(0, 3).join('|') === '公開句庫 A1|公開句庫 A2|🔒 公開句庫 B1', '免費：班級連結來源 B1 有鎖頭');
+    await page.selectOption('[data-sel=corresrc]', 'L:B1'); await page.waitForSelector('.modal.sub');
+    ok(await page.$eval('[data-sel=corresrc]', s => s.value) === 'L:A1' && (await url0()).endsWith('&level=A1'), '免費：選 B1 → 建議訂閱，連結維持 A1');
+    await page.click('.modal.sub [data-m=close]');
+    await page.selectOption('[data-sel=corresrc]', 'P:food'); await page.waitForSelector('.modal.sub');
+    ok(await page.$eval('[data-sel=corresrc]', s => s.value) === 'L:A1', '免費：選題包 → 建議訂閱');
+    await page.click('.modal.sub [data-m=close]');
+    await page.selectOption('[data-sel=corresrc]', 'L:A2');
+    ok((await url0()).endsWith('?class=' + CID + '&level=A2'), '免費：A2 可以，連結 &level=A2', await url0());
+    await page.$eval('#linksCard', e => e.scrollIntoView()); await vshot(page, 'p2_free_links');
+    await page.goto(BASE + '/index.html#/settings'); await page.waitForSelector('#pubCard');
+    await page.waitForFunction(() => document.querySelector('#pubCard [data-sel=pubsrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
+    ok(await page.$eval('#pubCard .url', e => e.textContent) === 'https://wangchiapin.github.io/corre/?level=A1' && (await text(page, '#pubCard')).includes('免費版可以用 A1、A2'), '免費：公開句庫練習連結預設 A1，並說明 B1／題包要訂閱');
+    await page.selectOption('#pubCard [data-sel=pubsrc]', 'L:A2');
+    ok(await page.$eval('#pubCard .url', e => e.textContent) === 'https://wangchiapin.github.io/corre/?level=A2', '免費：公開句庫連結 A2');
+    await page.selectOption('#pubCard [data-sel=pubsrc]', 'P:time'); await page.waitForSelector('.modal.sub');
+    ok(await page.$eval('#pubCard .url', e => e.textContent).then(x => !x.includes('pack')), '免費：公開句庫連結選題包 → 建議訂閱');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  { // 訂閱老師：公開句庫練習連結（B1、題包、題包＋等級）
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('#pubCard');
+    await page.waitForFunction(() => document.querySelector('#pubCard [data-sel=pubsrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
+    const u = () => page.$eval('#pubCard .url', e => e.textContent);
+    await page.selectOption('#pubCard [data-sel=pubsrc]', 'L:B1');
+    ok(await u() === 'https://wangchiapin.github.io/corre/?level=B1', '訂閱：公開句庫連結 B1');
+    await page.selectOption('#pubCard [data-sel=pubsrc]', 'P:compare');
+    ok(await u() === 'https://wangchiapin.github.io/corre/?pack=compare', '訂閱：題包連結 ?pack=compare', await u());
+    await page.selectOption('#pubCard [data-sel=publv]', 'A2');
+    ok(await u() === 'https://wangchiapin.github.io/corre/?pack=compare&level=A2', '訂閱：題包＋等級 ?pack=compare&level=A2', await u());
+    ok(((await page.$$eval('#pubCard [data-sel=pubsrc] option', o => o.length))) === 3 + 9, '來源選單：3 個等級 + 9 個題包');
+    await page.$eval('#pubCard', e => e.scrollIntoView()); await vshot(page, 'p1_pubcard');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
   { // 免費老師
     const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
     await page.waitForSelector('#correCard');
@@ -645,6 +697,13 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page)).includes('(2 / 50)'), '免費：第 1 庫上限 50');
     await page.click('[data-pick=pack]'); await page.waitForSelector('#ce-pickList .notice');
     ok((await text(page, '#ce-pickList')).includes('主題包是訂閱版功能'), '免費：主題包上鎖');
+    await page.click('[data-pick=pool]'); await page.waitForSelector('#ce-pickList label');
+    ok((await page.$$('#ce-pickList label')).length === 100 && (await page.$$eval('#ce-lvlSel option', o => o.map(x => x.textContent).join(','))) === 'A1,A2,🔒 B1', '免費：公開句庫 A1 可用，B1 有鎖頭');
+    await page.selectOption('#ce-lvlSel', 'B1'); await page.waitForSelector('.modal.sub');
+    ok(await page.$eval('#ce-lvlSel', s => s.value) === 'A1', '免費：選 B1 跳「建議訂閱」，等級維持 A1');
+    await page.click('.modal.sub [data-m=close]');
+    await page.selectOption('#ce-lvlSel', 'A2'); await page.waitForTimeout(300);
+    ok((await page.$$('#ce-pickList label')).length === 100 && !(await page.$('.modal.sub')), '免費：A2 可以選');
     await page.click('[data-act=nav][data-r=print]'); await page.waitForSelector('#cwsCard');   // 沒改東西，不會問
     ok((await text(page, '#cwsCard')).includes('學習單是訂閱功能') && !(await page.$('[data-act=cwsmake]')), '免費：學習單上鎖');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
@@ -674,7 +733,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('#correCard'); await vshot(page, 'n0a_settings_top');
     ok((await text(page, '.nav')).includes('學習單') && !(await text(page, '.nav')).includes('列印'), '上方選單：「列印」改名「學習單」');
     const jb = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k + ':' + x.innerText));
-    ok(jb.join('|') === 'correCard:📚 跑吧句庫|bbkCard:📐 比比看範圍|colCard:🎨 色數設定', '遊戲設定頁：三個快速按鈕', jb);
+    ok(jb.join('|') === 'correCard:📚 跑吧句庫|pubCard:🔗 公開句庫連結|bbkCard:📐 比比看範圍|colCard:🎨 色數設定', '遊戲設定頁：四個快速按鈕', jb);
     await page.click('.jump [data-k=colCard]'); await page.waitForTimeout(700);
     ok(await page.evaluate(() => { const t = document.getElementById('colCard').getBoundingClientRect().top; return window.scrollY > 0 && t >= 0 && t < window.innerHeight / 2; }), '按「色數設定」捲到色數卡片');
     await vshot(page, 'n0b_settings_jumped');
@@ -836,7 +895,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=nav][data-r=help]'); await page.waitForSelector('#hBbk');
     ok(page.url().endsWith('#/help'), '遊戲設定頁有「📘 遊戲設定說明」按鈕，按了到 #/help', page.url());
     const t = await text(page);
-    ok(['使用步驟', '跑吧！漢字：句庫', '色數消消樂：設定組', '比比看：練習範圍', '訂閱後還可以', 'A 沒有 B 那麼高', '公開題庫（一般句子）', '0–9999'].every(w => t.includes(w)), '說明頁：五段內容都在（繁）');
+    ok(['使用步驟', '跑吧！漢字：句庫', '色數消消樂：設定組', '比比看：練習範圍', '訂閱後還可以', 'A 沒有 B 那麼高', '公開句庫 A1／A2', '0–9999'].every(w => t.includes(w)), '說明頁：五段內容都在（繁）');
     ok(await page.$$eval('.hsteps > li', a => a.length) === 4 && await page.$$eval('.hsec', a => a.length) === 5 && await page.$$eval('.jump [data-act=jump]', a => a.length) === 5, '說明頁：4 個步驟卡片、5 段、5 個快速按鈕');
     ok(await page.$eval('.nav .pill.on', e => e.dataset.r) === 'settings', '說明頁：上方選單停在「遊戲設定」');
     ok(await noOverflow(page), '說明頁：手機寬度不會左右滑'); await shot(page, 'p1_help_tc');
@@ -897,7 +956,7 @@ server.listen(0, 'localhost', async () => {
       S.plays.unshift({ id: 'y1', cid: 'class0000aaaa', owner: 'u1', game: 'bbk', h: '0000000000000002', nick: 'Beto', ms: now, th: 'people', lv: 2, rg: 'd=height,age&t=pick&n=10', r: 'rng000011112', score: 100, max: 100, qs: [{ t: 'pick', d: 'height', f: 'BI', p: 1, ok: true, f1: true }] });
       document.querySelector('[data-act=lang][data-l=tc]').click(); });
     const opts = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
-    ok(JSON.stringify(opts) === JSON.stringify(['全部設定', '公開題庫（一般句子）', '📚 點飲料', '（已刪除的設定）']), '「顯示」選單：全部＋這款遊戲有成績的設定（刪掉的句庫顯示已刪除）', opts);
+    ok(JSON.stringify(opts) === JSON.stringify(['全部設定', '舊公開題庫（改版前）', '📚 點飲料', '（已刪除的設定）']), '「顯示」選單：全部＋這款遊戲有成績的設定（刪掉的句庫顯示已刪除）', opts);
     ok((await page.$$('table.t tr')).length === 5, '全部設定：每人每設定一列（4 列）');
     await page.selectOption('[data-sel=setk]', 'bank00001111');
     let rows = await page.$$eval('table.t tr', t => t.slice(1).map(r => r.innerText.replace(/\s+/g, ' ').trim()));
@@ -906,6 +965,12 @@ server.listen(0, 'localhost', async () => {
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=csv]')]);
     const csv = fs.readFileSync(await dl.path(), 'utf8');
     ok(csv.includes('Ana,📚 點飲料,300') && !csv.includes('公開題庫'), 'CSV 只匯出選的設定', csv);
+    // 新的設定名稱：pool-A1、pool-B1、pack-代碼、pack-代碼-等級
+    await page.evaluate(() => { const S = __profesor.S, now = Date.now();
+      [['pool-A1', 'D1'], ['pool-B1', 'D2'], ['pack-food', 'D3'], ['pack-compare-A2', 'D4'], ['pack-nosuch', 'D5']].forEach(([k, n], i) => S.scores.push({ id: 'z' + i, cid: 'class0000aaaa', owner: 'u1', game: 'corre', k, h: '00000000000000' + (i + 10), nick: n, best: 10, plays: 1, ms: now, extra: {} }));
+      S.setK = ''; document.querySelector('[data-act=lang][data-l=tc]').click(); });
+    const opts2 = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
+    ok(['公開句庫 A1', '公開句庫 B1', '🎯 飲食與點餐', '🎯 比較句 · A2', '🎯 nosuch'].every(x => opts2.includes(x)), '成績冊的設定名稱：pool-A1／pool-B1／pack-題包／pack-題包-等級', opts2);
     await shot(page, 'r1_setk_corre');
     await page.click('[data-act=game][data-g=bbk]'); await page.waitForSelector('[data-sel=setk]');
     ok(await page.$eval('[data-sel=setk]', e => e.value) === '', '換遊戲：選單回到全部');
@@ -964,7 +1029,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7)\b/.test(ix) && (ix.match(/\?v=6-8/g) || []).length >= 10 && ix.includes('js/help.js?v=6-8'), 'index.html 的 css／js 都改成 ?v=6-8（含 help.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8)\b/.test(ix) && (ix.match(/\?v=7-1/g) || []).length >= 11 && ix.includes('js/help.js?v=7-1') && ix.includes('js/pubbank.js?v=7-1'), 'index.html 的 css／js 都改成 ?v=7-1（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }

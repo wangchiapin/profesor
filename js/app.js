@@ -13,7 +13,7 @@ const S = {
   route: 'home', cur: null,
   game: 'corre', days: 0, tab: 'stu', sel: null,
   scores: [], scoresState: '', plays: [], playsState: '', msg2: '',
-  correBank: '', colCfg: '', bbkSel: '', busy: false, setK: '',     // setK = 成績冊只看哪個設定（'' = 全部）
+  correSrc: 'L:A1', correLv: '', pubSrc: 'L:A1', pubLv: '', colCfg: '', bbkSel: '', busy: false, setK: '',     // setK = 成績冊只看哪個設定（'' = 全部）
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
@@ -92,7 +92,7 @@ async function onRoute(){
   lastHash = location.hash;
   S.route = r.route; S.cur = r.cur;
   if(S.route === 'class'){
-    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correBank = ''; S.colCfg = ''; S.bbkSel = '';
+    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = '';
     render(); window.scrollTo(0, 0);
     if(S.acct === 'ok' && classOf(S.cur)) await loadBook();
     return;
@@ -202,15 +202,57 @@ function classesHtml(){
   return h + '</div>';
 }
 
+// ---- 公開句庫來源選單（班級連結、「遊戲設定」的公開句庫連結共用）----
+// 值：'L:A1'／'L:A2'／'L:B1'＝公開句庫等級；'P:代碼'＝題包；'B:句庫碼'＝我的句庫。免費版：只有 A1、A2 可選，B1 和題包按了會跳「建議訂閱」（擋入口就好）。
+const packLabel = p => PUB.packName(p, I18N.getLang());
+function ensurePacks(){
+  if(S.packs !== undefined) return;
+  S.packs = null;   // 讀取中
+  PUB.loadPacks().then(r => { S.packs = r; }).catch(e => { console.error(e); S.packs = []; S.packsErr = true; }).then(() => render());
+}
+function srcOptions(cur, withBanks){
+  const act = S.a.plan.active, lock = act ? '' : '🔒 ';
+  let h = '<optgroup label="' + esc(T('srcPublic')) + '">' + PUB.LEVELS.map(L =>
+    '<option value="L:' + L + '" ' + (cur === 'L:' + L ? 'selected' : '') + '>' + (PUB.isFreeLevel(L) ? '' : lock) + esc(T('srcLevel', { l: L })) + '</option>').join('') + '</optgroup>';
+  if(S.packs && S.packs.length) h += '<optgroup label="' + esc(T('srcPacks')) + '">' + S.packs.map(p =>
+    '<option value="P:' + esc(p.id) + '" ' + (cur === 'P:' + p.id ? 'selected' : '') + '>' + lock + esc(packLabel(p)) + '</option>').join('') + '</optgroup>';
+  if(withBanks && S.a.banks.length) h += '<optgroup label="' + esc(T('srcMine')) + '">' + S.a.banks.map(b =>
+    '<option value="B:' + esc(b.sid) + '" ' + (cur === 'B:' + b.sid ? 'selected' : '') + '>📚 ' + esc(b.name || ('#' + (b.slot + 1))) + '</option>').join('') + '</optgroup>';
+  return h + '';
+}
+function srcLvOptions(cur){
+  const lock = S.a.plan.active ? '' : '🔒 ';
+  return '<option value="">' + esc(T('srcAllLv')) + '</option>' + PUB.LEVELS.map(L =>
+    '<option value="' + L + '" ' + (cur === L ? 'selected' : '') + '>' + (PUB.isFreeLevel(L) ? '' : lock) + L + '</option>').join('');
+}
+const srcLocked = v => !S.a.plan.active && (v.slice(0, 2) === 'P:' || v === 'L:B1');
+function srcObj(v, lv){
+  if(v.slice(0, 2) === 'B:') return { bank: v.slice(2) };
+  if(v.slice(0, 2) === 'P:') return { pack: v.slice(2), level: lv || '' };
+  return { level: v.slice(2) || 'A1' };
+}
+// 選單目前的值：選到的句庫被刪了、或免費版選到鎖住的，就退回 A1
+function srcCur(v){
+  if(v.slice(0, 2) === 'B:' && !S.a.banks.some(b => b.sid === v.slice(2))) return 'L:A1';
+  if(srcLocked(v)) return 'L:A1';
+  return v;
+}
+function srcFieldsHtml(key, v, lv, withBanks){
+  let h = '<div class="field"><label>' + esc(T('sourceLabel')) + '</label><select data-sel="' + key + 'src">' + srcOptions(v, withBanks) + '</select></div>';
+  if(v.slice(0, 2) === 'P:') h += '<div class="field"><label>' + esc(T('srcLevelLabel')) + '</label><select data-sel="' + key + 'lv">' + srcLvOptions(lv) + '</select></div>';
+  return h;
+}
+
 // 學生連結
 function linkCardHtml(game){
   const c = classOf(S.cur), A = S.a;
   let h = '<div class="link"><h3>' + esc(T(GAME_KEY[game])) + '</h3>';
   let url = '';
   if(game === 'corre'){
-    h += '<div class="field"><label>' + esc(T('sourceLabel')) + '</label><select data-sel="correbank"><option value="">' + esc(T('sourcePool')) + '</option>' +
-      A.banks.map(b => '<option value="' + esc(b.sid) + '" ' + (S.correBank === b.sid ? 'selected' : '') + '>📚 ' + esc(b.name || ('#' + (b.slot + 1))) + '</option>').join('') + '</select></div>';
-    url = DATA.linkCorre(c.cid, S.correBank);
+    ensurePacks();
+    S.correSrc = srcCur(S.correSrc);
+    h += srcFieldsHtml('corre', S.correSrc, S.correLv, true);
+    url = DATA.linkCorre(c.cid, srcObj(S.correSrc, S.correLv));
   }else if(game === 'colores'){
     if(!A.configs.length){
       return h + '<p class="hint">' + esc(T('configNone')) + '</p></div>';
@@ -246,7 +288,10 @@ function linkCardHtml(game){
 function setLabel(game, k){
   const A = S.a;
   if(game === 'corre'){
-    if(k === 'pool') return T('sourcePool');
+    if(k === 'pool') return T('setOldPool');
+    let m = /^pool-(A1|A2|B1)$/.exec(k); if(m) return T('srcLevel', { l: m[1] });
+    m = /^pack-(.+?)(?:-(A1|A2|B1))?$/.exec(k);
+    if(m){ const p = (S.packs || []).find(x => x.id === m[1]); return '🎯 ' + (p ? packLabel(p) : m[1]) + (m[2] ? ' · ' + m[2] : ''); }
     const b = (A.banks || []).find(x => x.sid === k); return b ? '📚 ' + CORRE.bankName(b) : T('setDeleted');
   }
   if(game === 'colores'){
@@ -445,6 +490,20 @@ function correCardHtml(){
   h += '<p class="hint">' + esc(T('correPracticeHint')) + '</p>';
   return h + '</div>';
 }
+// ---- 公開句庫練習連結（不屬於班級，不收成績）----
+function pubCardHtml(){
+  const A = S.a;
+  ensurePacks();
+  S.pubSrc = srcCur(S.pubSrc || 'L:A1');
+  const o = srcObj(S.pubSrc, S.pubLv), url = DATA.linkCorrePublic(o);
+  let h = '<div class="card" id="pubCard"><h3>' + esc(T('pubTitle')) + '</h3><p class="hint">' + esc(T('pubHint')) + '</p>' + srcFieldsHtml('pub', S.pubSrc, S.pubLv, false);
+  h += '<div class="url" data-url="pub">' + esc(url) + '</div><div class="row">' +
+    '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
+    '<button class="pill sm" data-act="pubqr" data-url="' + esc(url) + '">' + esc(T('qr')) + '</button>' +
+    '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
+  if(!A.plan.active) h += '<div class="notice">' + esc(T('pubFreeNote')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
+  return h + '<p class="hint">' + esc(T('pubPracticeHint')) + '</p></div>';
+}
 function bankRouteHtml(){
   const why = CORRE.open(S.a, +S.cur);
   if(!why) return '<div id="correEd"></div>';
@@ -454,7 +513,7 @@ function bankRouteHtml(){
 function settingsHtml(){
   return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' +
     '<div class="row"><button class="pill fill" data-act="nav" data-r="help">' + esc(helpLang().btn) + '</button></div>' +
-    jumpHtml([['correCard', 'jumpCorre'], ['bbkCard', 'jumpBbk'], ['colCard', 'jumpColores']]) + correCardHtml() + bbkCardHtml() + colCardHtml();
+    jumpHtml([['correCard', 'jumpCorre'], ['pubCard', 'jumpPub'], ['bbkCard', 'jumpBbk'], ['colCard', 'jumpColores']]) + correCardHtml() + pubCardHtml() + bbkCardHtml() + colCardHtml();
 }
 // ---- 遊戲設定說明（#/help）：內容在 js/help.js（靜態文字，四種語言）----
 function helpLang(){ const H = window.HELP || {}; return H[I18N.getLang()] || H.tc || { btn: '', sections: [], jump: [] }; }
@@ -735,6 +794,10 @@ const actions = {
   }); },
   copy(el){ return copyText(el.dataset.url); },
   qr(el){ showQr(el.dataset.url, el.dataset.game); },
+  pubqr(el){
+    const o = srcObj(S.pubSrc, S.pubLv), title = S.pubSrc.slice(0, 2) === 'P:' ? ((S.packs || []).map(p => p.id === S.pubSrc.slice(2) ? packLabel(p) : '').join('') || S.pubSrc.slice(2)) + (o.level ? ' ' + o.level : '') : T('srcLevel', { l: o.level });
+    qrModal(qrCanvas(el.dataset.url), T('gameCorre') + ' · ' + title, 'corre-qr-' + safeName(title) + '.png', el.dataset.url);
+  },
   // ---- 跑吧句庫 ----
   bankedit(el){ S.bankMsg = ''; go('bank', el.dataset.k); },
   async bankpractice(el){ const b = CORRE.bankOf(S.a, +el.dataset.k); if(b) await copyText(DATA.linkCorrePractice(b.sid)); },
@@ -912,7 +975,16 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('change', e => {
   const s = e.target.closest('[data-sel]'); if(!s) return;
-  if(s.dataset.sel === 'correbank') S.correBank = s.value;
+  { const m = /^(corre|pub)(src|lv)$/.exec(s.dataset.sel || '');
+    if(m){
+      const key = m[1] === 'corre' ? ['correSrc', 'correLv'] : ['pubSrc', 'pubLv'];
+      if(m[2] === 'src'){
+        if(srcLocked(s.value)) needSub();                      // 免費版選到 B1／題包：跳建議訂閱，選項維持原樣
+        else{ S[key[0]] = s.value; if(s.value.slice(0, 2) !== 'P:') S[key[1]] = ''; }
+      }else{
+        if(!S.a.plan.active && !PUB.isFreeLevel(s.value) && s.value) needSub(); else S[key[1]] = s.value;
+      }
+    } }
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'setk'){ S.setK = s.value; S.sel = null; }

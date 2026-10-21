@@ -196,11 +196,11 @@ function shellHtml(){
     '<div class="card"><h3>' + esc(tr('pickTitle')) + '</h3><p class="hint">' + esc(tr('pickHint', { n: MAX_CHARS })) + '</p>' +
       '<div class="row" id="ce-pickSrc"></div>' +
       '<div id="ce-pickPanel" hidden>' +
+        '<div id="ce-lvlBox" hidden><select id="ce-lvlSel"></select></div>' +
         '<div id="ce-packBox" hidden><select id="ce-packSel"></select><p class="hint" id="ce-packDesc"></p></div>' +
         '<input type="text" id="ce-pickFilter" style="margin-top:8px">' +
         '<div class="row"><button class="pill fill sm" id="ce-pickAdd">' + esc(tr('pickAddSel')) + '</button><button class="pill sm" id="ce-pickAll" hidden>' + esc(tr('pickAddAll')) + '</button><span class="mut" id="ce-pickCount"></span></div>' +
         '<div class="st" id="ce-pickSt"></div><div id="ce-pickList"></div>' +
-        '<div class="row"><button class="pill sm" id="ce-pickMore" hidden>' + esc(tr('pickMore')) + '</button></div>' +
       '</div></div>' +
     '<div class="card"><h3>' + esc(tr('inBank')) + ' <span class="mut" id="ce-counter"></span></h3><div id="ce-sents"></div></div>' +
     '<div class="savebar"><button class="pill fill" id="ce-save">' + esc(tr('saveBank')) + '</button>' +
@@ -421,20 +421,10 @@ async function saveBank(){
   finally{ if($('save')) $('save').disabled = false; }
 }
 
-// ================= 從公開題庫／主題包挑句子 =================
-// 公開題庫在遊戲用的 corre-d16da 專案（第二個 Firebase app，只讀）；主題包在中心專案 site_content。
-const POOL_CONFIG = {
-  apiKey: 'AIzaSyA0jxyA3ZqWcFfsN1nu5Zol33QSxwrgq68', authDomain: 'corre-d16da.firebaseapp.com', projectId: 'corre-d16da',
-  storageBucket: 'corre-d16da.firebasestorage.app', messagingSenderId: '734685362204', appId: '1:734685362204:web:fec4c0f9f39b1730dfc7d9'
-};
-const POOL_COL = 'mandarinRunnerSentences', PACK_COL = 'site_content', PACK_PREFIX = 'corre_pack_', POOL_PAGE = 20, POOL_MAX = 100;
-let pdb = null;
-function poolDb(){
-  if(!pdb){ try{ pdb = firebase.initializeApp(POOL_CONFIG, 'pool').firestore(); }catch(e){ console.warn('pool init failed', e); } }
-  return pdb;
-}
-const newPool = () => ({ items: [], r: Math.random(), phase: 1, last: null, read: 0, done: false, capped: false, loading: false, err: null, plainTried: false });
-const PICK = { src: null, sel: new Map(), msg: null, filter: '', pool: newPool(), packs: null, packsErr: null, packId: null, loadingPacks: false };
+// ================= 從公開句庫／主題包挑句子 =================
+// 讀跑吧！漢字網站上的 bank/A1.json、A2.json、B1.json、packs.json（見 pubbank.js；每個等級一個檔）。
+// A1、A2 免費；B1 和主題包是訂閱功能（只擋入口）。
+const PICK = { src: null, sel: new Map(), msg: null, filter: '', level: 'A1', rows: {}, loading: false, err: null, packs: null, packId: null, packRows: {} };
 function resetPick(){ PICK.src = null; PICK.sel.clear(); PICK.msg = null; PICK.filter = ''; }
 function cleanSentence(r){
   if(!r || !Array.isArray(r.trad) || !r.trad.length) return null;
@@ -446,52 +436,29 @@ function cleanSentence(r){
 }
 const pickRoom = () => ED ? Math.max(0, cap() - ED.sentences.length) : 0;
 const setPickMsg = (text, cls) => { PICK.msg = text ? { text, cls: cls || '' } : null; };
-async function poolLoadMore(){
-  const P = PICK.pool, db = poolDb();
-  if(P.loading || P.done || !db) return;
-  P.loading = true; P.err = null; renderPick();
-  try{
-    const col = db.collection(POOL_COL);
-    let got = 0;
-    const take = snap => snap.docs.forEach(d => { P.read++; got++; const s = cleanSentence(d.data()); if(s) P.items.push({ id: d.id, s }); });
-    while(!P.done && got < POOL_PAGE){
-      const need = Math.min(POOL_PAGE - got, POOL_MAX - P.read);
-      if(need <= 0){ P.done = true; P.capped = true; break; }
-      let q = P.phase === 1 ? col.where('rand', '>=', P.r).orderBy('rand') : col.where('rand', '<', P.r).orderBy('rand');
-      if(P.last) q = q.startAfter(P.last);
-      const snap = await q.limit(need).get();
-      take(snap);
-      if(snap.docs.length) P.last = snap.docs[snap.docs.length - 1];
-      if(snap.docs.length < need){ if(P.phase === 1){ P.phase = 2; P.last = null; } else P.done = true; }
-    }
-    if(!P.done && P.read >= POOL_MAX){ P.done = true; P.capped = true; }
-    if(P.done && P.read === 0 && !P.plainTried){ P.plainTried = true; P.capped = false; take(await col.limit(POOL_PAGE).get()); }
-  }catch(e){ console.error(e); P.err = e; }
-  finally{ P.loading = false; renderPick(); }
+async function levelLoad(L){
+  if(PICK.rows[L] || PICK.loading) return;
+  PICK.loading = true; PICK.err = null; renderPick();
+  try{ PICK.rows[L] = (await PUB.loadLevel(L)).map(cleanSentence).filter(Boolean); }
+  catch(e){ console.error(e); PICK.err = e; }
+  finally{ PICK.loading = false; renderPick(); }
 }
 async function packsLoad(){
-  if(PICK.loadingPacks || PICK.packs) return;
-  if(!planOn()){ renderPick(); return; }       // 非訂閱者不查（規則也會擋）
-  PICK.loadingPacks = true; PICK.packsErr = null; renderPick();
+  if(PICK.loading) return;
+  if(!planOn()){ renderPick(); return; }       // 非訂閱者不載入
+  PICK.loading = true; PICK.err = null; renderPick();
   try{
-    const snap = await firebase.firestore().collection(PACK_COL).where('kind', '==', 'corre_pack').get();
-    PICK.packs = snap.docs.filter(d => d.id.indexOf(PACK_PREFIX) === 0).map(d => ({ id: d.id, data: d.data() }));
-    PICK.packs.sort((a, b) => (a.data.order || 0) - (b.data.order || 0));
+    if(!PICK.packs) PICK.packs = await PUB.loadPacks();
     if(!PICK.packs.some(p => p.id === PICK.packId)) PICK.packId = PICK.packs.length ? PICK.packs[0].id : null;
-  }catch(e){ console.error(e); PICK.packsErr = e; }
-  finally{ PICK.loadingPacks = false; renderPick(); }
-}
-function packText(obj, id){
-  const o = obj || {}, L = lang();
-  if(L === 'es' || L === 'en') return o.es || o.zh || id || '';
-  const z = o.zh || o.es || id || '';
-  if(L === 'cn' && window.OpenCC){ try{ return toSimplified(z); }catch(e){} }
-  return z;
+    const p = PICK.packs.find(x => x.id === PICK.packId);
+    if(p && !PICK.packRows[p.id]) PICK.packRows[p.id] = (await PUB.packSentences(p)).map(cleanSentence).filter(Boolean);
+  }catch(e){ console.error(e); PICK.err = e; }
+  finally{ PICK.loading = false; renderPick(); }
 }
 function pickItems(){
   let rows;
-  if(PICK.src === 'pool') rows = PICK.pool.items.map(x => x.s);
-  else{ const p = (PICK.packs || []).find(x => x.id === PICK.packId); rows = p ? (p.data.sentences || []).map(cleanSentence).filter(Boolean) : []; }
+  if(PICK.src === 'pool') rows = PICK.rows[PICK.level] || [];
+  else rows = (PICK.packId && PICK.packRows[PICK.packId]) || [];
   const seen = new Set();
   return rows.map(s => ({ key: keyOf(s.trad), s })).filter(it => { if(seen.has(it.key)) return false; seen.add(it.key); return true; });
 }
@@ -502,13 +469,18 @@ function renderPick(){
     '<button class="pill sm ' + (PICK.src === x[0] ? 'on' : '') + '" data-pick="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   const panel = $('pickPanel'); panel.hidden = !PICK.src;
   if(!PICK.src) return;
-  const isPack = PICK.src === 'pack', P = PICK.pool, st = $('pickSt'), list = $('pickList');
-  list.textContent = ''; $('pickMore').hidden = true;
-  const denied = isPack && PICK.packsErr && PICK.packsErr.code === 'permission-denied';
-  const locked = isPack && (!planOn() || denied);
+  const isPack = PICK.src === 'pack', st = $('pickSt'), list = $('pickList');
+  list.textContent = '';
+  const locked = isPack && !planOn();
+  $('lvlBox').hidden = isPack;
   $('packBox').hidden = !isPack || locked;
   $('pickFilter').hidden = locked; $('pickAdd').hidden = locked; $('pickAll').hidden = !isPack || locked; $('pickCount').hidden = locked;
   $('pickFilter').placeholder = tr('pickFilter');
+  if(!isPack){
+    const sel = $('lvlSel'); sel.textContent = '';
+    PUB.LEVELS.forEach(L => { const o = document.createElement('option'); o.value = L; o.textContent = (PUB.isFreeLevel(L) || planOn() ? '' : '🔒 ') + L; sel.appendChild(o); });
+    sel.value = PICK.level;
+  }
   if(locked){
     setSt(st, '');
     const n = mk('div', 'notice', tr('packNeedSub') + ' ');
@@ -517,11 +489,11 @@ function renderPick(){
   }
   if(isPack){
     const sel = $('packSel'); sel.textContent = '';
-    (PICK.packs || []).forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = packText(p.data.name, p.id) + ' · ' + tr('packCount', { n: (p.data.sentences || []).length }); sel.appendChild(o); });
+    (PICK.packs || []).forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = PUB.packName(p, I18N.getLang()); sel.appendChild(o); });
     if(PICK.packId) sel.value = PICK.packId;
     sel.hidden = !(PICK.packs && PICK.packs.length);
-    const cur = (PICK.packs || []).find(x => x.id === PICK.packId);
-    $('packDesc').textContent = cur ? packText(cur.data.desc, '') : '';
+    const cur = (PICK.packs || []).find(x => x.id === PICK.packId), n = cur && PICK.packRows[cur.id] ? PICK.packRows[cur.id].length : null;
+    $('packDesc').textContent = n == null ? '' : tr('packCount', { n });
   }
   const have = new Set(ED.sentences.map(s => keyOf(s.trad))), items = pickItems();
   PICK.sel.forEach((s, k) => { const it = items.find(x => x.key === k); if(!it || pickState(it, have) !== 'ok') PICK.sel.delete(k); });
@@ -546,13 +518,10 @@ function renderPick(){
     if(state === 'dup') info.appendChild(mk('small', null, tr('pickDup')));
     card.appendChild(cb); card.appendChild(info); list.appendChild(card);
   });
-  const loading = isPack ? PICK.loadingPacks : P.loading, e = isPack ? PICK.packsErr : P.err;
-  if(!show.length && !loading && !e) list.appendChild(mk('p', 'hint', isPack && !(PICK.packs && PICK.packs.length) ? tr('packNone') : tr('pickEmpty')));
-  if(!isPack && !P.done && !P.loading) $('pickMore').hidden = false;
-  if(loading) setSt(st, I18N.t('loading'));
-  else if(e) setSt(st, tr(isPack ? 'packLoadFail' : 'pickPoolFail', { m: explainError(e) }), 'err');
+  if(!show.length && !PICK.loading && !PICK.err) list.appendChild(mk('p', 'hint', isPack && !(PICK.packs && PICK.packs.length) ? tr('packNone') : tr('pickEmpty')));
+  if(PICK.loading) setSt(st, I18N.t('loading'));
+  else if(PICK.err) setSt(st, tr(isPack ? 'packLoadFail' : 'pickPoolFail', { m: explainError(PICK.err) }), 'err');
   else if(PICK.msg) setSt(st, PICK.msg.text, PICK.msg.cls);
-  else if(!isPack && P.capped) setSt(st, tr('pickPoolCap', { n: POOL_MAX }));
   else setSt(st, '');
   updatePickCount();
 }
@@ -574,10 +543,27 @@ function pickAdd(sentences){
   PICK.sel.clear(); setPickMsg(msg, added ? 'ok' : 'err');
   if(added){ markDirty(); renderSents(); } else renderPick();
 }
+function pickAdd(sentences){
+  let room = pickRoom();
+  if(room <= 0){ setPickMsg(tr('pickRoomFull', { max: cap() }), 'err'); renderPick(); return; }
+  const have = new Set(ED.sentences.map(s => keyOf(s.trad)));
+  let added = 0, skipped = 0, cut = 0;
+  sentences.forEach(s => {
+    const k = keyOf(s.trad), han = countHan(s.trad);
+    if(han < 1 || han > MAX_CHARS || have.has(k)){ skipped++; return; }
+    if(room <= 0){ cut++; return; }
+    ED.sentences.push({ trad: s.trad.slice(), simp: s.simp.slice(), pinyin: s.pinyin.slice(), es: s.es, en: s.en || '' });
+    have.add(k); room--; added++;
+  });
+  let msg = skipped ? tr('pickAddedSkip', { n: added, skip: skipped }) : tr('pickAdded', { n: added });
+  if(cut) msg += ' ' + tr('pickCut', { max: cap() });
+  PICK.sel.clear(); setPickMsg(msg, added ? 'ok' : 'err');
+  if(added){ markDirty(); renderSents(); } else renderPick();
+}
 function pickSetSrc(src){
-  PICK.src = PICK.src === src ? null : src; PICK.sel.clear(); setPickMsg('');
+  PICK.src = PICK.src === src ? null : src; PICK.sel.clear(); setPickMsg(''); PICK.err = null;
   PICK.filter = ''; if($('pickFilter')) $('pickFilter').value = '';   // 換來源就清掉篩選字
-  if(PICK.src === 'pool' && !PICK.pool.items.length && !PICK.pool.done) poolLoadMore();
+  if(PICK.src === 'pool') levelLoad(PICK.level);
   else if(PICK.src === 'pack') packsLoad();
   renderPick();
 }
@@ -626,8 +612,12 @@ function mount(el, onBack){
   $('bulkGo').addEventListener('click', bulkGo);
   $('save').addEventListener('click', saveBank);
   $('pickFilter').addEventListener('input', () => { PICK.filter = $('pickFilter').value; setPickMsg(''); renderPick(); });
-  $('packSel').addEventListener('change', () => { PICK.packId = $('packSel').value; PICK.sel.clear(); setPickMsg(''); renderPick(); });
-  $('pickMore').addEventListener('click', poolLoadMore);
+  $('packSel').addEventListener('change', () => { PICK.packId = $('packSel').value; PICK.sel.clear(); setPickMsg(''); packsLoad(); });
+  $('lvlSel').addEventListener('change', () => {
+    const L = $('lvlSel').value;
+    if(!planOn() && !PUB.isFreeLevel(L)){ $('lvlSel').value = PICK.level; if(window.PROF) window.PROF.needSub(); return; }   // 免費版：B1 是訂閱功能
+    PICK.level = L; PICK.sel.clear(); setPickMsg(''); levelLoad(L); renderPick();
+  });
   $('pickAdd').addEventListener('click', () => { if(!PICK.sel.size){ setPickMsg(tr('pickNothing'), 'err'); renderPick(); return; } pickAdd(Array.from(PICK.sel.values())); });
   $('pickAll').addEventListener('click', () => pickAdd(pickItems().map(it => it.s)));
 }

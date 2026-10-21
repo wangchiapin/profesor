@@ -47,13 +47,13 @@ window.HELP = {
      "<b>句子</b>：詞和詞之間用空格分開，例如「我 喜歡 吃 蘋果」。空格決定遊戲裡每塊詞語怎麼切。",
      "<b>翻譯</b>：西班牙文必填，英文選填。留空會自動機器翻譯，請一定要檢查。",
      "<b>批次匯入</b>：一行一句，格式是「中文 | 西班牙文 | 英文」。",
-     "<b>從題庫／主題包加入</b>：不用自己一句一句打。可以從「公開題庫」或「主題包」挑句子，或整包加入，複製進你的句庫（不會改到原本的題庫）。加進來後可以再修改。",
+     "<b>從公開句庫／主題包加入</b>：不用自己一句一句打。可以從「公開句庫」（A1、A2 免費，B1 需訂閱）或「主題包」（訂閱）挑句子，或整包加入，複製進你的句庫（不會改到原本的句庫）。加進來後可以再修改。",
      "<b>干擾字</b>（訂閱功能）：遊戲出這一句時，會先用這些字當干擾，讓學生練習分辨相似字。每句最多 5 個。",
-     "<b>不建句庫也能用</b>：在「班級」頁的「題目來源」選「公開題庫（一般句子）」，直接用內建的句子出題。"
+     "<b>不建句庫也能用</b>：在「班級」頁的「題目來源」選「公開句庫 A1／A2」（訂閱後還有 B1 和主題包），直接用內建的句子出題。內建句庫依《當代中文課程》1、2、3 冊的語法點分成 A1、A2、B1，詞彙不超過華語八千詞對應等級。「遊戲設定」頁的「公開句庫練習連結」可以直接做出不收成績的連結和 QR code。"
     ],
     "plan": [
-     "1 個句庫，每庫最多 50 句",
-     "最多 5 個句庫，每庫 80 句，可以設定干擾字"
+     "1 個句庫，每庫最多 50 句；公開句庫 A1、A2",
+     "最多 5 個句庫，每庫 80 句，可以設定干擾字；公開句庫再加 B1 和主題包"
     ]
    },
    {
@@ -172,13 +172,13 @@ window.HELP = {
      "<b>句子</b>：词和词之间用空格分开，例如“我 喜欢 吃 苹果”。空格决定游戏里每块词语怎么切。",
      "<b>翻译</b>：西班牙文必填，英文选填。留空会自动机器翻译，请一定要检查。",
      "<b>批量导入</b>：一行一句，格式是“中文 | 西班牙文 | 英文”。",
-     "<b>从题库／主题包加入</b>：不用自己一句一句打。可以从“公开题库”或“主题包”挑句子，或整包加入，复制进你的句库（不会改到原本的题库）。加进来后可以再修改。",
+     "<b>从公开句库／主题包加入</b>：不用自己一句一句打。可以从“公开句库”（A1、A2 免费，B1 需订阅）或“主题包”（订阅）挑句子，或整包加入，复制进你的句库（不会改到原本的句库）。加进来后可以再修改。",
      "<b>干扰字</b>（订阅功能）：游戏出这一句时，会先用这些字当干扰，让学生练习分辨相似字。每句最多 5 个。",
-     "<b>不建句库也能用</b>：在“班级”页的“题目来源”选“公开题库（一般句子）”，直接用内置的句子出题。"
+     "<b>不建句库也能用</b>：在“班级”页的“题目来源”选“公开句库 A1／A2”（订阅后还有 B1 和主题包），直接用内置的句子出题。内置句库依《当代中文课程》1、2、3 册的语法点分成 A1、A2、B1，词汇不超过华语八千词对应等级。“游戏设置”页的“公开句库练习链接”可以直接做出不收成绩的链接和 QR code。"
     ],
     "plan": [
-     "1 个句库，每库最多 50 句",
-     "最多 5 个句库，每库 80 句，可以设置干扰字"
+     "1 个句库，每库最多 50 句；公开句库 A1、A2",
+     "最多 5 个句库，每库 80 句，可以设置干扰字；公开句库再加 B1 和主题包"
     ]
    },
    {
@@ -297,13 +297,13 @@ window.HELP = {
      "<b>Frases</b>: separa las palabras con espacios, por ejemplo «我 喜歡 吃 蘋果». Los espacios deciden cómo se corta cada bloque de palabras en el juego.",
      "<b>Traducción</b>: el español es obligatorio y el inglés, opcional. Si la dejas vacía, se traduce automáticamente; revísala siempre.",
      "<b>Importar en lote</b>: una frase por línea, con el formato «chino | español | inglés».",
-     "<b>Añadir desde el banco público / paquetes temáticos</b>: no tienes que escribir frase por frase. Elige frases del «Banco público» o de un «Paquete temático», o añade el paquete entero; se copian a tu banco (el original no cambia). Después puedes editarlas.",
+     "<b>Añadir desde el banco público / paquetes temáticos</b>: no tienes que escribir frase por frase. Elige frases del «Banco público» (A1 y A2 gratis; B1 con suscripción) o de un «Paquete temático» (suscripción), o añade el paquete entero; se copian a tu banco (el original no cambia). Después puedes editarlas.",
      "<b>Distractores</b> (suscripción): cuando sale esa frase, el juego usa primero estas palabras como distractores para practicar caracteres parecidos. Hasta 5 por frase.",
-     "<b>Sin crear un banco</b>: en la página «Clases», en «Origen de las frases», elige «Banco público (frases generales)» para usar las frases incluidas."
+     "<b>Sin crear un banco</b>: en la página «Clases», en «Origen de las frases», elige «Banco público A1 / A2» (con suscripción también B1 y los paquetes temáticos) para usar las frases incluidas. Están divididas en A1, A2 y B1 según los puntos gramaticales de los libros 1, 2 y 3 de «Contemporary Chinese», con vocabulario dentro del nivel correspondiente de las 8000 palabras. En «Ajustes» puedes crear un «Enlace de práctica del banco público» (sin notas) y su QR."
     ],
     "plan": [
-     "1 banco, hasta 50 frases",
-     "Hasta 5 bancos de 80 frases, con distractores"
+     "1 banco, hasta 50 frases; banco público A1 y A2",
+     "Hasta 5 bancos de 80 frases, con distractores; banco público con B1 y paquetes temáticos"
     ]
    },
    {
@@ -422,13 +422,13 @@ window.HELP = {
      "<b>Sentences</b>: separate words with spaces, e.g. “我 喜歡 吃 蘋果”. The spaces decide how the words are split into blocks in the game.",
      "<b>Translation</b>: Spanish is required, English is optional. Left blank, it is machine-translated — always check it.",
      "<b>Bulk import</b>: one sentence per line, in the format “Chinese | Spanish | English”.",
-     "<b>Add from the public bank / theme packs</b>: no need to type every sentence. Pick sentences from the Public bank or a Theme pack, or add a whole pack; they are copied into your bank (the original stays the same). You can edit them afterwards.",
+     "<b>Add from the public bank / theme packs</b>: no need to type every sentence. Pick sentences from the Public bank (A1 and A2 free; B1 needs a subscription) or a Theme pack (subscription), or add a whole pack; they are copied into your bank (the original stays the same). You can edit them afterwards.",
      "<b>Decoys</b> (subscription): when this sentence comes up, the game uses these words as decoys first, so students practice telling similar characters apart. Up to 5 per sentence.",
-     "<b>No bank needed</b>: on the Classes page, set “Sentence source” to “Public bank (general sentences)” to use the built-in sentences."
+     "<b>No bank needed</b>: on the Classes page, set “Sentence source” to “Public bank A1 / A2” (subscribers also get B1 and theme packs) to use the built-in sentences. They are split into A1, A2 and B1 by the grammar points of Contemporary Chinese books 1, 2 and 3, with vocabulary within the matching level of the 8000-word list. On the Settings page, “Public bank practice link” makes a link and QR code that does not collect scores."
     ],
     "plan": [
-     "1 bank, up to 50 sentences",
-     "Up to 5 banks of 80 sentences, with decoys"
+     "1 bank, up to 50 sentences; public bank A1 and A2",
+     "Up to 5 banks of 80 sentences, with decoys; public bank plus B1 and theme packs"
     ]
    },
    {
