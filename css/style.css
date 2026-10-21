@@ -20,11 +20,11 @@ small,.mut{color:var(--mut)}
 .brand{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
 .brand small{font-size:.74rem;color:var(--mut);margin-top:4px}
 .brand small span{display:block;word-break:break-all}
-.brand b{font-size:1.2rem}.brand span{font-size:.78rem;color:var(--mut)}
+.brand b{font-size:1.5rem}.brand span{font-size:.78rem;color:var(--mut)}
 .topr{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
-.langtxt{display:flex;align-items:center;font-size:1.2rem;font-weight:700;color:var(--brown)}
+.langtxt{display:flex;align-items:center;font-size:.9rem;font-weight:700;color:var(--brown)}
 .langtxt .lg{border:0;background:none;padding:2px 4px;font:inherit;color:inherit;cursor:pointer;opacity:.5}
-.langtxt .lg.on{opacity:1;text-decoration:underline;text-underline-offset:5px}
+.langtxt .lg.on{opacity:1;text-decoration:underline;text-underline-offset:4px}
 .langtxt .lgsep{opacity:.5}
 .langs{display:flex;gap:6px}
 .seg{height:34px;box-sizing:border-box;display:inline-flex;border:1.5px solid var(--brown);border-radius:999px;overflow:hidden}
@@ -280,4 +280,4 @@ details.hsec>summary::after{content:"＋";float:right;color:var(--mut)}
 details.hsec[open]>summary::after{content:"－"}
 details.hsec[open]>summary{margin-bottom:8px}
 
-.backhome{border:0;background:none;padding:0;font:inherit;font-size:1.2rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
+.backhome{border:0;background:none;padding:0;font:inherit;font-size:1.5rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
