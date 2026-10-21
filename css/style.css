@@ -26,6 +26,7 @@ small,.mut{color:var(--mut)}
 .seg button+button{border-left:1.5px solid var(--brown)}
 .seg button.on{background:var(--brown);color:#fff}
 .seg button:not(.on):hover{background:var(--brown-l)}
+.pill.xs{min-height:30px;padding:3px 12px;font-size:.8rem;min-width:0}
 .ph{display:flex;align-items:center;gap:10px}
 .ph .badge{font-size:.8rem}
 .ph .pexp{margin-left:auto;font-size:.85rem;font-weight:400;color:var(--mut)}

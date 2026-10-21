@@ -156,9 +156,9 @@ async function loadBook(){
 function headerHtml(){
   const lang = I18N.getLang();
   const seg = arr => '<div class="seg">' + arr.map(l => '<button class="' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('') + '</div>';
-  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b><span>' + esc(T('appSub')) + '</span></div><div class="topr"><div class="langs">' +
+  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b></div><div class="topr"><div class="langs">' +
     seg([['tc', '繁'], ['sc', '简']]) + seg([['es', 'ES'], ['en', 'EN']]) + '</div>' +
-    (S.user ? '<div class="seg"><button data-act="feedback">' + esc(T('fbBtn')) + '</button><button data-act="logout">' + esc(T('logout')) + '</button></div>' : '') + '</div></div>';
+    (S.user ? '<div class="langs"><button class="pill xs" data-act="feedback">' + esc(T('fbBtn')) + '</button><button class="pill xs" data-act="logout">' + esc(T('logout')) + '</button></div>' : '') + '</div></div>';
 }
 function navHtml(){
   const items = [['home', 'navHome'], ['classes', 'navClasses']];
