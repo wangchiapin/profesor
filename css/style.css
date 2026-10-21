@@ -22,7 +22,7 @@ small,.mut{color:var(--mut)}
 .topr{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .langs{display:flex;gap:6px}
 .seg{display:inline-flex;border:1.5px solid var(--brown);border-radius:999px;overflow:hidden}
-.seg button{border:0;background:transparent;color:var(--brown);font:inherit;font-size:.8rem;font-weight:600;padding:4px 12px;min-height:30px;cursor:pointer;white-space:nowrap}
+.seg button{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-width:46px;border:0;background:transparent;color:var(--brown);font:inherit;font-size:.8rem;font-weight:600;padding:4px 12px;min-height:30px;cursor:pointer;white-space:nowrap}
 .seg button+button{border-left:1.5px solid var(--brown)}
 .seg button.on{background:var(--brown);color:#fff}
 .seg button:not(.on):hover{background:var(--brown-l)}
