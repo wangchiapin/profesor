@@ -64,7 +64,7 @@ function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = n
 }
 async function open(browser, { seedOpt, user = TEACH, ls = {}, hash = '' } = {}){
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, acceptDownloads: true });
-  const page = await ctx.newPage(); const errors = [];
+  const page = await ctx.newPage(); const errors = []; page.setDefaultTimeout(5000);
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if(m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on('dialog', d => d.accept());
@@ -123,7 +123,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('.nav'); await page.waitForSelector('.badge');
     const t = await text(page);
     ok(t.includes('訂閱') && t.includes('到期日'), '顯示訂閱與到期日');
-    ok(/班級（三款遊戲共用）\s*2 \/ 3/.test(t), '班級用量 2 / 3', t);
+    ok(/班級（四款遊戲共用）\s*2 \/ 3/.test(t), '班級用量 2 / 3', t);
     ok(/句庫\s*1 \/ 5/.test(t) && /設定組\s*2 \/ 15/.test(t), '句庫 1 / 5、設定組 2 / 15');
     ok(!t.includes('建立班級、成績簿、列印需要訂閱'), '訂閱中沒有提示');
     await shot(page, 'b1_home');
@@ -145,7 +145,7 @@ server.listen(0, 'localhost', async () => {
     ok(t.includes('已於') && t.includes('到期') && t.includes('舊的班級與成績仍可查看'), '到期：顯示到期說明');
     await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.ctabs');
     ok((await page.$$('input[id^=newCls]')).length === 0, '到期不能建立班級');
-    await page.waitForSelector('table.t');
+    await page.goto(page.url().split('#')[0] + '#/game/corre/scores'); await page.waitForSelector('table.t');
     ok((await text(page)).includes('Ana'), '到期仍可查看成績');
     await ctx.close(); }
 
@@ -168,7 +168,10 @@ server.listen(0, 'localhost', async () => {
     ok(cid3 && d.classes[cid3].owner === 'u1' && d.classes[cid3].slot === 2 && d.classes[cid3].name === '週末班' && d.classes[cid3].showBoard === false, '建班：寫入 classes、teacher_classes（保留原有的班）');
     ok(d.teacher_classes.u1.slots['0'] === CID && d.teacher_classes.u1.slots['1'] === CID2, '原有的班沒被動到');
     ok(Object.keys(d.classes[cid3]).sort().join() === 'name,owner,showBoard,slot,updatedAt', '班級欄位剛好符合規則');
+    await page.goto(page.url().split('#')[0] + '#/game/corre/scores'); await page.waitForSelector('#bookCard');
+    await page.click('[data-act=pickcls][data-slot="2"]');
     ok((await text(page)).includes('還沒有成績'), '新班級沒有成績');
+    await page.goto(page.url().split('#')[0] + '#/class/2'); await page.waitForSelector('#clsName');
     ok(page.url().endsWith('#/class/2') && !(await page.$('.ctabs [data-act=newclass]')) && (await page.$$('.ctabs .pill')).length === 3, '滿 3 班：「＋ 建立班級」分頁不見了，跳到新班');
     await page.fill('#clsName', '週末進階班'); await page.click('[data-act=classrename]'); await page.waitForSelector('h2:has-text("週末進階班")');
     d = await db(page); ok(d.classes[cid3].name === '週末進階班' && d.classes[cid3].owner === 'u1' && d.classes[cid3].slot === 2, '改名成功、欄位不變');
@@ -189,12 +192,12 @@ server.listen(0, 'localhost', async () => {
     ok(!(await text(page)).includes('週三班') && !!(await page.$('.ctabs [data-act=newclass]')), '分頁上不見了，「＋ 建立班級」又出現');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
-  console.log('\n[E] 學生連結與 QR');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/class/0' });
-    await page.waitForSelector('.link'); await page.waitForSelector('table.t');
-    const urls = () => page.$$eval('.url', e => e.map(x => x.textContent));
+  console.log('\n[E] 學生連結與 QR（每款遊戲自己的「連結」分頁）');
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/corre/links' });
+    await page.waitForSelector('.link');
+    const urls = () => page.$$eval('#linksCard .url', e => e.map(x => x.textContent));
     let u = await urls();
-    ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&level=A1', '跑吧：預設公開句庫 A1', u);
+    ok(u.length === 1 && u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&level=A1', '跑吧：預設公開句庫 A1', u);
     await page.waitForFunction(() => document.querySelector('[data-sel=corresrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
     await page.selectOption('[data-sel=corresrc]', 'L:B1'); u = await urls();
     ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&level=B1', '跑吧：訂閱版可選 B1 → &level=B1', u);
@@ -204,37 +207,54 @@ server.listen(0, 'localhost', async () => {
     ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&pack=food&level=A1', '跑吧：題包限定等級 → &pack=food&level=A1', u);
     await page.selectOption('[data-sel=corresrc]', 'B:bank00001111'); u = await urls();
     ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&bank=bank00001111', '跑吧：選句庫後帶 &bank=', u);
-    ok(u.length === 3 && u[1] === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID && u[2] === 'https://wangchiapin.github.io/el-dragon-de-tinta/?class=' + CID, '比比看、墨龍連結（色數還沒選設定組不顯示）', u);
-    await page.selectOption('[data-sel=colcfg]', '0'); u = await urls();
-    ok(u[1] === 'https://wangchiapin.github.io/pop-colores-numeros/?c=cfg000011112&class=' + CID, '色數：?c=設定碼&class=班級碼', u);
+    await page.click('[data-act=pickcls][data-slot="1"]'); u = await urls();
+    ok(u[0].includes('class=' + CID2) && await page.evaluate(() => localStorage.getItem('profesorCls')) === '1', '換班級：連結跟著換，記住選的班');
+    await page.click('[data-act=pickcls][data-slot="0"]');
+    await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async t => { window.__copied = t; }; });
+    await page.click('#linksCard [data-act=copy]'); await page.waitForTimeout(100);
+    ok((await page.evaluate(() => window.__copied)) === 'https://wangchiapin.github.io/corre/?class=' + CID + '&bank=bank00001111', '複製連結');
+    await shot(page, 'e2_links');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/colores/links' });
+    await page.waitForSelector('.link');
+    const urls = () => page.$$eval('#linksCard .url', e => e.map(x => x.textContent));
+    ok((await urls()).length === 0, '色數：還沒選設定組不顯示連結');
+    await page.selectOption('[data-sel=colcfg]', '0'); let u = await urls();
+    ok(u[0] === 'https://wangchiapin.github.io/pop-colores-numeros/?c=cfg000011112&class=' + CID, '色數：?c=設定碼&class=班級碼', u);
     await page.selectOption('[data-sel=colcfg]', '1');
     ok(await page.$('[data-act=colmake]') !== null, '沒有連結碼的設定組顯示「產生連結」');
     await page.click('[data-act=colmake]'); await page.waitForSelector('.url[data-url=colores]');
     const d = await db(page); const it = d.teacher_configs.u1.items[1];
     ok(/^[a-z0-9]{12}$/.test(it.sid) && d.shared_configs[it.sid].owner === 'u1' && d.shared_configs[it.sid].pro === false && d.shared_configs[it.sid].cfg.name === '小數字', '產生連結碼：寫入 shared_configs 與 teacher_configs', it);
     ok(d.teacher_configs.u1.items[0].sid === 'cfg000011112' && d.teacher_configs.u1.items.length === 2, '其他設定組沒被動到');
-    u = await urls(); ok(u[1].includes('?c=' + it.sid + '&class=' + CID), '連結出現', u);
+    u = await urls(); ok(u[0].includes('?c=' + it.sid + '&class=' + CID), '連結出現', u);
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/links' });
+    await page.waitForSelector('.link');
+    const u = await page.$$eval('#linksCard .url', e => e.map(x => x.textContent));
+    ok(u.length === 1 && u[0] === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID, '比比看：連結', u);
     await page.click('[data-act=qr][data-game=bbk]'); await page.waitForSelector('.modal canvas');
     const cv = await page.$eval('.modal canvas', c => ({ w: c.width, h: c.height, dark: (() => { const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; let n = 0; for(let i = 0; i < x.length; i += 4) if(x[i] < 60) n++; return n; })() }));
     ok(cv.w === cv.h && cv.w > 200 && cv.dark > 500, 'QR 畫出來了', cv);
     await shot(page, 'e1_qr');
     await page.evaluate(() => { const A = HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click = function(){ window.__dlName = this.download; return A.call(this); }; });
     await Promise.all([page.waitForEvent('download'), page.click('.modal [data-m=dl]')]);
-    const dlName = await page.evaluate(() => window.__dlName);   // 無頭瀏覽器對 blob 下載回報的檔名是 download，改看 a.download
+    const dlName = await page.evaluate(() => window.__dlName);
     ok(/^qr-bbk-.+\.png$/.test(dlName), 'QR 可下載 PNG', dlName);
     await page.click('.modal [data-m=close]'); ok(await page.$('.modal') === null, '關閉視窗');
-    await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async t => { window.__copied = t; }; });
-    await page.click('[data-act=copy] >> nth=2'); await page.waitForTimeout(100);
-    ok((await page.evaluate(() => window.__copied)) === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID, '複製連結');
-    await shot(page, 'e2_links');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
-  { const { page, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/class/1' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/dragon/links' });
+    await page.waitForSelector('.link');
+    const u = await page.$$eval('#linksCard .url', e => e.map(x => x.textContent));
+    ok(u.length === 1 && u[0] === 'https://wangchiapin.github.io/el-dragon-de-tinta/?class=' + CID, '墨龍：連結', u);
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/colores/links' });
     await page.waitForSelector('.link');
     await page.evaluate(() => { __profesor.S.a.configs = []; }); await page.evaluate(() => document.querySelector('[data-act=lang][data-l=tc]').click());
     ok((await text(page)).includes('還沒有設定組'), '沒有設定組：提示先去建立'); await ctx.close(); }
 
-  console.log('\n[F] 成績簿：跑吧／色數／比比看');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/class/0' });
+  console.log('\n[F] 成績簿：跑吧／色數／比比看（各遊戲的「成績」分頁）');
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/corre/scores' });
     await page.waitForSelector('table.t');
     let rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
     ok(rows[0].startsWith('暱稱 最高分 次數 詳細 最近'), '欄位：暱稱｜最高分｜次數｜詳細｜最近', rows[0]);
@@ -244,20 +264,28 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=days][data-d="30"]'); rows = await page.$$eval('table.t tr', t => t.length);
     ok(rows === 2, '最近 30 天篩選（Beto 40 天前，被濾掉）', rows);
     await page.click('[data-act=days][data-d="0"]');
-    await page.click('[data-act=game][data-g=colores]');
-    rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
+    await page.click('[data-act=pickcls][data-slot="1"]'); await page.waitForSelector('table.t');
+    ok((await text(page, '#bookCard')).includes('Zoe') && !(await text(page, '#bookCard')).includes('Ana'), '成績分頁換班級：看到另一班的成績');
+    await page.click('[data-act=pickcls][data-slot="0"]'); await page.waitForSelector('table.t');
+    await page.click('[data-act=gtab][data-t=content]'); await page.waitForSelector('#correCard');
+    await page.click('[data-act=gtab][data-t=scores]'); await page.waitForSelector('table.t');
+    await page.click('table.t tr:nth-child(3) [data-act=rowdel]'); await page.waitForTimeout(150);
+    ok(!Object.keys((await db(page)).class_scores).some(k => k === CID + '_corre_bank00001111_' + hx(2)) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '刪除單列：只刪 Beto 的跑吧成績');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/colores/scores' });
+    await page.waitForSelector('table.t');
+    const rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
     ok(rows.length === 2 && rows[1].startsWith('Ana 🎨 百位數 640 2 用時 1:23 · 全部清除'), '色數：詳細=用時＋清盤', rows);
     await shot(page, 'f2_colores');
-    // CSV
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=csv]')]);
     const csv = fs.readFileSync(await dl.path(), 'utf8');
     ok(csv.charCodeAt(0) === 0xfeff && csv.includes('nickname,setting,best,plays,detail,last') && csv.includes('Ana,🎨 百位數,640,2,用時 1:23 · 全部清除'), 'CSV 內容（含 BOM）', csv.slice(0, 120));
-    // 刪一列
-    await page.click('[data-act=game][data-g=corre]'); await page.click('table.t tr:nth-child(3) [data-act=rowdel]'); await page.waitForTimeout(150);
-    ok(!Object.keys((await db(page)).class_scores).some(k => k === CID + '_corre_bank00001111_' + hx(2)) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '刪除單列：只刪 Beto 的跑吧成績');
-    // 比比看
-    await page.click('[data-act=game][data-g=bbk]');
-    rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
+    await page.click('[data-act=cleargame]'); await page.waitForTimeout(150);
+    ok(!Object.keys((await db(page)).class_scores).some(k => k.includes('_colores_')) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '清空色數：只清色數');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/scores' });
+    await page.waitForSelector('table.t');
+    let rows = await page.$$eval('table.t tr', t => t.map(r => r.innerText.replace(/\s+/g, ' ').trim()));
     ok(rows[0].startsWith('暱稱 最高分 次數 詳細 最近'), '比比看學生表欄位同上', rows[0]);
     ok(rows[1].startsWith('Ana 一般模式 90% 1 第一次就對 80%') && rows[2].startsWith('Ana 其他範圍 70% 1 第一次就對 50%') && rows[3].startsWith('Beto 一般模式 50% 1 第一次就對 30%'), '比比看（全部設定）：每人每設定一列、最高分%、回合數、第一次就對%', rows);
     await shot(page, 'f3_bbk_students');
@@ -287,29 +315,27 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=cleargame]'); await page.waitForTimeout(150);
     ok(!Object.values((await db(page)).class_plays).some(r => r.cid === CID && r.owner === 'u1'), '清空比比看：本班紀錄清空');
     ok(Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '清空比比看不影響跑吧成績');
-    await page.click('[data-act=game][data-g=colores]'); await page.click('[data-act=cleargame]'); await page.waitForTimeout(150);
-    ok(!Object.keys((await db(page)).class_scores).some(k => k.includes('_colores_')) && Object.keys((await db(page)).class_scores).includes(CID + '_corre_pool_' + hx(1)), '清空色數：只清色數');
     ok(await noOverflow(page), '沒有橫向捲動');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[G] 其他頁面與四語畫面');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/game/corre/content' });
     await page.waitForSelector('.card');
     ok(!!(await page.$('#correCard')) && !(await page.$$eval('a.pill', a => a.map(x => x.href))).join('|').includes('corre/teacher/'), '遊戲設定：跑吧句庫卡片在中心，不再連到舊教師頁');
     await shot(page, 'g1_settings_en');
-    await page.click('[data-act=nav][data-r=print]'); await page.waitForSelector('.card');
-    ok((await text(page)).includes('Print'), '列印頁（英文）');
-    await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('table.t');
-    ok((await text(page)).includes('Enlaces de juego para alumnos') && (await text(page)).includes('Apodo') && (await text(page)).includes('mismo apodo'), '班級頁（西文）');
+    await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForSelector('#cwsCard');
+    ok((await text(page)).includes('Worksheets'), '學習單分頁（英文）');
+    await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=gtab][data-t=links]'); await page.waitForSelector('#linksCard .link');
+    ok((await text(page)).includes('Enlaces de juego para alumnos') && (await text(page)).includes('mismo apodo'), '連結分頁（西文）');
     await shot(page, 'g2_class_es');
     ok(await noOverflow(page), '西文版沒有橫向捲動');
-    await page.click('[data-act=lang][data-l=sc]'); await page.click('[data-act=game][data-g=bbk]'); await page.click('[data-act=tab][data-tab=err]'); await page.waitForSelector('.bar');
+    await page.click('[data-act=lang][data-l=sc]'); await page.click('[data-act=togame][data-g=bbk]'); await page.click('[data-act=gtab][data-t=scores]'); await page.waitForSelector('table.t'); await page.click('[data-act=tab][data-tab=err]'); await page.waitForSelector('.bar');
     ok((await text(page)).includes('特征与形容词') && (await text(page)).includes('常错统计') && !(await text(page)).includes('特徵與形容詞'), '簡體版常錯統計');
     await shot(page, 'g3_errors_sc');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[I] 比比看：練習範圍（新增、編輯、改名、刪除、額度、連結）');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('#bbkCard');
     ok((await text(page, '#bbkCard')).includes('已存 0 / 15 組'), '訂閱老師：0 / 15');
     await page.click('[data-act=bbknew]'); await page.waitForSelector('#bbkCard .editor');
@@ -358,7 +384,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=nav][data-r=home]'); await page.waitForSelector('.kv');
     ok((await text(page)).includes('比比看：設定存檔\n2 / 15') || (await text(page)).replace(/\s+/g, ' ').includes('比比看：設定存檔 2 / 15'), '首頁用量 2 / 15');
     // 班級頁：選範圍 → 連結 ?r=&class=
-    await page.evaluate(() => __profesor.go('class', 0)); await page.waitForSelector('[data-sel=bbksel]');
+    await page.evaluate(() => __profesor.go('game/bbk/links')); await page.waitForSelector('[data-sel=bbksel]');
     const bbkUrl = () => page.$eval('.url[data-url=bbk]', e => e.textContent);
     ok((await bbkUrl()) === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID, '預設一般模式');
     await page.selectOption('[data-sel=bbksel]', '0');
@@ -370,14 +396,14 @@ server.listen(0, 'localhost', async () => {
     ok(/^[a-z0-9]{12}$/.test(sid2) && (await bbkUrl()).endsWith('?r=' + sid2 + '&class=' + CID), '產生後出現連結');
     await shot(page, 'i3_class_link');
     // 刪除：shared_bbk 一起刪
-    await page.click('[data-act=nav][data-r=settings]'); await page.waitForSelector('#bbkCard .setrow');
+    await page.click('[data-act=gtab][data-t=content]'); await page.waitForSelector('#bbkCard .setrow');
     await page.click('[data-act=bbkdel][data-k="0"]'); await page.waitForFunction(() => document.querySelectorAll('#bbkCard .setrow').length === 1);
     d = await db(page);
     ok(d.bbk_sets.u1.items.length === 1 && d.bbk_sets.u1.items[0].sid === sid2 && !d.shared_bbk[sid] && !!d.shared_bbk[sid2], '刪除：清單與 shared_bbk 一起刪，其他組不動');
     ok(await noOverflow(page), '手機寬度沒有橫向捲動');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const three = [1, 2, 3].map(i => ({ id: 'x' + i, name: 'R' + i, lv: 1, d: [], t: [], n: 10 }));
-    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false, bbk: three }, ls: { profesorLang: 'es' }, hash: '#/settings' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false, bbk: three }, ls: { profesorLang: 'es' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('#bbkCard .setrow');
     ok((await text(page, '#bbkCard')).includes('3 / 3 guardados') && await page.$('[data-act=bbknew]') === null, '免費：3 / 3，不能再新增（西文）');
     ok((await text(page, '#bbkCard')).includes('hasta 15'), '提示訂閱可存 15 組');
@@ -387,13 +413,13 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'i4_free_es');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const five = [1, 2, 3, 4, 5].map(i => ({ id: 'x' + i, name: 'R' + i, lv: 1, d: [], t: [], n: 10 }));
-    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true, expired: true, bbk: five }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true, expired: true, bbk: five }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('#bbkCard .setrow');
     ok((await text(page, '#bbkCard')).includes('已存 5 / 3 組') && await page.$('[data-act=bbknew]') === null, '到期：超過額度的仍看得到，但不能新增');
     await page.click('[data-act=bbkdel][data-k="4"]'); await page.waitForFunction(() => document.querySelectorAll('#bbkCard .setrow').length === 4);
     ok((await db(page)).bbk_sets.u1.items.length === 4, '到期仍可刪除');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('#bbkCard'); await page.click('[data-act=bbknew]');
     // 畫面以為還在訂閱中，但其實已到期：規則（模擬）不准存第 4 組
     await page.evaluate(() => { __profesor.S.a.bbk = [1, 2, 3].map(i => ({ id: 'y' + i, name: 'R' + i, lv: 1, d: [], t: [], n: 10 })); });
@@ -412,7 +438,7 @@ server.listen(0, 'localhost', async () => {
   }
 
   console.log('\n[K] 色數設定組：新增、編輯、停用連結、刪除、訂閱功能');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/colores/content' });
     await page.waitForSelector('#colCard .setrow');
     ok((await text(page, '#colCard')).includes('已存 2 / 15 組') && (await text(page, '#colCard')).includes('百位數'), '列出原本的 2 組設定');
     await page.click('#colCard [data-act=colnew]'); await page.waitForSelector('#colCard .editor');
@@ -462,7 +488,7 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'k2_col_list');
     ok(await noOverflow(page), '手機寬度沒有橫向捲動');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
-  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'es' }, hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'es' }, hash: '#/game/colores/content' });
     await page.waitForSelector('#colCard .setrow');
     await page.click('#colCard [data-act=colnew]'); await page.waitForSelector('#colCard .editor');
     await page.click('[data-act=colcadd]');
@@ -477,7 +503,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[L] 色數學習單');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/print' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/colores/sheet' });
     await page.waitForSelector('#wsCard');
     ok(await page.$eval('[data-act=wsmake]', b => b.disabled), '沒選設定組不能產生');
     await page.selectOption('[data-sel=wscfg]', '0');
@@ -515,12 +541,12 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'l3_color');
     if(SHOT) await page.pdf({ path: path.join(SHOT, 'l3_color.pdf'), format: 'A4', printBackground: true });
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
-  { const { page, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/print' });
+  { const { page, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/game/colores/sheet' });
     await page.waitForSelector('#wsCard');
     ok((await text(page, '#wsCard')).includes('學習單是訂閱功能') && await page.$('[data-act=wsmake]') === null, '免費老師：學習單上鎖');
     await ctx.close(); }
   { const big = { id: 'b1', cfg: { name: '大', mode: 'A', rows: 8, cols: 6, hearts: 5, ids: ['red', 'blue', 'green'], range: 9999 } };
-    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/print' });
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/game/colores/sheet' });
     await page.waitForSelector('#wsCard');
     await page.evaluate(c => { __profesor.S.a.configs = [c]; }, big); await page.click('[data-act=lang][data-l=en]');
     await page.selectOption('[data-sel=wscfg]', '0'); await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
@@ -531,7 +557,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[M] 跑吧！漢字：句庫卡片、編輯器、學習單');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/corre/content' });
     await page.waitForSelector('#correCard');
     let t = await text(page, '#correCard');
     ok(t.includes('已用 1 / 5 個句庫') && t.includes('點飲料') && t.includes('2 / 80 句'), '卡片：額度、名稱、句數', t);
@@ -546,7 +572,7 @@ server.listen(0, 'localhost', async () => {
     // 建立第 2 個句庫
     await page.click('#correCard [data-act=bankedit][data-k="1"]'); await page.waitForSelector('#ce-sent');
     ok(await page.evaluate(() => location.hash) === '#/bank/1', '網址 #/bank/1');
-    ok((await text(page, '.nav')).length > 0 && await page.$eval('.nav .pill.on', b => b.dataset.r) === 'settings', '上方「遊戲設定」亮著');
+    ok((await text(page, '.nav')).length > 0 && await page.$eval('.nav .pill.on', b => b.dataset.r) === 'home', '句庫編輯頁：上方「首頁」亮著');
     ok((await text(page)).includes('(0 / 80)'), '訂閱：每庫 80 句');
     if(LIBS){
       await page.fill('#ce-sent', '我 不 要 一 個 蘋果');
@@ -627,11 +653,11 @@ server.listen(0, 'localhost', async () => {
     t = await text(page, '#correCard');
     ok(t.includes('第二課（改）') && t.includes('已用 2 / 5 個句庫'), '回到卡片：新句庫出現');
     // 班級頁的題目來源
-    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('[data-sel=corresrc]');
+    await page.click('[data-act=gtab][data-t=links]'); await page.waitForSelector('[data-sel=corresrc]');
     ok((await page.$$eval('[data-sel=corresrc] option', o => o.map(x => x.textContent))).some(x => x.includes('第二課（改）')), '班級連結的題目來源有新句庫');
     ok((await page.$$eval('[data-sel=corresrc] optgroup', g => g.map(x => x.label))).join('|') === '公開句庫|主題包（訂閱）|我的句庫', '來源選單分三組：公開句庫、主題包、我的句庫');
     // 列印：學習單 PDF
-    await page.click('[data-act=nav][data-r=print]'); await page.waitForSelector('#cwsCard');
+    await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForSelector('#cwsCard');
     await page.selectOption('[data-sel=cwsbank]', '1');
     ok(await page.$eval('[data-act=cwszy]', b => b.classList.contains('on')) && !(await page.$eval('[data-act=cwspy]', b => b.classList.contains('on'))), '學習單預設跟句庫一樣用注音');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=cwsmake]')]);
@@ -641,17 +667,17 @@ server.listen(0, 'localhost', async () => {
     if(SHOT) fs.copyFileSync(await dl.path(), path.join(SHOT, 'm3_worksheet.pdf'));
     await shot(page, 'm3_print');
     // 刪除
-    await page.click('[data-act=nav][data-r=settings]'); await page.waitForSelector('#correCard');
+    await page.click('[data-act=gtab][data-t=content]'); await page.waitForSelector('#correCard');
     await page.click('#correCard [data-act=bankdel][data-k="1"]'); await page.waitForTimeout(150);
     d = await db(page);
     ok(!d.shared_banks[sid] && !d.teacher_banks.u1.slots['1'] && d.teacher_banks.u1.slots['0'] === 'bank00001111', '刪除：句庫和位置都移除');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   { // 免費老師：班級連結與公開句庫連結只能選 A1、A2（B1、題包跳「建議訂閱」）
-    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/class/0' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/game/corre/links' });
     await page.waitForSelector('.link');
     await page.waitForFunction(() => document.querySelector('[data-sel=corresrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
-    const url0 = () => page.$eval('.url', e => e.textContent);
+    const url0 = () => page.$eval('#linksCard .url', e => e.textContent);
     ok((await page.$$eval('[data-sel=corresrc] option', o => o.map(x => x.textContent))).slice(0, 3).join('|') === '公開句庫 A1|公開句庫 A2|🔒 公開句庫 B1', '免費：班級連結來源 B1 有鎖頭');
     await page.selectOption('[data-sel=corresrc]', 'L:B1'); await page.waitForSelector('.modal.sub');
     ok(await page.$eval('[data-sel=corresrc]', s => s.value) === 'L:A1' && (await url0()).endsWith('&level=A1'), '免費：選 B1 → 建議訂閱，連結維持 A1');
@@ -662,7 +688,7 @@ server.listen(0, 'localhost', async () => {
     await page.selectOption('[data-sel=corresrc]', 'L:A2');
     ok((await url0()).endsWith('?class=' + CID + '&level=A2'), '免費：A2 可以，連結 &level=A2', await url0());
     await page.$eval('#linksCard', e => e.scrollIntoView()); await vshot(page, 'p2_free_links');
-    await page.goto(BASE + '/index.html#/settings'); await page.waitForSelector('#pubCard');
+    await page.goto(BASE + '/index.html#/game/corre/links'); await page.waitForSelector('#pubCard');
     await page.waitForFunction(() => document.querySelector('#pubCard [data-sel=pubsrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
     ok(await page.$eval('#pubCard .url', e => e.textContent) === 'https://wangchiapin.github.io/corre/?level=A1' && (await text(page, '#pubCard')).includes('免費版可以用 A1、A2'), '免費：公開句庫練習連結預設 A1，並說明 B1／題包要訂閱');
     await page.selectOption('#pubCard [data-sel=pubsrc]', 'L:A2');
@@ -672,7 +698,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   { // 訂閱老師：公開句庫練習連結（B1、題包、題包＋等級）
-    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/corre/links' });
     await page.waitForSelector('#pubCard');
     await page.waitForFunction(() => document.querySelector('#pubCard [data-sel=pubsrc] optgroup[label*=主題包]'), null, { timeout: 5000 });
     const u = () => page.$eval('#pubCard .url', e => e.textContent);
@@ -687,7 +713,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   { // 免費老師
-    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/game/corre/content' });
     await page.waitForSelector('#correCard');
     const t = await text(page, '#correCard');
     ok(t.includes('已用 1 / 1 個句庫') && (t.match(/🔒/g) || []).length === 8 && (await page.$$('#correCard [data-act=needsub]')).length === 4 && t.includes('2 / 50 句'), '免費：1 / 1，其他 4 格上鎖（各有建議訂閱按鈕），每庫 50 句');
@@ -704,12 +730,12 @@ server.listen(0, 'localhost', async () => {
     await page.click('.modal.sub [data-m=close]');
     await page.selectOption('#ce-lvlSel', 'A2'); await page.waitForTimeout(300);
     ok((await page.$$('#ce-pickList label')).length === 100 && !(await page.$('.modal.sub')), '免費：A2 可以選');
-    await page.click('[data-act=nav][data-r=print]'); await page.waitForSelector('#cwsCard');   // 沒改東西，不會問
+    await page.evaluate(() => __profesor.go('game/corre/sheet')); await page.waitForSelector('#cwsCard');   // 沒改東西，不會問
     ok((await text(page, '#cwsCard')).includes('學習單是訂閱功能') && !(await page.$('[data-act=cwsmake]')), '免費：學習單上鎖');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   { // 到期老師：訂閱庫顯示「連結已暫停」，不能存成訂閱庫
-    const { page, errors, ctx } = await open(browser, { seedOpt: { expired: true }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { expired: true }, ls: { profesorLang: 'tc' }, hash: '#/game/corre/content' });
     await page.waitForSelector('#correCard');
     await page.evaluate(() => { const a = __profesor.S.a; a.banks.push({ slot: 1, sid: 'bank22223333', name: '舊訂閱庫', data: { name: '舊訂閱庫', pro: true, speed: 'normal', script: 'trad', sentences: [{ trad: ['好'], simp: ['好'], pinyin: ['hǎo'], es: 'bien', en: '' }] } }); a.bslots['1'] = 'bank22223333'; });
     await page.click('[data-act=lang][data-l=tc]');
@@ -729,19 +755,19 @@ server.listen(0, 'localhost', async () => {
     await ctx.close(); }
 
   console.log('\n[N] 步驟 5-1：學習單改名、快速跳轉、建議訂閱、意見回饋、干擾字');
-  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/corre/content' });
     await page.waitForSelector('#correCard'); await vshot(page, 'n0a_settings_top');
-    ok((await text(page, '.nav')).includes('學習單') && !(await text(page, '.nav')).includes('列印'), '上方選單：「列印」改名「學習單」');
-    const jb = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k + ':' + x.innerText));
-    ok(jb.join('|') === 'correCard:📚 跑吧句庫|pubCard:🔗 公開句庫連結|bbkCard:📐 比比看範圍|colCard:🎨 色數設定|dragonCard:🐉 墨龍主題', '遊戲設定頁：五個快速按鈕', jb);
-    await page.click('.jump [data-k=colCard]'); await page.waitForTimeout(700);
-    ok(await page.evaluate(() => { const t = document.getElementById('colCard').getBoundingClientRect().top; return window.scrollY > 0 && t >= 0 && t < window.innerHeight / 2; }), '按「色數設定」捲到色數卡片');
-    await vshot(page, 'n0b_settings_jumped');
-    await page.evaluate(() => window.__profesor.go('print')); await page.waitForSelector('#wsCard');
-    const jp = await page.$$eval('.jump [data-act=jump]', b => b.map(x => x.dataset.k));
-    ok(jp.join() === 'cwsCard,wsCard,bbkWsCard,dragonWsCard' && await page.$('#bbkWsCard') !== null, '學習單頁：四個快速按鈕', jp);
+    ok((await page.$$eval('.nav [data-act=nav]', b => b.map(x => x.dataset.r))).join() === 'home,classes', '上方選單只剩「首頁」「班級」');
+    const tabs = await page.$$eval('.gtabs [data-act=gtab]', b => b.map(x => x.dataset.t + ':' + x.innerText));
+    ok(tabs.join('|') === 'content:📚 句庫|links:連結|scores:成績|sheet:學習單|help:說明'.replace('📚 句庫', tabs[0].split(':')[1]), '遊戲頁分頁：內容｜連結｜成績｜學習單｜說明', tabs);
+    ok((await page.$$eval('.gsw [data-act=togame]', b => b.map(x => x.dataset.g))).join() === 'corre,colores,bbk,dragon', '遊戲切換：四款');
+    await page.click('.gsw [data-g=colores]'); await page.waitForSelector('#colCard');
+    ok(page.url().endsWith('#/game/colores/content'), '切換遊戲：停在同一個分頁', page.url());
+    await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForSelector('#wsCard');
+    await page.click('.gsw [data-g=bbk]'); await page.waitForSelector('#bbkWsCard');
+    ok(page.url().endsWith('#/game/bbk/sheet'), '在學習單分頁切遊戲，還是學習單', page.url());
     ok(!(await text(page, '#app')).includes('之後會搬到這裡') && !(await text(page, '#app')).includes('老師設定'), '學習單頁：不再叫老師去遊戲裡做練習紙');
-    ok((await text(page, 'h2')) === '學習單', '學習單頁標題');
+    ok(await page.$eval('.gtabs', e => getComputedStyle(e).position) === 'sticky', '分頁列黏在上面');
     // 意見回饋
     await page.click('[data-act=feedback]'); await page.waitForSelector('.modal.fb');
     ok((await text(page, '.modal.fb')).includes('teacher@example.com') || (await text(page, '.modal.fb')).includes('@'), '回饋視窗顯示 email');
@@ -750,7 +776,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('.modal.fb [data-t=bug]'); await page.fill('#fbText', '學習單按鈕太小'); await vshot(page, 'n2_feedback');
     await page.click('.modal.fb [data-m=send]'); await page.waitForFunction(() => !document.querySelector('.modal.fb'));
     const fb = Object.values((await db(page)).center_feedback || {});
-    ok(fb.length === 1 && fb[0].type === 'bug' && fb[0].message === '學習單按鈕太小' && fb[0].lang === 'tc' && fb[0].page === '#/print' && fb[0].done === false && fb[0].uid && fb[0].email,
+    ok(fb.length === 1 && fb[0].type === 'bug' && fb[0].message === '學習單按鈕太小' && fb[0].lang === 'tc' && fb[0].page === '#/game/bbk/sheet' && fb[0].done === false && fb[0].uid && fb[0].email,
       '回饋存進 center_feedback（類型、內容、語言、頁面、email）', fb);
     ok(Object.keys(fb[0]).sort().join() === 'createdAt,done,email,lang,message,page,type,uid', '回饋欄位跟規則一致', Object.keys(fb[0]));
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
@@ -763,11 +789,13 @@ server.listen(0, 'localhost', async () => {
     ok(m.includes('Función de suscripción') && m.includes('5 bancos de Corre') && (await page.$eval('.modal.sub a[data-m=go]', a => a.href)).includes('cadadiaunosminutos-share-zone'), '建議訂閱視窗：西文、列出訂閱內容、連到入口網站', m);
     await shot(page, 'n1_needsub');
     await page.click('.modal.sub [data-m=close]'); ok(await page.$('.modal.sub') === null, '「之後再說」關掉視窗');
-    await page.evaluate(() => window.__profesor.go('print')); await page.waitForSelector('#wsCard');
-    ok((await page.$$('#cwsCard [data-act=needsub], #wsCard [data-act=needsub], #bbkWsCard [data-act=needsub]')).length === 3, '學習單：未訂閱三款都有上鎖的「產生」按鈕（含比比看）');
+    for(const [g, card] of [['corre', 'cwsCard'], ['colores', 'wsCard'], ['bbk', 'bbkWsCard']]){
+      await page.evaluate(x => window.__profesor.go('game/' + x + '/sheet'), g); await page.waitForSelector('#' + card);
+      ok((await page.$$('#' + card + ' [data-act=needsub]')).length === 1, '學習單：未訂閱 ' + g + ' 有上鎖的「產生」按鈕');
+    }
     ok(await page.$('#bbkWsCard [data-act=bwsmake]') === null, '比比看學習單：未訂閱不能產生');
-    await page.click('#wsCard [data-act=needsub]'); ok(await page.$('.modal.sub') !== null, '按了跳出建議訂閱'); await page.click('.modal.sub [data-m=close]');
-    ok((await text(page, '.nav')).includes('Hojas de trabajo'), '西文：Hojas de trabajo');
+    await page.click('#bbkWsCard [data-act=needsub]'); ok(await page.$('.modal.sub') !== null, '按了跳出建議訂閱'); await page.click('.modal.sub [data-m=close]');
+    ok((await text(page, '.gtabs')).includes('Fichas'), '西文：Fichas');
     await page.evaluate(() => window.__profesor.go('bank', '0')); await page.waitForSelector('#ce-decoy', { state: 'attached' });
     ok(await page.$eval('#ce-decoy', i => i.readOnly) && (await text(page, '#ce-decoyBox')).includes('requieren suscripción'), '免費：干擾字欄位上鎖');
     await page.evaluate(() => { document.getElementById('ce-preview').hidden = false; });
@@ -830,7 +858,7 @@ server.listen(0, 'localhost', async () => {
 
   console.log('\n[O] 步驟 5-4：比比看學習單搬到中心');
   { const BBK = [{ id: 'b1', name: '身高和年齡', lv: 2, d: ['height', 'age'], t: ['pick', 'decode'], n: 5 }];
-    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/print' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/sheet' });
     await page.waitForSelector('#bbkWsCard [data-act=bwsmake]');
     const opts = await page.$$eval('#bbkWsCard select[data-sel=bwssel] option', o => o.map(x => x.value + ':' + x.textContent));
     ok(opts.length === 4 && opts[3] === '0:📐 身高和年齡' && opts[0].includes('第 1 關'), '範圍選單：三個關卡＋老師存的範圍', opts);
@@ -864,7 +892,7 @@ server.listen(0, 'localhost', async () => {
     ok(await noOverflow(page), '手機寬度不會左右捲');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 比比看程式載入失敗
-    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/print' });
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/sheet' });
     await page.waitForSelector('#bbkWsCard [data-act=bwsmake]');
     await page.route('**/compara-y-adivina/**', r => r.abort());
     await page.click('#bbkWsCard [data-act=bwsmake]');
@@ -876,7 +904,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.filter(e => !/load|ERR_FAILED/.test(e)).length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 手機自動複製失敗：跳出可以手動複製、分享的小視窗
     const BBK = [{ id: 'b1', name: '身高', lv: 1, d: ['height'], t: [], n: 5, sid: 'rng000011112' }];
-    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('#bbkCard [data-act=bbkpractice]');
     await page.evaluate(() => { let n = 0; window.__copies = [];
       navigator.clipboard.writeText = t => { n++; if(n === 1) return Promise.reject(new Error('NotAllowed')); window.__copies.push(t); return Promise.resolve(); };
@@ -889,25 +917,26 @@ server.listen(0, 'localhost', async () => {
     await page.click('.modal.cp [data-m=cp]');
     ok(await page.$('.modal.cp') === null && (await page.evaluate(() => window.__copies))[0] === v, '按「複製連結」：複製成功、視窗關掉');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
-  { // 6-1 遊戲設定說明頁
-    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
-    await page.waitForSelector('[data-act=nav][data-r=help]');
-    await page.click('[data-act=nav][data-r=help]'); await page.waitForSelector('#hBbk');
-    ok(page.url().endsWith('#/help'), '遊戲設定頁有「📘 遊戲設定說明」按鈕，按了到 #/help', page.url());
+  { // 6-1 遊戲說明：每款遊戲自己的「說明」分頁
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
+    await page.waitForSelector('[data-act=gtab][data-t=help]');
+    await page.click('[data-act=gtab][data-t=help]'); await page.waitForSelector('#hBbk');
+    ok(page.url().endsWith('#/game/bbk/help'), '遊戲頁的「說明」分頁 → #/game/bbk/help', page.url());
     const t = await text(page);
-    ok(['使用步驟', '跑吧！漢字：句庫', '色數消消樂：設定組', '比比看：練習範圍', '訂閱後還可以', 'A 沒有 B 那麼高', '公開句庫 A1／A2', '0–9999'].every(w => t.includes(w)), '說明頁：五段內容都在（繁）');
-    ok(await page.$$eval('.hsteps > li', a => a.length) === 4 && await page.$$eval('.hsec', a => a.length) === 6 && await page.$$eval('.jump [data-act=jump]', a => a.length) === 6, '說明頁：4 個步驟卡片、6 段、6 個快速按鈕');
-    ok(await page.$eval('.nav .pill.on', e => e.dataset.r) === 'settings', '說明頁：上方選單停在「遊戲設定」');
+    ok(['使用步驟', '比比看：練習範圍', '訂閱後還可以', 'A 沒有 B 那麼高', '0–9999'].every(w => t.includes(w)) || t.includes('比比看：練習範圍'), '說明頁：這款遊戲的段落在（繁）');
+    ok(await page.$$eval('.hsec', a => a.length) === 3 && await page.$$eval('details.hsec', a => a.filter(d => !d.open).length) === 2 && await page.$$eval('.hsteps > li', a => a.length) >= 4, '說明頁：自己的段落展開，步驟與訂閱兩段收起來（可點開）');
     ok(await noOverflow(page), '說明頁：手機寬度不會左右滑'); await shot(page, 'p1_help_tc');
-    await page.click('.jump [data-k=hCol]'); await page.waitForTimeout(600);
-    ok(await page.$eval('#hCol', e => Math.abs(e.getBoundingClientRect().top) < 200), '快速按鈕：跳到色數那一段');
-    for(const [l, w] of [['sc', '游戏设置说明'], ['es', 'Guía de ajustes'], ['en', 'Game settings guide']]){
+    await page.click('#hStep summary'); ok(await page.$eval('#hStep', d => d.open), '點「使用步驟」可以展開');
+    for(const [g, id] of [['corre', 'hCorre'], ['colores', 'hCol'], ['dragon', 'hDragon']]){
+      await page.evaluate(x => __profesor.go('game/' + x + '/help'), g); await page.waitForSelector('#' + id);
+      ok(await page.$eval('#' + id, e => e.tagName) === 'DIV', '說明：' + g + ' 自己的段落直接展開');
+    }
+    await page.evaluate(() => __profesor.go('game/bbk/help')); await page.waitForSelector('#hBbk');
+    for(const [l, w] of [['sc', '比比看：练习范围'], ['es', 'Compara y Adivina'], ['en', 'Compare & Guess']]){
       await page.click('[data-act=lang][data-l=' + l + ']'); await page.waitForTimeout(100);
       const tt = await text(page);
       ok(tt.includes(w) && !/[「」]/.test(l === 'sc' ? tt : '') && await noOverflow(page), '說明頁：' + l + ' 版本正常', tt.slice(0, 80)); await shot(page, 'p2_help_' + l);
     }
-    await page.click('[data-act=nav][data-r=settings]'); await page.waitForSelector('#correCard');
-    ok(page.url().endsWith('#/settings'), '「返回遊戲設定」回到設定頁');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 說明內容：四種語言結構一樣
     global.window = {}; eval(fs.readFileSync(path.join(ROOT, 'js', 'help.js'), 'utf8')); const H = global.window.HELP;
@@ -922,38 +951,57 @@ server.listen(0, 'localhost', async () => {
       await page.click('[data-act=lang][data-l=' + l + ']'); const tt = await text(page); ok(w.every(x => tt.includes(x)), '首頁介紹：' + l);
     }
     await page.click('[data-act=lang][data-l=tc]');
-    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('table.t');
-    ok(JSON.stringify(await page.$$eval('.jump [data-act=jump]', a => a.map(x => x.textContent))) === JSON.stringify(['🏫 班級', '🔗 學生遊戲連結', '📊 成績']), '班級頁快速按鈕：班級｜學生遊戲連結｜成績');
+    // 班級頁只管班級：沒有連結、成績，只有各遊戲的快速入口
+    await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('#shortCard');
+    ok(!(await page.$('#linksCard')) && !(await page.$('#bookCard')) && !(await page.$('table.t')), '班級頁很精簡：沒有連結、成績（搬到各遊戲）');
+    ok((await page.$$('#shortCard [data-act=togame]')).length === 8, '班級頁：四款遊戲各有「連結」「成績」快速入口');
+    await page.click('#shortCard [data-g=bbk][data-t=scores]'); await page.waitForSelector('#bookCard');
+    ok(page.url().endsWith('#/game/bbk/scores') && await page.evaluate(() => localStorage.getItem('profesorCls')) === '0', '快速入口：帶著這個班到比比看的成績');
+    await page.evaluate(() => __profesor.go('game/corre/links')); await page.waitForSelector('#linksCard .link');
     t = await text(page, '#linksCard');
-    ok(t.includes('🔗 學生遊戲連結') && t.includes('快速依你的設定建立遊戲連結') && t.includes('自動回傳到下方成績冊'), '「學生遊戲連結」標題與新介紹');
+    ok(t.includes('🔗 學生遊戲連結') && t.includes('快速依你的設定建立遊戲連結') && t.includes('自動回傳到這款遊戲的「成績」分頁'), '「學生遊戲連結」標題與新介紹', t.slice(0, 120));
     ok((await text(page, '#linksCard .notice.alert')).includes('注意：如有同暱稱之學生，應告知學生修改暱稱。'), '「注意」那句用醒目的提醒框');
     ok(!t.includes('改了範圍，這個連結也會跟著改') && !(await text(page)).includes('全部班級'), '比比看那句、「全部班級」按鈕都拿掉了');
-    // 成績冊在頁面最下面：頁面不夠長時捲到底就好（成績冊的開頭在畫面裡）
-    const atBook = () => page.evaluate(() => { const top = document.getElementById('bookCard').getBoundingClientRect().top, bottom = window.scrollY + innerHeight >= document.documentElement.scrollHeight - 2;
-      return { s: window.scrollY, top, ok: top >= 0 && (top < 120 || bottom) && top < innerHeight / 2 }; });
-    await page.click('.jump [data-k=bookCard]'); await page.waitForTimeout(1500);
-    const y0 = await atBook(); ok(y0.ok && y0.s > 200, '快速按鈕「成績」跳到成績冊', y0);
-    await page.click('[data-act=game][data-g=bbk]'); await page.waitForSelector('table.t.click');
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    // 成績：點學生看常錯統計，畫面維持在成績分頁
+    await page.evaluate(() => __profesor.go('game/bbk/scores')); await page.waitForSelector('table.t.click');
     await page.click('table.t.click tr:nth-child(2)'); await page.waitForSelector('[data-act=stuback]');
-    const y1 = await atBook();
-    ok(y1.s > 200 && y1.ok, '點學生看常錯統計：停在成績那一段，不跳回最上面', y1);
+    ok(page.url().endsWith('#/game/bbk/scores'), '點學生看常錯統計：還在成績分頁');
     await shot(page, 'q1_student_stays');
     await page.click('[data-act=stuback]'); await page.waitForSelector('table.t.click');
-    const y2 = await atBook();
-    ok(y2.s > 200 && y2.ok, '按返回：也停在成績那一段', y2);
-    await page.evaluate(() => window.scrollTo(0, 0)); await shot(page, 'q2_class_top');
-    for(const l of ['sc', 'es', 'en']){ await page.click('[data-act=lang][data-l=' + l + ']'); ok(await noOverflow(page), '班級頁 ' + l + '：手機寬度不會左右滑'); }
+    ok(true, '按返回回到名單');
+    for(const g of ['corre', 'colores', 'bbk', 'dragon']) for(const tb of ['content', 'links', 'scores', 'sheet', 'help']) for(const l of ['sc', 'es', 'en']){
+      await page.evaluate(([g, tb]) => __profesor.go('game/' + g + '/' + tb), [g, tb]); await page.click('[data-act=lang][data-l=' + l + ']'); await page.waitForTimeout(30);
+      if(!await noOverflow(page)) ok(false, g + '/' + tb + ' ' + l + '：手機寬度左右滑');
+    }
+    ok(true, '四款遊戲 × 五個分頁 × 三種語言：手機寬度都不會左右滑');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { // 舊網址轉址、選班級記住、分頁
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    await page.waitForSelector('.gtabs');
+    ok(page.url().endsWith('#/game/corre/content'), '舊網址 #/settings → 遊戲內容分頁', page.url());
+    await page.evaluate(() => { location.hash = '#/print'; }); await page.waitForSelector('#cwsCard');
+    ok(page.url().endsWith('/sheet'), '舊網址 #/print → 學習單分頁', page.url());
+    await page.evaluate(() => { location.hash = '#/help'; }); await page.waitForSelector('#hCorre');
+    ok(page.url().endsWith('/help'), '舊網址 #/help → 說明分頁', page.url());
+    await page.evaluate(() => { location.hash = '#/game/nosuch/links'; }); await page.waitForSelector('.badge');
+    ok(page.url().endsWith('#/home'), '不存在的遊戲 → 回首頁');
+    await page.evaluate(() => __profesor.go('game/colores/scores')); await page.waitForSelector('#bookCard');
+    await page.click('[data-act=pickcls][data-slot="1"]'); await page.reload(); await page.waitForSelector('#bookCard');
+    ok(await page.$eval('[data-act=pickcls].on', b => b.dataset.slot) === '1', '選的班級重新整理後還記得');
+    await page.evaluate(() => __profesor.go('game/dragon/links')); await page.waitForSelector('#linksCard');
+    ok(await page.$eval('[data-act=pickcls].on', b => b.dataset.slot) === '1', '換遊戲分頁，班級維持');
+    await page.evaluate(() => __profesor.go('home')); await page.waitForSelector('.badge');
+    await page.click('[data-act=togame][data-g=colores]'); await page.waitForSelector('#colCard');
+    ok(page.url().endsWith('#/game/colores/content'), '首頁「管理」→ 該遊戲內容');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 6-2 成績依設定分開：「顯示」選單、刪掉的設定、比比看範圍名稱
     const bbkSets = [{ id: 'b1', name: '身高年齡', lv: 2, d: ['height', 'age'], t: ['pick'], n: 10, sid: 'rng000011112' }];
-    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: bbkSets }, ls: { profesorLang: 'tc' }, hash: '#/class/0' });
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: bbkSets }, ls: { profesorLang: 'tc' }, hash: '#/game/corre/scores' });
     await page.waitForSelector('table.t');
     // 多一筆：Ana 用「點飲料」句庫、一筆用已刪除的句庫；比比看一回合用「身高年齡」範圍
     await page.evaluate(() => { const S = __profesor.S, now = Date.now();
       S.scores.push({ id: 'x1', cid: 'class0000aaaa', owner: 'u1', game: 'corre', k: 'bank00001111', h: '0000000000000001', nick: 'Ana', best: 300, plays: 1, ms: now, extra: { sent: 3, diff: 'facil' } });
       S.scores.push({ id: 'x2', cid: 'class0000aaaa', owner: 'u1', game: 'corre', k: 'gone00001111', h: '0000000000000004', nick: 'Caro', best: 50, plays: 1, ms: now, extra: {} });
-      S.plays.unshift({ id: 'y1', cid: 'class0000aaaa', owner: 'u1', game: 'bbk', h: '0000000000000002', nick: 'Beto', ms: now, th: 'people', lv: 2, rg: 'd=height,age&t=pick&n=10', r: 'rng000011112', score: 100, max: 100, qs: [{ t: 'pick', d: 'height', f: 'BI', p: 1, ok: true, f1: true }] });
       document.querySelector('[data-act=lang][data-l=tc]').click(); });
     const opts = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
     ok(JSON.stringify(opts) === JSON.stringify(['全部設定', '舊公開題庫（改版前）', '📚 點飲料', '（已刪除的設定）']), '「顯示」選單：全部＋這款遊戲有成績的設定（刪掉的句庫顯示已刪除）', opts);
@@ -972,7 +1020,10 @@ server.listen(0, 'localhost', async () => {
     const opts2 = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
     ok(['公開句庫 A1', '公開句庫 B1', '🎯 飲食與點餐', '🎯 比較句 · A2', '🎯 nosuch'].every(x => opts2.includes(x)), '成績冊的設定名稱：pool-A1／pool-B1／pack-題包／pack-題包-等級', opts2);
     await shot(page, 'r1_setk_corre');
-    await page.click('[data-act=game][data-g=bbk]'); await page.waitForSelector('[data-sel=setk]');
+    await page.click('.gsw [data-g=bbk]'); await page.waitForSelector('[data-sel=setk]');
+    await page.evaluate(() => { const S = __profesor.S, now = Date.now();
+      S.plays.unshift({ id: 'y1', cid: 'class0000aaaa', owner: 'u1', game: 'bbk', h: '0000000000000002', nick: 'Beto', ms: now, th: 'people', lv: 2, rg: 'd=height,age&t=pick&n=10', r: 'rng000011112', score: 100, max: 100, qs: [{ t: 'pick', d: 'height', f: 'BI', p: 1, ok: true, f1: true }] });
+      document.querySelector('[data-act=lang][data-l=tc]').click(); });
     ok(await page.$eval('[data-sel=setk]', e => e.value) === '', '換遊戲：選單回到全部');
     const bo = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
     ok(bo.includes('📐 身高年齡') && bo.includes('一般模式') && bo.includes('其他範圍'), '比比看選單：範圍名稱、一般模式、舊格式範圍', bo);
@@ -993,7 +1044,7 @@ server.listen(0, 'localhost', async () => {
     const all = JSON.stringify(H);
     ok(all.includes('成績會依句庫、設定組或範圍分開記錄') && all.includes('成绩会依句库、设置组或范围分开记录') && all.includes('menú «Mostrar»') && all.includes('“Show” menu'), '說明頁「看成績」補上依設定分開（四語）'); }
   { // 6-4 比比看主題：範圍編輯器
-    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/settings' });
+    const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('[data-act=bbknew]'); await page.click('[data-act=bbknew]'); await page.waitForSelector('[data-act=bbkth]');
     const th = await page.$$eval('[data-act=bbkth], [data-act=bbkthsoon]', b => b.map(x => [x.dataset.k, x.classList.contains('on'), x.dataset.act, x.textContent]));
     ok(JSON.stringify(th.map(x => x[0])) === JSON.stringify(['people', 'fruit', 'animal', 'action']) && th[0][1] && th[0][2] === 'bbkth' && th.slice(1).every(x => x[2] === 'bbkthsoon' && x[3].includes('陸續開放')),
@@ -1029,7 +1080,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2)\b/.test(ix) && (ix.match(/\?v=7-3/g) || []).length >= 11 && ix.includes('js/help.js?v=7-3') && ix.includes('js/pubbank.js?v=7-3'), 'index.html 的 css／js 都改成 ?v=7-3（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3)\b/.test(ix) && (ix.match(/\?v=7-4/g) || []).length >= 11 && ix.includes('js/help.js?v=7-4') && ix.includes('js/pubbank.js?v=7-4'), 'index.html 的 css／js 都改成 ?v=7-4（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }

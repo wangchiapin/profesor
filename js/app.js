@@ -7,6 +7,8 @@ const app = document.getElementById('app');
 const GAMES = ['corre', 'colores', 'bbk'];
 const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon' };
 const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc' };
+const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon'];
+const GAME_TABS = ['content', 'links', 'scores', 'sheet', 'help'];
 const DR = window.DRAGON;
 const bookGames = () => DR.ready() ? GAMES.concat(['dragon']) : GAMES;     // 成績冊的遊戲分頁（墨龍正式開放前不顯示）
 const maintBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>：' + esc(T('maintNote')) + '</div>';
@@ -14,6 +16,7 @@ const maintBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>�
 const S = {
   authSeen: false, user: null, acct: '', msg: '', a: null,          // a = loadAccount 的結果
   route: 'home', cur: null,
+  g: 'corre', gt: 'content', cls: (function(){ try{ return localStorage.getItem('profesorCls') || ''; }catch(e){ return ''; } })(),   // 遊戲頁：現在是哪款遊戲、哪個分頁；連結／成績分頁選的班級
   game: 'corre', days: 0, tab: 'stu', sel: null,
   scores: [], scoresState: '', plays: [], playsState: '', msg2: '',
   correSrc: 'L:A1', correLv: '', pubSrc: 'L:A1', pubLv: '', colCfg: '', bbkSel: '', busy: false, setK: '',     // setK = 成績冊只看哪個設定（'' = 全部）
@@ -67,15 +70,30 @@ const isReal = () => DATA.isRealUser(S.user);
 const classOf = slot => S.a && S.a.classes[String(slot)];
 const fdate = BOOKS.fdate;
 
-// ---- 路由（#/home、#/classes、#/classes/new、#/class/0、#/settings、#/help、#/print）----
+// ---- 路由（#/home、#/classes、#/classes/new、#/class/0、#/game/<遊戲>/<分頁>、#/bank/N；舊的 #/settings、#/print、#/help 會導到遊戲頁）----
 function parseHash(){
   const h = (location.hash || '').replace(/^#\/?/, '').split('/');
   const r = h[0] || 'home';
+  if(r === 'game'){
+    if(GAME_IDS.indexOf(h[1]) < 0) return { route: 'home', cur: null, redirect: '#/home' };
+    return { route: 'game', cur: null, g: h[1], gt: GAME_TABS.indexOf(h[2]) >= 0 ? h[2] : 'content' };
+  }
+  if(r === 'settings') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/content' };
+  if(r === 'print') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/sheet' };
+  if(r === 'help') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/help' };
   if(r === 'class' && /^[0-2]$/.test(h[1] || '')) return { route: 'class', cur: h[1] };
   if(r === 'bank' && /^[0-4]$/.test(h[1] || '')) return { route: 'bank', cur: h[1] };
   if(r === 'classes') return { route: 'classes', cur: h[1] === 'new' ? 'new' : null };
-  return { route: ['home', 'classes', 'settings', 'help', 'print'].indexOf(r) >= 0 ? r : 'home', cur: null };
+  return { route: 'home', cur: null };
 }
+// 連結、成績分頁用的「現在選的班級」
+function ensureCls(){
+  if(!S.a) return;
+  const ks = Object.keys(S.a.classes).sort();
+  if(!S.cls || !S.a.classes[S.cls]) S.cls = ks[0] || '';
+}
+function setCls(slot){ S.cls = String(slot); try{ localStorage.setItem('profesorCls', S.cls); }catch(e){} }
+const clsC = () => { ensureCls(); return S.a && S.cls !== '' ? S.a.classes[S.cls] : undefined; };
 // 按上方「班級」：有班級就直接打開第一班（班級頁上面的分頁可以換班）；「＋ 建立班級」分頁是 #/classes/new
 function firstSlot(){ return S.a ? Object.keys(S.a.classes).sort()[0] : undefined; }
 function classesRedirect(){
@@ -84,26 +102,33 @@ function classesRedirect(){
   location.replace('#/class/' + s); return true;
 }
 function go(route, cur){ location.hash = '#/' + route + (cur != null ? '/' + cur : ''); }
+function goGame(g, t){ const h = '#/game/' + g + '/' + t; if(location.hash === h) onRoute(); else location.hash = h; }
 let lastHash = location.hash, skipHash = false;
 async function onRoute(){
   if(skipHash){ skipHash = false; return; }
   const r = parseHash();
+  if(r.redirect){ location.replace(r.redirect); return; }
   // 離開句庫編輯：有沒上傳的修改要先問
   if(S.route === 'bank' && !(r.route === 'bank' && r.cur === S.cur)){
     if(CORRE.isDirty() && !confirm(CORRE.tr('confirmLeave'))){ skipHash = true; location.hash = lastHash; return; }
     CORRE.close();
   }
   lastHash = location.hash;
+  const prevG = S.route === 'game' ? S.g : null;
   S.route = r.route; S.cur = r.cur;
-  if(S.route === 'class'){
-    S.game = 'corre'; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = '';
+  if(S.route === 'game'){
+    if(prevG !== r.g){ S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
+    S.g = r.g; S.gt = r.gt; S.game = r.g;
+    if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = ''; }
+    if(S.gt !== 'sheet') S.wsSheet = null;
     render(); window.scrollTo(0, 0);
-    if(S.acct === 'ok' && classOf(S.cur)) await loadBook();
+    if(S.gt === 'scores' && S.acct === 'ok' && clsC()) await loadBook();
     return;
   }
+  if(S.route === 'class'){ if(classOf(S.cur)) setCls(S.cur); render(); window.scrollTo(0, 0); return; }
   if(classesRedirect()) return;
-  if(S.route !== 'settings'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = ''; }
-  if(S.route !== 'print') S.wsSheet = null;
+  S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = '';
+  S.wsSheet = null;
   render(); window.scrollTo(0, 0);
 }
 
@@ -114,17 +139,17 @@ async function loadAccount(){
   catch(e){ console.error(e); S.acct = 'error'; S.msg = err(e); }
   if(classesRedirect()) return;
   render();
-  if(S.acct === 'ok' && S.route === 'class' && classOf(S.cur)) loadBook();
+  if(S.acct === 'ok' && S.route === 'game' && S.gt === 'scores' && clsC()) loadBook();
 }
 async function loadBook(){
-  const c = classOf(S.cur); if(!c) return;
+  const c = clsC(); if(!c) return;
   S.scoresState = 'loading'; S.playsState = 'loading'; S.msg2 = ''; render();
   const cid = c.cid;
   await Promise.all([
     DATA.loadScores(cid).then(r => { S.scores = r; S.scoresState = 'ok'; }).catch(e => { console.error(e); S.scores = []; S.scoresState = 'error'; S.msg2 = err(e); }),
     DATA.loadPlays(cid).then(r => { S.plays = r; S.playsState = 'ok'; }).catch(e => { console.error(e); S.plays = []; S.playsState = 'error'; S.msg2 = err(e); })
   ]);
-  if(S.route === 'class' && S.cur !== null && classOf(S.cur) && classOf(S.cur).cid === cid) render();
+  if(S.route === 'game' && S.gt === 'scores' && clsC() && clsC().cid === cid) render();
 }
 
 // ---- 畫面 ----
@@ -134,8 +159,8 @@ function headerHtml(){
     [['tc', '繁'], ['sc', '简'], ['es', 'ES'], ['en', 'EN']].map(l => '<button class="pill sm ' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('') + '</div></div>';
 }
 function navHtml(){
-  const items = [['home', 'navHome'], ['classes', 'navClasses'], ['settings', 'navSettings'], ['print', 'navPrint']];
-  const cur = S.route === 'class' ? 'classes' : (S.route === 'bank' || S.route === 'help') ? 'settings' : S.route;
+  const items = [['home', 'navHome'], ['classes', 'navClasses']];
+  const cur = (S.route === 'class' || S.route === 'classes') ? 'classes' : 'home';
   return '<div class="nav">' + items.map(i => '<button class="pill ' + (cur === i[0] ? 'on' : '') + '" data-act="nav" data-r="' + i[0] + '">' + esc(T(i[1])) + '</button>').join('') + '</div>';
 }
 function loginHtml(){
@@ -162,29 +187,27 @@ function planLabel(P){
   return name;
 }
 // 遊戲設定、學習單頁上方的快速按鈕：按了直接捲到那一張卡片
-function jumpHtml(list){
-  return '<div class="jump" aria-label="' + esc(T('jumpTo')) + '">' + list.map(x => '<button class="pill sm" data-act="jump" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div>';
-}
 // 沒訂閱的人按到訂閱功能時的按鈕（按了跳出「建議訂閱」視窗）
 const lockBtn = label => '<button class="pill sm lockbtn" data-act="needsub">🔒 ' + esc(label) + '</button>';
+function usageOf(g){
+  const A = S.a, P = A.plan, banksMax = P.active ? 5 : 1, cfgMax = P.active ? 15 : 3;
+  if(g === 'corre') return T('usageCorre') + '　' + (A.extrasReady ? A.banks.length + ' / ' + banksMax : '–');
+  if(g === 'colores') return T('usageColores') + '　' + (A.extrasReady ? A.configs.length + ' / ' + cfgMax : '–');
+  if(g === 'bbk') return T('usageBbk') + '　' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–');
+  return T('usageDragonThemes') + '　' + (A.dragonReady ? A.dragon.themes.length + ' / ' + DATA.DRAGON_THEMES_MAX : '–') + '　·　' + T('usageDragonSets') + '　' + (A.dragonReady ? A.dragon.sets.length + ' / ' + DATA.DRAGON_SETS_MAX : '–');
+}
 function homeHtml(){
   const A = S.a, P = A.plan, nCls = Object.keys(A.classes).length;
-  const banksMax = P.active ? 5 : 1, cfgMax = P.active ? 15 : 3;
   const plan = '<div class="card"><h3>' + esc(T('planTitle')) + '</h3><div class="kv"><span><span class="badge ' + (P.active ? 'pro' : '') + '">' + esc(planLabel(P)) + '</span></span><span class="mut">' +
-    (P.expiresAt ? esc(T(P.active ? 'planUntil' : 'planExpired', { date: fdate(P.expiresAt) })) : '') + '</span></div>' + planNoticeHtml() + '</div>';
-  const usage = '<div class="card"><h3>' + esc(T('usageTitle')) + '</h3>' +
-    '<div class="kv"><span>' + esc(T('usageClasses')) + '</span><b>' + nCls + ' / ' + DATA.MAX_CLASSES + '</b></div>' +
-    '<div class="kv"><span>' + esc(T('usageCorre')) + '</span><b>' + (A.extrasReady ? A.banks.length + ' / ' + banksMax : '–') + '</b></div>' +
-    '<div class="kv"><span>' + esc(T('usageColores')) + '</span><b>' + (A.extrasReady ? A.configs.length + ' / ' + cfgMax : '–') + '</b></div>' +
-    '<div class="kv"><span>' + esc(T('usageBbk')) + '</span><b>' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–') + '</b></div>' +
-    (DR.ready() ? '<div class="kv"><span>' + esc(T('usageDragonThemes')) + '</span><b>' + (A.dragonReady ? A.dragon.themes.length + ' / ' + DATA.DRAGON_THEMES_MAX : '–') + '</b></div>' +
-      '<div class="kv"><span>' + esc(T('usageDragonSets')) + '</span><b>' + (A.dragonReady ? A.dragon.sets.length + ' / ' + DATA.DRAGON_SETS_MAX : '–') + '</b></div>' : '') + '</div>';
-  const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3>' + GAMES.map(g =>
-    '<div class="kv" style="align-items:center"><span><b>' + esc(T(GAME_KEY[g])) + '</b><br><small>' + esc(T(GAME_DESC[g])) + '</small></span>' +
-    '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>').join('') +
-    '<div class="kv" style="align-items:center"><span><b>' + esc(T('gameDragon')) + '</b><br><small>' + esc(T('gameDragonDesc')) + '</small></span>' +
-    (DR.ready() ? '<a class="pill sm" href="' + DATA.GAME_URL.dragon + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a>' : '<span class="badge">🔧 ' + esc(T('maint')) + '</span>') + '</div></div>';
-  return plan + usage + games;
+    (P.expiresAt ? esc(T(P.active ? 'planUntil' : 'planExpired', { date: fdate(P.expiresAt) })) : '') + '</span></div>' + planNoticeHtml() +
+    '<div class="kv"><span>' + esc(T('usageClasses')) + '</span><b>' + nCls + ' / ' + DATA.MAX_CLASSES + '</b></div></div>';
+  const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3><p class="hint">' + esc(T('gamesPick')) + '</p>' + GAME_IDS.map(g =>
+    '<div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small>' +
+    ((g === 'dragon' && !DR.ready()) ? '' : '<small class="mut">' + esc(usageOf(g)) + '</small>') + '</div>' +
+    ((g === 'dragon' && !DR.ready()) ? '<span class="badge">🔧 ' + esc(T('maint')) + '</span>'
+      : '<div class="row" style="margin:0"><button class="pill fill sm" data-act="togame" data-g="' + g + '" data-t="content">' + esc(T('manage')) + '</button>' +
+        '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>') + '</div>').join('') + '</div>';
+  return plan + games;
 }
 // 班級頁最上面的分頁：每班一個（顯示班名），最後是「＋ 建立班級」（還沒滿 3 班才有）
 function classTabsHtml(active){
@@ -253,7 +276,7 @@ function srcFieldsHtml(key, v, lv, withBanks){
 
 // 學生連結
 function linkCardHtml(game){
-  const c = classOf(S.cur), A = S.a;
+  const c = clsC(), A = S.a;
   let h = '<div class="link"><h3>' + esc(T(GAME_KEY[game])) + '</h3>';
   let url = '';
   if(game === 'dragon'){
@@ -331,8 +354,7 @@ function setPickHtml(g, keys, sk){
 }
 function bookHtml(){
   const g = S.game;
-  let h = '<h3>' + esc(T('resultsTitle')) + '</h3><div class="row">' +
-    bookGames().map(x => '<button class="pill sm ' + (g === x ? 'on' : '') + '" data-act="game" data-g="' + x + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>';
+  let h = '<h3>' + esc(T('resultsTitle')) + ' · ' + esc(clsC().data.name) + '</h3>';
   const state = g === 'bbk' ? S.playsState : S.scoresState;
   if(state === 'loading' || state === '') return h + '<p class="hint">' + esc(T('loading')) + '</p>';
   if(state === 'error') return h + '<div class="err">' + esc(S.msg2) + '</div><div class="row"><button class="pill" data-act="refresh">' + esc(T('retry')) + '</button></div>';
@@ -355,7 +377,7 @@ function bookHtml(){
 function classHtml(){
   const c = classOf(S.cur);
   if(!c) return classTabsHtml(String(S.cur)) + '<p class="hint">' + esc(T('noClasses')) + '</p>';
-  let h = classTabsHtml(String(S.cur)) + jumpHtml([['clsCard', 'jumpClass'], ['linksCard', 'jumpLinks'], ['bookCard', 'jumpScores']]) + planNoticeHtml() +
+  let h = classTabsHtml(String(S.cur)) + planNoticeHtml() +
     '<div class="card" id="clsCard"><h2>🏫 ' + esc(c.data.name) + '</h2>' +
     '<div class="field"><label>' + esc(T('classNameLabel')) + '</label><div class="inline"><input type="text" id="clsName" maxlength="40" value="' + esc(c.data.name) + '"><button class="pill sm" data-act="classrename">' + esc(T('rename')) + '</button></div></div>' +
     '<div class="field"><label>' + esc(T('boardTitle')) + '</label><div class="row" style="margin-top:0">' +
@@ -363,9 +385,10 @@ function classHtml(){
     '<p class="hint">' + esc(T('boardHint')) + '</p></div>' +
     '<div class="row"><button class="pill sm" data-act="classdelete">🗑 ' + esc(T('deleteClass')) + '</button></div>' +
     (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
-  h += '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T('linksHint')) + '</p>' +
-    '<div class="notice alert">⚠️ ' + esc(T('linksNick')) + '</div>' + GAMES.concat(['dragon']).map(linkCardHtml).join('') + '</div>';
-  h += '<div class="card" id="bookCard">' + bookHtml() + '</div>';
+  h += '<div class="card" id="shortCard"><h3>' + esc(T('classShortcuts')) + '</h3><p class="hint">' + esc(T('classShortcutsHint')) + '</p>' +
+    bookGames().map(g => '<div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b></div><div class="row" style="margin:0">' +
+      '<button class="pill sm" data-act="togame" data-g="' + g + '" data-t="links" data-slot="' + esc(String(S.cur)) + '">🔗 ' + esc(T('gtLinks')) + '</button>' +
+      '<button class="pill sm" data-act="togame" data-g="' + g + '" data-t="scores" data-slot="' + esc(String(S.cur)) + '">📊 ' + esc(T('gtScores')) + '</button></div></div>').join('') + '</div>';
   return h;
 }
 // ---- 比比看：練習範圍 ----
@@ -549,20 +572,26 @@ function dragonSetEditorHtml(){
   if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
   return h + '<div class="row"><button class="pill fill sm" data-act="dssave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dscancel">' + esc(T('cancel')) + '</button></div></div>';
 }
+function dragonQuickHtml(){
+  let h = '<div class="card" id="dragonQuick"><h3>🐉 ' + esc(T('dragonQuickTitle')) + '</h3>';
+  if(!DR.ready()) return h + maintBox() + '</div>';
+  const A = S.a, P = A.plan;
+  if(!A.dragonReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  const sel = S.dragonQuick.filter(id => P.active || DR.isFreeId(id)), url = sel.length ? DATA.linkDragonQuick(sel) : '';
+  h += '<p class="hint">' + esc(T(P.active ? 'dragonQuickHintPro' : 'dragonQuickHintFree')) + '</p><div class="row" style="margin-top:0">' +
+    DR.IDS.map(id => (P.active || DR.isFreeId(id)) ? chip(sel.indexOf(id) >= 0, DR.builtinName(id), 'dqk', id)
+      : '<button class="pill sm chip lockbtn" data-act="needsub">🔒 ' + esc(DR.builtinName(id)) + '</button>').join('') + '</div>';
+  h += url ? '<div class="url" data-url="dragon">' + esc(url) + '</div><div class="row"><button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
+    '<button class="pill sm" data-act="dragonqr" data-url="' + esc(url) + '">' + esc(T('qr')) + '</button><a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>'
+    : '<p class="hint">' + esc(T('dragonQuickNone')) + '</p>';
+  return h + '</div>';
+}
 function dragonCardHtml(){
   let h = '<div class="card" id="dragonCard"><h3>🐉 ' + esc(T('dragonTitle')) + '</h3>';
   if(!DR.ready()) return h + maintBox() + '</div>';
   const A = S.a, P = A.plan, D = A.dragon, E = S.dragonEdit, SE = S.dragonSetEdit;
   h += '<p class="hint">' + esc(T('dragonHint')) + '</p>';
   if(!A.dragonReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-  // 1. 快速練習連結（內建主題，不用存資料；不收成績）
-  const sel = S.dragonQuick.filter(id => P.active || DR.isFreeId(id)), url = sel.length ? DATA.linkDragonQuick(sel) : '';
-  h += '<h4>' + esc(T('dragonQuickTitle')) + '</h4><p class="hint">' + esc(T(P.active ? 'dragonQuickHintPro' : 'dragonQuickHintFree')) + '</p><div class="row" style="margin-top:0">' +
-    DR.IDS.map(id => (P.active || DR.isFreeId(id)) ? chip(sel.indexOf(id) >= 0, DR.builtinName(id), 'dqk', id)
-      : '<button class="pill sm chip lockbtn" data-act="needsub">🔒 ' + esc(DR.builtinName(id)) + '</button>').join('') + '</div>';
-  h += url ? '<div class="url" data-url="dragon">' + esc(url) + '</div><div class="row"><button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
-    '<button class="pill sm" data-act="dragonqr" data-url="' + esc(url) + '">' + esc(T('qr')) + '</button><a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>'
-    : '<p class="hint">' + esc(T('dragonQuickNone')) + '</p>';
   // 2. 自訂主題（訂閱）
   h += '<h4>' + esc(T('dragonCustomTitle')) + '</h4>';
   if(!P.active){ h += lockedNote(); }
@@ -596,20 +625,53 @@ function dragonCardHtml(){
 function bankRouteHtml(){
   const why = CORRE.open(S.a, +S.cur);
   if(!why) return '<div id="correEd"></div>';
-  return '<div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(CORRE.tr('back')) + '</button></div><div class="notice">' +
+  return '<div class="row"><button class="pill sm" data-act="togame" data-g="corre" data-t="content">' + esc(CORRE.tr('back')) + '</button></div><div class="notice">' +
     esc(why === 'locked' ? CORRE.tr('slotLockedEd') : T('bbkUnavailable')) + '</div>';
 }
-function settingsHtml(){
-  return '<h2>' + esc(T('settingsTitle')) + '</h2><p class="hint">' + esc(T('settingsHint')) + '</p>' +
-    '<div class="row"><button class="pill fill" data-act="nav" data-r="help">' + esc(helpLang().btn) + '</button></div>' +
-    jumpHtml([['correCard', 'jumpCorre'], ['pubCard', 'jumpPub'], ['bbkCard', 'jumpBbk'], ['colCard', 'jumpColores'], ['dragonCard', 'jumpDragon']]) + correCardHtml() + pubCardHtml() + bbkCardHtml() + colCardHtml() + dragonCardHtml();
+// ---- 遊戲頁：每款遊戲一頁，分頁＝題庫／連結／成績／學習單／說明 ----
+const GT_CONTENT = { corre: 'gtBankCorre', colores: 'gtBankColores', bbk: 'gtBankBbk', dragon: 'gtBankDragon' };
+const GT_LABEL = { links: 'gtLinks', scores: 'gtScores', sheet: 'gtSheet', help: 'gtHelp' };
+function classPickHtml(){
+  const A = S.a, ks = Object.keys(A.classes).sort();
+  if(!ks.length) return '<div class="notice">' + esc(T('noClasses')) + '</div><div class="row">' +
+    (A.plan.active && A.clsReady ? '<button class="pill fill sm" data-act="newclass">＋ ' + esc(T('createClass')) + '</button>' : lockBtn(T('createClass'))) + '</div>';
+  return '<div class="field"><label>' + esc(T('pickClass')) + '</label><div class="ctabs">' +
+    ks.map(k => '<button class="pill ' + (S.cls === k ? 'on' : '') + '" data-act="pickcls" data-slot="' + k + '">🏫 ' + esc(A.classes[k].data.name) + '</button>').join('') + '</div></div>';
+}
+function classLinksHtml(g){
+  return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T('linksHint')) + '</p>' + classPickHtml() +
+    (clsC() ? '<div class="notice alert">⚠️ ' + esc(T('linksNick')) + '</div>' + linkCardHtml(g) : '') + '</div>';
+}
+function gameLinksHtml(g){
+  if(g === 'corre') return pubCardHtml() + classLinksHtml(g);
+  if(g === 'dragon') return dragonQuickHtml() + classLinksHtml(g);
+  return '<p class="hint">' + esc(T('linksPracticeHint')) + '</p>' + classLinksHtml(g);
+}
+function gameScoresHtml(){
+  if(S.g === 'corre') ensurePacks();   // 成績冊的題包名稱要用
+  return '<div class="card" id="bookCard">' + classPickHtml() + (clsC() ? bookHtml() : '') + '</div>';
+}
+function gameHtml(){
+  const g = S.g;
+  ensureCls();
+  let h = '<div class="ctabs gsw">' + GAME_IDS.map(x => '<button class="pill ' + (g === x ? 'on' : '') + '" data-act="togame" data-g="' + x + '" data-t="' + S.gt + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>' +
+    '<div class="gtitle"><h2>' + esc(T(GAME_KEY[g])) + '</h2><a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">▶ ' + esc(T('openGame')) + '</a></div>';
+  if(g === 'dragon' && !DR.ready()) return h + maintBox();
+  h += '<div class="gtabs">' + [['content', GT_CONTENT[g]], ['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]].map(t =>
+    '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
+  if(S.gt === 'content') return h + (g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
+  if(S.gt === 'links') return h + gameLinksHtml(g);
+  if(S.gt === 'scores') return h + gameScoresHtml();
+  if(S.gt === 'sheet') return h + (g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
+  return h + helpHtml(g);
 }
 // ---- 遊戲設定說明（#/help）：內容在 js/help.js（靜態文字，四種語言）----
 function helpLang(){ const H = window.HELP || {}; return H[I18N.getLang()] || H.tc || { btn: '', sections: [], jump: [] }; }
-function helpHtml(){
+function helpHtml(game){
   const H = helpLang();
+  const mine = { corre: 'hCorre', colores: 'hCol', bbk: 'hBbk', dragon: 'hDragon' }[game];
   const list = a => '<ul class="hlist">' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
-  const sec = x => '<div class="card hsec" id="' + x.id + '"><h3>' + esc(x.h) + '</h3>' +
+  const sec = x => (x.id === mine ? '<div class="card hsec" id="' + x.id + '"><h3>' + esc(x.h) + '</h3>' : '<details class="card hsec" id="' + x.id + '"><summary><b>' + esc(x.h) + '</b></summary>') +
     (x.intro ? '<p>' + x.intro + '</p>' : '') +
     (x.steps ? '<ol class="hsteps">' + x.steps.map((st, i) => '<li><span class="hnum">' + (i + 1) + '</span><div><b>' + esc(st[0]) + '</b><div>' + st[1] + '</div></div></li>').join('') + '</ol>' : '') +
     (x.items ? list(x.items) : '') +
@@ -617,13 +679,8 @@ function helpHtml(){
     (x.tip ? '<div class="notice">' + x.tip + '</div>' : '') +
     (x.note ? '<div class="notice">' + x.note + '</div>' : '') +
     (x.plan ? '<div class="hplan"><div><span class="badge">' + esc(H.free) + '</span><span>' + esc(x.plan[0]) + '</span></div><div><span class="badge pro">' + esc(H.pro) + '</span><span>' + esc(x.plan[1]) + '</span></div></div>' : '') +
-    '</div>';
-  // 墨龍還沒開放時，說明裡先不出現墨龍那一段
-  const secs = H.sections.map((x, i) => ({ x, j: H.jump[i] })).filter(o => o.x.id !== 'hDragon' || DR.ready());
-  return '<div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(H.back) + '</button></div>' +
-    '<h2>' + esc(H.title) + '</h2><p class="hint">' + esc(H.intro) + '</p>' +
-    '<div class="jump">' + secs.map(o => '<button class="pill sm" data-act="jump" data-k="' + o.x.id + '">' + esc(o.j || o.x.h) + '</button>').join('') + '</div>' +
-    secs.map(o => sec(o.x)).join('');
+    (x.id === mine ? '</div>' : '</details>');
+  return H.sections.filter(x => x.id === mine || x.id === 'hStep' || x.id === 'hSub').sort((a, b) => (a.id === mine ? 0 : a.id === 'hStep' ? 1 : 2) - (b.id === mine ? 0 : b.id === 'hStep' ? 1 : 2)).map(sec).join('');
 }
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
@@ -634,7 +691,7 @@ function wsFormHtml(){
   const A = S.a, W = S.ws || (S.ws = wsDefaults());
   let h = '<div class="card" id="wsCard"><h3>' + esc(T('gameColores')) + '</h3>';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
-  if(!A.configs.length) return h + '<p class="hint">' + esc(T('wsNoCfg')) + '</p><div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(T('navSettings')) + '</button></div></div>';
+  if(!A.configs.length) return h + '<p class="hint">' + esc(T('wsNoCfg')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="colores" data-t="content">' + esc(T('navSettings')) + '</button></div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   h += '<div class="field"><label>' + esc(T('configLabel')) + '</label><select data-sel="wscfg"><option value="">' + esc(T('configPick')) + '</option>' +
     A.configs.map((it, i) => '<option value="' + i + '" ' + (W.cfg === String(i) ? 'selected' : '') + '>' + esc((it.cfg && it.cfg.name) || ('#' + (i + 1))) + '</option>').join('') + '</select>' +
@@ -663,7 +720,7 @@ function cwsFormHtml(){
   const A = S.a, W = S.cws || (S.cws = cwsDefaults());
   let h = '<div class="card" id="cwsCard"><h3>' + esc(T('gameCorre')) + '</h3><p class="hint">' + esc(T('cwsHint')) + '</p>';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
-  if(!A.banks.length) return h + '<p class="hint">' + esc(T('cwsNoBank')) + '</p><div class="row"><button class="pill sm" data-act="nav" data-r="settings">' + esc(T('navSettings')) + '</button></div></div>';
+  if(!A.banks.length) return h + '<p class="hint">' + esc(T('cwsNoBank')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="corre" data-t="content">' + esc(T('navSettings')) + '</button></div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
   const b = W.bank !== '' ? CORRE.bankOf(A, +W.bank) : null;
@@ -752,21 +809,14 @@ function dwsFormHtml(){
     (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
   return h + '</div>';
 }
-function printHtml(){
-  if(S.wsSheet) return wsSheetHtml();
-  return '<h2>' + esc(T('printTitle')) + '</h2><p class="hint">' + esc(T('printHint')) + '</p>' +
-    jumpHtml([['cwsCard', 'jumpCorreWs'], ['wsCard', 'jumpColoresWs'], ['bbkWsCard', 'jumpBbkWs'], ['dragonWsCard', 'jumpDragonWs']]) + cwsFormHtml() + wsFormHtml() + bwsFormHtml() + dwsFormHtml();
-}
 function bodyHtml(){
   if(S.acct === 'loading' || S.acct === '') return '<p class="hint center">' + esc(T('loading')) + '</p>';
   if(S.acct === 'error') return '<div class="err">' + esc(S.msg) + '</div><div class="row"><button class="pill" data-act="reload">' + esc(T('retry')) + '</button></div>';
   switch(S.route){
     case 'classes': return classesHtml();
     case 'class': return classHtml();
-    case 'settings': return settingsHtml();
-    case 'help': return helpHtml();
+    case 'game': return S.wsSheet ? wsSheetHtml() : gameHtml();
     case 'bank': return bankRouteHtml();
-    case 'print': return printHtml();
     default: return homeHtml();
   }
 }
@@ -781,8 +831,8 @@ function render(){
   CORRE.capture();                                    // 句庫編輯器：記下還沒加入的輸入
   app.innerHTML = h;
   const ce = document.getElementById('correEd');
-  if(ce) CORRE.mount(ce, () => go('settings'));
-  document.body.classList.toggle('wsmode', !!(S.route === 'print' && S.wsSheet));
+  if(ce) CORRE.mount(ce, () => goGame('corre', 'content'));
+  document.body.classList.toggle('wsmode', !!S.wsSheet);
   Object.keys(vals).forEach(id => { const el = document.getElementById(id); if(el && /^newCls/.test(id)) el.value = vals[id]; });   // 重畫時保留還沒送出的新班級名稱
   if(keep){ const el = document.getElementById(keep); if(el && el.focus) el.focus(); }
 }
@@ -797,7 +847,7 @@ function qrCanvas(url){
   return cv;
 }
 function showQr(url, game){
-  const c = classOf(S.cur);
+  const c = clsC();
   qrModal(qrCanvas(url), T(GAME_KEY[game]) + ' · ' + (c ? c.data.name : ''), 'qr-' + game + '-' + safeName(c ? c.data.name : '') + '.png', url);
 }
 function qrModal(cv, title, file, url){
@@ -879,6 +929,9 @@ const actions = {
   async login(){ S.msg = ''; try{ await DATA.login(); }catch(e){ console.error(e); S.msg = err(e); render(); } },
   async logout(){ await DATA.logout(); },
   nav(el){ go(el.dataset.r); },
+  togame(el){ if(el.dataset.slot != null && el.dataset.slot !== '') setCls(el.dataset.slot); goGame(el.dataset.g, el.dataset.t || 'content'); },
+  gtab(el){ goGame(S.g, el.dataset.t); },
+  pickcls(el){ setCls(el.dataset.slot); S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.dragonSel = ''; S.colCfg = ''; S.bbkSel = ''; if(S.gt === 'scores') return loadBook(); render(); },
   reload(){ return loadAccount(); },
   openclass(el){ go('class', el.dataset.slot); },
   newclass(){ S.msg = ''; go('classes', 'new'); },
@@ -1150,7 +1203,7 @@ const actions = {
   }); },
   refresh(){ return loadBook(); },
   csv(){
-    const c = classOf(S.cur), g = S.game, lab = k => setLabel(g, k);
+    const c = clsC(), g = S.game, lab = k => setLabel(g, k);
     const sk = curSetK(BOOKS.setKeys(g, g === 'bbk' ? S.plays : S.scores));
     const rows = g === 'bbk' ? BOOKS.csvBbk(sk ? S.plays.filter(r => BOOKS.setKeyOf('bbk', r) === sk) : S.plays, S.days, lab) : BOOKS.csvScores(g, S.scores, S.days, sk, lab);
     saveBlob(new Blob([BOOKS.toCsv(rows)], { type: 'text/csv;charset=utf-8' }), g + '_' + safeName(c.data.name) + '_' + fdate(Date.now()).replace(/\//g, '') + '.csv');
@@ -1228,7 +1281,10 @@ window.addEventListener('hashchange', onRoute);
 
 // ---- 啟動 ----
 render();
-const r0 = parseHash(); S.route = r0.route; S.cur = r0.cur;
+let r0 = parseHash();
+if(r0.redirect){ location.replace(r0.redirect); r0 = parseHash(); }
+S.route = r0.route; S.cur = r0.cur;
+if(r0.route === 'game'){ S.g = r0.g; S.gt = r0.gt; S.game = r0.g; }
 try{
   DATA.onUser(u => {
     S.user = u; S.authSeen = true;

@@ -1,10 +1,10 @@
 // 遊戲設定說明（#/help）的內容：繁、簡、西、英。簡體由繁體自動轉換。
-// 這份說明目前只寫三款遊戲的設定；之後新增功能或新遊戲，要記得一起改這裡。
+// 說明放在各遊戲頁的「說明」分頁：該遊戲那一段＋共用的「使用步驟」「訂閱後」（收合）。新增功能或新遊戲，要記得一起改這裡。
 window.HELP = {
  "tc": {
   "btn": "📘 遊戲設定說明",
   "title": "📘 遊戲設定說明",
-  "intro": "在「遊戲設定」頁，你可以替三款遊戲準備自己的題目，然後用連結傳給學生玩。",
+  "intro": "在遊戲頁，你可以替每款遊戲準備自己的題目，然後用連結傳給學生玩。",
   "back": "← 返回遊戲設定",
   "free": "免費",
   "pro": "訂閱",
@@ -19,15 +19,15 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "使用步驟（三款遊戲都一樣）",
+    "h": "使用步驟（四款遊戲都一樣）",
     "steps": [
      [
       "建立",
-      "在「遊戲設定」頁建立句庫、設定組或練習範圍。"
+      "進入遊戲頁，在第一個分頁（句庫、設定組、練習範圍或主題）建立你要的內容。"
      ],
      [
       "產生連結",
-      "連結有兩種：<ul><li><b>練習連結</b>：在「遊戲設定」頁就能產生，不用開班級。學生打開就能玩，但成績不會回傳給你。</li><li><b>班級連結</b>（訂閱功能）：到「班級」頁，選好句庫、設定組或範圍，再產生連結。學生輸入暱稱後，每一回合的成績會自動回傳到成績冊。</li></ul>"
+      "連結有兩種：<ul><li><b>練習連結</b>：在遊戲頁的「設定組／練習範圍／主題」分頁（跑吧、墨龍在「連結」分頁）就能產生，不用開班級。學生打開就能玩，但成績不會回傳給你。</li><li><b>班級連結</b>（訂閱功能）：到遊戲頁的「連結」分頁，上面選班級，再選好句庫、設定組或範圍，產生連結。學生輸入暱稱後，每一回合的成績會自動回傳到成績冊。</li></ul>"
      ],
      [
       "傳給學生",
@@ -35,7 +35,7 @@ window.HELP = {
      ],
      [
       "看成績",
-      "到「班級」頁的成績冊查看。成績會依句庫、設定組或範圍分開記錄，可以用成績冊上方的「顯示」選單切換。"
+      "到遊戲頁的「成績」分頁，上面選班級就能看成績冊。成績會依句庫、設定組或範圍分開記錄，可以用成績冊上方的「顯示」選單切換。"
      ]
     ],
     "tip": "💡 改了設定，已經發出去的連結會自動更新，不用重傳。"
@@ -50,7 +50,7 @@ window.HELP = {
      "<b>批次匯入</b>：一行一句，格式是「中文 | 西班牙文 | 英文」。",
      "<b>從公開句庫／主題包加入</b>：不用自己一句一句打。可以從「公開句庫」（A1、A2 免費，B1 需訂閱）或「主題包」（訂閱）挑句子，或整包加入，複製進你的句庫（不會改到原本的句庫）。加進來後可以再修改。",
      "<b>干擾字</b>（訂閱功能）：遊戲出這一句時，會先用這些字當干擾，讓學生練習分辨相似字。每句最多 5 個。",
-     "<b>不建句庫也能用</b>：在「班級」頁的「題目來源」選「公開句庫 A1／A2」（訂閱後還有 B1 和主題包），直接用內建的句子出題。內建句庫依《當代中文課程》1、2、3 冊的語法點分成 A1、A2、B1，詞彙不超過華語八千詞對應等級。「遊戲設定」頁的「公開句庫練習連結」可以直接做出不收成績的連結和 QR code。"
+     "<b>不建句庫也能用</b>：在「跑吧」遊戲頁的「連結」分頁，班級連結的「題目來源」選「公開句庫 A1／A2」（訂閱後還有 B1 和主題包），直接用內建的句子出題。內建句庫依《當代中文課程》1、2、3 冊的語法點分成 A1、A2、B1，詞彙不超過華語八千詞對應等級。同一個分頁的「公開句庫練習連結」可以直接做出不收成績的連結和 QR code。"
     ],
     "plan": [
      "1 個句庫，每庫最多 50 句；公開句庫 A1、A2",
@@ -140,7 +140,7 @@ window.HELP = {
     "items": [
      "建立班級（最多 3 班），成績自動回傳到成績冊",
      "比比看常錯統計、匯出 CSV",
-     "三款遊戲的學習單（列印／PDF）"
+     "四款遊戲的學習單（列印／PDF，在各遊戲頁的「學習單」分頁）"
     ]
    }
   ]
@@ -148,7 +148,7 @@ window.HELP = {
  "sc": {
   "btn": "📘 游戏设置说明",
   "title": "📘 游戏设置说明",
-  "intro": "在“游戏设置”页，你可以替三款游戏准备自己的题目，然后用链接传给学生玩。",
+  "intro": "在游戏页，你可以替每款游戏准备自己的题目，然后用链接传给学生玩。",
   "back": "← 返回游戏设置",
   "free": "免费",
   "pro": "订阅",
@@ -163,15 +163,15 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "使用步骤（三款游戏都一样）",
+    "h": "使用步骤（四款游戏都一样）",
     "steps": [
      [
       "创建",
-      "在“游戏设置”页创建句库、设置组或练习范围。"
+      "进入游戏页，在第一个分页（句库、设置组、练习范围或主题）创建你要的内容。"
      ],
      [
       "生成链接",
-      "链接有两种：<ul><li><b>练习链接</b>：在“游戏设置”页就能生成，不用开班级。学生打开就能玩，但成绩不会回传给你。</li><li><b>班级链接</b>（订阅功能）：到“班级”页，选好句库、设置组或范围，再生成链接。学生输入昵称后，每一回合的成绩会自动回传到成绩册。</li></ul>"
+      "链接有两种：<ul><li><b>练习链接</b>：在游戏页的“设置组／练习范围／主题”分页（跑吧、墨龙在“链接”分页）就能生成，不用开班级。学生打开就能玩，但成绩不会回传给你。</li><li><b>班级链接</b>（订阅功能）：到游戏页的“链接”分页，上面选班级，再选好句库、设置组或范围，生成链接。学生输入昵称后，每一回合的成绩会自动回传到成绩册。</li></ul>"
      ],
      [
       "传给学生",
@@ -179,7 +179,7 @@ window.HELP = {
      ],
      [
       "看成绩",
-      "到“班级”页的成绩册查看。成绩会依句库、设置组或范围分开记录，可以用成绩册上方的“显示”选单切换。"
+      "到游戏页的“成绩”分页，上面选班级就能看成绩册。成绩会依句库、设置组或范围分开记录，可以用成绩册上方的“显示”选单切换。"
      ]
     ],
     "tip": "💡 改了设置，已经发出去的链接会自动更新，不用重传。"
@@ -194,7 +194,7 @@ window.HELP = {
      "<b>批量导入</b>：一行一句，格式是“中文 | 西班牙文 | 英文”。",
      "<b>从公开句库／主题包加入</b>：不用自己一句一句打。可以从“公开句库”（A1、A2 免费，B1 需订阅）或“主题包”（订阅）挑句子，或整包加入，复制进你的句库（不会改到原本的句库）。加进来后可以再修改。",
      "<b>干扰字</b>（订阅功能）：游戏出这一句时，会先用这些字当干扰，让学生练习分辨相似字。每句最多 5 个。",
-     "<b>不建句库也能用</b>：在“班级”页的“题目来源”选“公开句库 A1／A2”（订阅后还有 B1 和主题包），直接用内置的句子出题。内置句库依《当代中文课程》1、2、3 册的语法点分成 A1、A2、B1，词汇不超过华语八千词对应等级。“游戏设置”页的“公开句库练习链接”可以直接做出不收成绩的链接和 QR code。"
+     "<b>不建句库也能用</b>：在“跑吧”游戏页的“链接”分页，班级链接的“题目来源”选“公开句库 A1／A2”（订阅后还有 B1 和主题包），直接用内置的句子出题。内置句库依《当代中文课程》1、2、3 册的语法点分成 A1、A2、B1，词汇不超过华语八千词对应等级。同一个分页的“公开句库练习链接”可以直接做出不收成绩的链接和 QR code。"
     ],
     "plan": [
      "1 个句库，每库最多 50 句；公开句库 A1、A2",
@@ -284,7 +284,7 @@ window.HELP = {
     "items": [
      "创建班级（最多 3 班），成绩自动回传到成绩册",
      "比比看常错统计、导出 CSV",
-     "三款游戏的学习单（打印／PDF）"
+     "四款游戏的学习单（打印／PDF，在各游戏页的“学习单”分页）"
     ]
    }
   ]
@@ -292,7 +292,7 @@ window.HELP = {
  "es": {
   "btn": "📘 Guía de ajustes",
   "title": "📘 Guía de ajustes de juegos",
-  "intro": "En «Ajustes de juegos» puedes preparar tus propios ejercicios para los tres juegos y enviárselos a tus alumnos con un enlace.",
+  "intro": "En la página de cada juego puedes preparar tus propios ejercicios y enviárselos a tus alumnos con un enlace.",
   "back": "← Volver a Ajustes de juegos",
   "free": "Gratis",
   "pro": "Suscripción",
@@ -307,15 +307,15 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "Cómo se usa (igual en los tres juegos)",
+    "h": "Cómo se usa (igual en los cuatro juegos)",
     "steps": [
      [
       "Crear",
-      "En «Ajustes de juegos», crea un banco de frases, una configuración o un rango de práctica."
+      "Entra en la página del juego y, en la primera pestaña (bancos, configuraciones, rangos o temas), crea lo que necesites."
      ],
      [
       "Generar el enlace",
-      "Hay dos tipos de enlace:<ul><li><b>Enlace de práctica</b>: se genera en «Ajustes de juegos», sin crear una clase. El alumno lo abre y juega, pero sus notas no te llegan.</li><li><b>Enlace de clase</b> (suscripción): en la página «Clases», elige el banco, la configuración o el rango y genera el enlace. El alumno escribe un apodo y la nota de cada ronda llega sola al libro de notas.</li></ul>"
+      "Hay dos tipos de enlace:<ul><li><b>Enlace de práctica</b>: se genera en la página del juego (en la pestaña de configuraciones, rangos o temas; en Corre y Dragón, en «Enlaces»), sin crear una clase. El alumno lo abre y juega, pero sus notas no te llegan.</li><li><b>Enlace de clase</b> (suscripción): en la pestaña «Enlaces» del juego, elige la clase arriba, luego el banco, la configuración o el rango, y genera el enlace. El alumno escribe un apodo y la nota de cada ronda llega sola al libro de notas.</li></ul>"
      ],
      [
       "Enviarlo a tus alumnos",
@@ -323,7 +323,7 @@ window.HELP = {
      ],
      [
       "Ver las notas",
-      "Consulta el libro de notas en la página «Clases». Las notas se guardan por banco, configuración o rango; cámbialo con el menú «Mostrar» de arriba."
+      "Consulta el libro de notas en la pestaña «Notas» del juego, eligiendo la clase arriba. Las notas se guardan por banco, configuración o rango; cámbialo con el menú «Mostrar» de arriba."
      ]
     ],
     "tip": "💡 Si cambias un ajuste, los enlaces ya enviados se actualizan solos; no hace falta reenviarlos."
@@ -338,7 +338,7 @@ window.HELP = {
      "<b>Importar en lote</b>: una frase por línea, con el formato «chino | español | inglés».",
      "<b>Añadir desde el banco público / paquetes temáticos</b>: no tienes que escribir frase por frase. Elige frases del «Banco público» (A1 y A2 gratis; B1 con suscripción) o de un «Paquete temático» (suscripción), o añade el paquete entero; se copian a tu banco (el original no cambia). Después puedes editarlas.",
      "<b>Distractores</b> (suscripción): cuando sale esa frase, el juego usa primero estas palabras como distractores para practicar caracteres parecidos. Hasta 5 por frase.",
-     "<b>Sin crear un banco</b>: en la página «Clases», en «Origen de las frases», elige «Banco público A1 / A2» (con suscripción también B1 y los paquetes temáticos) para usar las frases incluidas. Están divididas en A1, A2 y B1 según los puntos gramaticales de los libros 1, 2 y 3 de «Contemporary Chinese», con vocabulario dentro del nivel correspondiente de las 8000 palabras. En «Ajustes» puedes crear un «Enlace de práctica del banco público» (sin notas) y su QR."
+     "<b>Sin crear un banco</b>: en la pestaña «Enlaces» de Corre, en «Origen de las frases» del enlace de clase, elige «Banco público A1 / A2» (con suscripción también B1 y los paquetes temáticos) para usar las frases incluidas. Están divididas en A1, A2 y B1 según los puntos gramaticales de los libros 1, 2 y 3 de «Contemporary Chinese», con vocabulario dentro del nivel correspondiente de las 8000 palabras. En la misma pestaña puedes crear un «Enlace de práctica del banco público» (sin notas) y su QR."
     ],
     "plan": [
      "1 banco, hasta 50 frases; banco público A1 y A2",
@@ -428,7 +428,7 @@ window.HELP = {
     "items": [
      "Crear clases (hasta 3); las notas llegan solas al libro de notas",
      "Errores frecuentes en Compara y Adivina y exportar CSV",
-     "Hojas de trabajo de los tres juegos (imprimir / PDF)"
+     "Hojas de trabajo de los cuatro juegos (imprimir / PDF, en la pestaña «Fichas» de cada juego)"
     ]
    }
   ]
@@ -436,7 +436,7 @@ window.HELP = {
  "en": {
   "btn": "📘 Settings guide",
   "title": "📘 Game settings guide",
-  "intro": "In Game settings you can prepare your own exercises for the three games and send them to your students with a link.",
+  "intro": "On each game’s page you can prepare your own exercises and send them to your students with a link.",
   "back": "← Back to Game settings",
   "free": "Free",
   "pro": "Subscription",
@@ -451,15 +451,15 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "How it works (same for all three games)",
+    "h": "How it works (same for all four games)",
     "steps": [
      [
       "Create",
-      "In Game settings, create a sentence bank, a setup or a practice range."
+      "Open the game page and, in the first tab (banks, setups, ranges or themes), create what you need."
      ],
      [
       "Make a link",
-      "There are two kinds of link:<ul><li><b>Practice link</b>: made in Game settings, no class needed. Students open it and play, but their scores are not sent to you.</li><li><b>Class link</b> (subscription): on the Classes page, pick the bank, setup or range and create the link. Students enter a nickname and every round’s score goes straight to the gradebook.</li></ul>"
+      "There are two kinds of link:<ul><li><b>Practice link</b>: made on the game page (in the setups, ranges or themes tab; for Run Hanzi and Ink Dragon, in the “Links” tab), no class needed. Students open it and play, but their scores are not sent to you.</li><li><b>Class link</b> (subscription): in the game’s “Links” tab, choose the class at the top, then the bank, setup or range, and create the link. Students enter a nickname and every round’s score goes straight to the gradebook.</li></ul>"
      ],
      [
       "Send it to students",
@@ -467,7 +467,7 @@ window.HELP = {
      ],
      [
       "Check scores",
-      "Open the gradebook on the Classes page. Scores are kept separately for each bank, setup or range; switch with the “Show” menu at the top."
+      "Open the gradebook in the game’s “Scores” tab, choosing the class at the top. Scores are kept separately for each bank, setup or range; switch with the “Show” menu at the top."
      ]
     ],
     "tip": "💡 If you change a setting, links you already sent update automatically — no need to resend."
@@ -482,7 +482,7 @@ window.HELP = {
      "<b>Bulk import</b>: one sentence per line, in the format “Chinese | Spanish | English”.",
      "<b>Add from the public bank / theme packs</b>: no need to type every sentence. Pick sentences from the Public bank (A1 and A2 free; B1 needs a subscription) or a Theme pack (subscription), or add a whole pack; they are copied into your bank (the original stays the same). You can edit them afterwards.",
      "<b>Decoys</b> (subscription): when this sentence comes up, the game uses these words as decoys first, so students practice telling similar characters apart. Up to 5 per sentence.",
-     "<b>No bank needed</b>: on the Classes page, set “Sentence source” to “Public bank A1 / A2” (subscribers also get B1 and theme packs) to use the built-in sentences. They are split into A1, A2 and B1 by the grammar points of Contemporary Chinese books 1, 2 and 3, with vocabulary within the matching level of the 8000-word list. On the Settings page, “Public bank practice link” makes a link and QR code that does not collect scores."
+     "<b>No bank needed</b>: in the “Links” tab of Run Hanzi, set “Sentence source” of the class link to “Public bank A1 / A2” (subscribers also get B1 and theme packs) to use the built-in sentences. They are split into A1, A2 and B1 by the grammar points of Contemporary Chinese books 1, 2 and 3, with vocabulary within the matching level of the 8000-word list. In the same tab, “Public bank practice link” makes a link and QR code that does not collect scores."
     ],
     "plan": [
      "1 bank, up to 50 sentences; public bank A1 and A2",
@@ -572,7 +572,7 @@ window.HELP = {
     "items": [
      "Classes (up to 3), with scores sent automatically to the gradebook",
      "Common mistakes in Compare & Guess, and CSV export",
-     "Worksheets for all three games (print / PDF)"
+     "Worksheets for all four games (print / PDF, in each game’s “Worksheets” tab)"
     ]
    }
   ]

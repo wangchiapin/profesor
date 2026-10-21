@@ -75,22 +75,24 @@ server.listen(0, 'localhost', async () => {
   console.log('\n[A] 已開放（不用 ?dev=dragon）：各頁都是正常功能，沒有維修中');
   { const { page, errors, ctx } = await open(browser);
     ok((await text(page)).includes('墨龍飛天') && !(await text(page)).includes('維修中'), '首頁：墨龍沒有維修中');
-    await go(page, '#/settings'); await page.waitForSelector('#dragonCard [data-act=dqk]');
-    ok(!(await text(page, '#dragonCard')).includes('維修中'), '遊戲設定：墨龍卡片可操作');
-    await go(page, '#/print'); await page.waitForSelector('#dragonWsCard [data-act=dwst]');
-    await go(page, '#/class/0'); await page.waitForSelector('select[data-sel=dragonsel]');
-    ok(!!(await page.$('[data-act=game][data-g=dragon]')), '成績冊有墨龍分頁');
-    await go(page, '#/help'); await page.waitForSelector('#hDragon'); ok(true, '說明頁有墨龍段落');
+    await go(page, '#/game/dragon/content'); await page.waitForSelector('#dragonCard [data-act=dgnew]');
+    ok(!(await text(page, '#dragonCard')).includes('維修中'), '墨龍內容分頁：卡片可操作');
+    await go(page, '#/game/dragon/links'); await page.waitForSelector('#dragonQuick [data-act=dqk]'); ok(!!(await page.$('#linksCard')), '連結分頁：快速連結＋班級連結');
+    await go(page, '#/game/dragon/sheet'); await page.waitForSelector('#dragonWsCard [data-act=dwst]');
+    await go(page, '#/game/dragon/scores'); await page.waitForSelector('#bookCard');
+    ok(!!(await page.$('.gsw [data-g=dragon].on')), '成績分頁有墨龍');
+    await go(page, '#/game/dragon/help'); await page.waitForSelector('#hDragon'); ok(true, '說明頁有墨龍段落');
     ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[B] 訂閱老師（?dev=dragon）：快速連結、自訂主題、練習範圍');
-  { const { page, errors, ctx } = await open(browser, { q: '?dev=dragon', hash: '#/settings' });
-    await page.waitForSelector('#dragonCard [data-act=dqk]');
-    const url0 = await page.$eval('#dragonCard .url', e => e.textContent);
+  { const { page, errors, ctx } = await open(browser, { q: '?dev=dragon', hash: '#/game/dragon/links' });
+    await page.waitForSelector('#dragonQuick [data-act=dqk]');
+    const url0 = await page.$eval('#dragonQuick .url', e => e.textContent);
     ok(/\?th=food-animal-color$/.test(url0), '快速連結預設 3 個主題', url0);
     await page.click('[data-act=dqk][data-k=fruit]');
-    ok((await page.$eval('#dragonCard .url', e => e.textContent)).endsWith('?th=food-animal-color-fruit'.replace('-color-fruit', '-color-fruit')) || true, '訂閱可勾 10 個主題中的水果');
-    ok(!(await page.$('#dragonCard .lockbtn[data-act=needsub]')), '訂閱：沒有鎖住的主題');
+    ok((await page.$eval('#dragonQuick .url', e => e.textContent)).endsWith('?th=food-animal-color-fruit'), '訂閱可勾 10 個主題中的水果');
+    ok(!(await page.$('#dragonQuick .lockbtn[data-act=needsub]')), '訂閱：沒有鎖住的主題');
+    await go(page, '#/game/dragon/content'); await page.waitForSelector('[data-act=dgnew]');
     // 自訂主題
     await page.click('[data-act=dgnew]'); await page.waitForSelector('#dgName');
     await page.fill('#dgName', '旅行');
@@ -140,34 +142,34 @@ server.listen(0, 'localhost', async () => {
     ok((await db(page)).shared_dragon[sid].custom[0].words.length === 7, '已發出的連結跟著新單字');
     ok(await noOverflow(page), '沒有橫向捲動'); await shot(page, 'dragon_settings');
     // 班級連結
-    await go(page, '#/class/0'); await page.waitForSelector('select[data-sel=dragonsel]');
-    let lk = await page.$eval('#linksCard .link:last-child .url', e => e.textContent);
+    await go(page, '#/game/dragon/links'); await page.waitForSelector('select[data-sel=dragonsel]');
+    let lk = await page.$eval('#linksCard .url', e => e.textContent);
     ok(lk.endsWith('/el-dragon-de-tinta/?class=' + CID), '班級連結預設全部內建主題', lk);
     await page.selectOption('select[data-sel=dragonsel]', '0');
-    lk = await page.$eval('#linksCard .link:last-child .url', e => e.textContent);
+    lk = await page.$eval('#linksCard .url', e => e.textContent);
     ok(lk.endsWith('?class=' + CID + '&d=' + sid), '選範圍後班級連結帶 &d=', lk);
     // 成績冊
-    await page.click('[data-act=game][data-g=dragon]'); await page.waitForSelector('#bookCard table');
+    await go(page, '#/game/dragon/scores'); await page.waitForSelector('#bookCard table');
     const bt = await text(page, '#bookCard');
     ok(bt.includes('Ana') && bt.includes('320') && bt.includes('吃對 21') && bt.includes('54 m') && bt.includes('蘋果 牛奶'), '成績冊：分數、吃對、高度、易錯字', bt);
     ok(bt.includes('食物') && bt.includes('（已刪除') || bt.includes('已刪除'), '設定名稱：內建主題名；已刪的自訂主題顯示已刪除');
     await page.selectOption('[data-sel=setk]', 'food'); await page.waitForTimeout(150);
     ok(!(await text(page, '#bookCard')).includes('Beto'), '依主題篩選');
     // 刪自訂主題 → 範圍拿掉它
-    await go(page, '#/settings'); await page.waitForSelector('[data-act=dgdel]');
+    await go(page, '#/game/dragon/content'); await page.waitForSelector('[data-act=dgdel]');
     await page.click('[data-act=dgdel][data-k="0"]'); await page.waitForFunction(() => !document.querySelector('[data-act=dgdel]'));
     d = (await db(page)).dragon_sets.u1; ok(d.themes.length === 0 && d.sets[0].custom.length === 0, '刪除自訂主題：範圍同步拿掉', d);
     ok((await db(page)).shared_dragon[sid].custom.length === 0, 'shared_dragon 也同步');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[C] 學習單 PDF');
-  { const { page, errors, ctx } = await open(browser, { q: '?dev=dragon', hash: '#/settings' });
+  { const { page, errors, ctx } = await open(browser, { q: '?dev=dragon', hash: '#/game/dragon/content' });
     await page.waitForSelector('[data-act=dgnew]');
     await page.click('[data-act=dgnew]'); await page.fill('#dgName', '旅行');
     await page.fill('#dgText', '機場，aeropuerto\n護照，pasaporte\n行李，equipaje\n登機證，tarjeta de embarque\n海關，aduana\n飛機，avión');
     await page.click('[data-act=dggen]'); await page.waitForSelector('table.dgt', { timeout: 20000 });
     await page.click('[data-act=dgsave]'); await page.waitForSelector('.setrow');
-    await go(page, '#/print'); await page.waitForSelector('#dragonWsCard [data-act=dwst]');
+    await go(page, '#/game/dragon/sheet'); await page.waitForSelector('#dragonWsCard [data-act=dwst]');
     ok((await page.$eval('[data-act=dwsmake]', e => e.disabled)), '沒選主題不能產生');
     await page.click('[data-act=dwst][data-k=food]'); await page.click('[data-act=dwst][data-k=color]');
     await page.click('#dragonWsCard [data-act=dwst]:last-of-type');
@@ -181,32 +183,33 @@ server.listen(0, 'localhost', async () => {
     ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[D] 免費老師：5 個主題，其餘鎖住，訂閱功能鎖住');
-  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, q: '?dev=dragon', hash: '#/settings' });
-    await page.waitForSelector('#dragonCard [data-act=dqk]');
-    ok((await page.$$('#dragonCard [data-act=dqk]')).length === 5, '免費：可勾 5 個主題');
-    ok((await page.$$('#dragonCard .lockbtn[data-act=needsub]')).length === 5, '免費：另外 5 個鎖住');
-    const names = await page.$$eval('#dragonCard [data-act=dqk]', e => e.map(x => x.textContent.replace('✓ ', '')));
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, q: '?dev=dragon', hash: '#/game/dragon/links' });
+    await page.waitForSelector('#dragonQuick [data-act=dqk]');
+    ok((await page.$$('#dragonQuick [data-act=dqk]')).length === 5, '免費：可勾 5 個主題');
+    ok((await page.$$('#dragonQuick .lockbtn[data-act=needsub]')).length === 5, '免費：另外 5 個鎖住');
+    const names = await page.$$eval('#dragonQuick [data-act=dqk]', e => e.map(x => x.textContent.replace('✓ ', '')));
     ok(names.join() === '食物,動物,顏色,交通,家裡', '免費 5 個是食物、動物、顏色、交通、家裡', names);
     for(const k of ['transport', 'home']) await page.click('[data-act=dqk][data-k=' + k + ']');
-    ok((await page.$eval('#dragonCard .url', e => e.textContent)).endsWith('?th=food-animal-color-transport-home'), '免費連結：5 個主題');
+    ok((await page.$eval('#dragonQuick .url', e => e.textContent)).endsWith('?th=food-animal-color-transport-home'), '免費連結：5 個主題');
+    await go(page, '#/game/dragon/content'); await page.waitForSelector('#dragonCard');
     ok(!(await page.$('[data-act=dgnew]')) && !(await page.$('[data-act=dsnew]')), '免費沒有自訂主題、範圍的按鈕');
     ok((await text(page, '#dragonCard')).includes('這是訂閱功能'), '提示訂閱功能');
-    await go(page, '#/print'); await page.waitForSelector('#dragonWsCard');
+    await go(page, '#/game/dragon/sheet'); await page.waitForSelector('#dragonWsCard');
     ok(!(await page.$('[data-act=dwst]')) && (await text(page, '#dragonWsCard')).includes('訂閱'), '免費學習單鎖住');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[E] 四種語言、手機寬度');
   for(const [lang, w] of [['sc', '自定义主题'], ['es', 'Temas propios'], ['en', 'Custom themes']]){
-    const { page, errors, ctx } = await open(browser, { q: '?dev=dragon', hash: '#/settings', lang });
-    await page.waitForSelector('#dragonCard [data-act=dqk]');
+    const { page, errors, ctx } = await open(browser, { q: '?dev=dragon', hash: '#/game/dragon/content', lang });
+    await page.waitForSelector('#dragonCard [data-act=dgnew]');
     ok((await text(page, '#dragonCard')).includes(w), lang + '：卡片文字含「' + w + '」');
     ok(await noOverflow(page), lang + '：沒有橫向捲動'); ok(errors.length === 0, lang + '：沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[F] 說明頁：四種語言都有墨龍段落');
   { let r;
     for(const [lang, w] of [['tc', '自訂主題'], ['sc', '自定义主题'], ['es', 'Temas propios'], ['en', 'Custom themes']]){
-      r = await open(browser, { q: '?dev=dragon', hash: '#/help', lang }); await r.page.waitForSelector('#hDragon');
-      ok((await text(r.page, '#hDragon')).includes(w) && (await text(r.page, '.jump')).includes('🐉'), lang + '：說明頁有墨龍段落與跳轉鈕');
+      r = await open(browser, { q: '?dev=dragon', hash: '#/game/dragon/help', lang }); await r.page.waitForSelector('#hDragon');
+      ok((await text(r.page, '#hDragon')).includes(w) && (await text(r.page, '.gsw')).length > 0, lang + '：說明頁有墨龍段落與跳轉鈕');
       ok(await noOverflow(r.page), lang + '：說明頁沒有橫向捲動'); ok(r.errors.length === 0, lang + '：沒有頁面錯誤', r.errors); await r.ctx.close(); } }
 
   await browser.close(); server.close();
