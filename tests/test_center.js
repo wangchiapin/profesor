@@ -381,7 +381,7 @@ server.listen(0, 'localhost', async () => {
     ok((await db(page)).bbk_sets.u1.items[1].name === '範圍 2', '取消：不存');
     await shot(page, 'i2_list');
     // 首頁用量
-    await page.click('[data-act=nav][data-r=home]'); await page.waitForSelector('.kv');
+    await page.click('[data-act=nav][data-r=home]'); await page.waitForSelector('.ph');
     ok((await text(page)).includes('比比看：設定存檔\n2 / 15') || (await text(page)).replace(/\s+/g, ' ').includes('比比看：設定存檔 2 / 15'), '首頁用量 2 / 15');
     // 班級頁：選範圍 → 連結 ?r=&class=
     await page.evaluate(() => __profesor.go('game/bbk/links')); await page.waitForSelector('[data-sel=bbksel]');
@@ -1080,7 +1080,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4)\b/.test(ix) && (ix.match(/\?v=7-5/g) || []).length >= 11 && ix.includes('js/help.js?v=7-5') && ix.includes('js/pubbank.js?v=7-5'), 'index.html 的 css／js 都改成 ?v=7-5（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5)\b/.test(ix) && (ix.match(/\?v=7-6/g) || []).length >= 11 && ix.includes('js/help.js?v=7-6') && ix.includes('js/pubbank.js?v=7-6'), 'index.html 的 css／js 都改成 ?v=7-6（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
