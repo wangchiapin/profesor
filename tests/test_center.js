@@ -204,7 +204,7 @@ server.listen(0, 'localhost', async () => {
     ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&pack=food&level=A1', '跑吧：題包限定等級 → &pack=food&level=A1', u);
     await page.selectOption('[data-sel=corresrc]', 'B:bank00001111'); u = await urls();
     ok(u[0] === 'https://wangchiapin.github.io/corre/?class=' + CID + '&bank=bank00001111', '跑吧：選句庫後帶 &bank=', u);
-    ok(u.length === 2 && u[1] === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID, '比比看連結（色數還沒選設定組不顯示）', u);
+    ok(u.length === 3 && u[1] === 'https://wangchiapin.github.io/compara-y-adivina/?class=' + CID && u[2] === 'https://wangchiapin.github.io/el-dragon-de-tinta/?class=' + CID, '比比看、墨龍連結（色數還沒選設定組不顯示）', u);
     await page.selectOption('[data-sel=colcfg]', '0'); u = await urls();
     ok(u[1] === 'https://wangchiapin.github.io/pop-colores-numeros/?c=cfg000011112&class=' + CID, '色數：?c=設定碼&class=班級碼', u);
     await page.selectOption('[data-sel=colcfg]', '1');
@@ -896,7 +896,7 @@ server.listen(0, 'localhost', async () => {
     ok(page.url().endsWith('#/help'), '遊戲設定頁有「📘 遊戲設定說明」按鈕，按了到 #/help', page.url());
     const t = await text(page);
     ok(['使用步驟', '跑吧！漢字：句庫', '色數消消樂：設定組', '比比看：練習範圍', '訂閱後還可以', 'A 沒有 B 那麼高', '公開句庫 A1／A2', '0–9999'].every(w => t.includes(w)), '說明頁：五段內容都在（繁）');
-    ok(await page.$$eval('.hsteps > li', a => a.length) === 4 && await page.$$eval('.hsec', a => a.length) === 5 && await page.$$eval('.jump [data-act=jump]', a => a.length) === 5, '說明頁：4 個步驟卡片、5 段、5 個快速按鈕');
+    ok(await page.$$eval('.hsteps > li', a => a.length) === 4 && await page.$$eval('.hsec', a => a.length) === 6 && await page.$$eval('.jump [data-act=jump]', a => a.length) === 6, '說明頁：4 個步驟卡片、6 段、6 個快速按鈕');
     ok(await page.$eval('.nav .pill.on', e => e.dataset.r) === 'settings', '說明頁：上方選單停在「遊戲設定」');
     ok(await noOverflow(page), '說明頁：手機寬度不會左右滑'); await shot(page, 'p1_help_tc');
     await page.click('.jump [data-k=hCol]'); await page.waitForTimeout(600);
@@ -1029,7 +1029,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8)\b/.test(ix) && (ix.match(/\?v=7-1/g) || []).length >= 11 && ix.includes('js/help.js?v=7-1') && ix.includes('js/pubbank.js?v=7-1'), 'index.html 的 css／js 都改成 ?v=7-1（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1)\b/.test(ix) && (ix.match(/\?v=7-2/g) || []).length >= 11 && ix.includes('js/help.js?v=7-2') && ix.includes('js/pubbank.js?v=7-2'), 'index.html 的 css／js 都改成 ?v=7-2（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }

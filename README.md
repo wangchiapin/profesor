@@ -82,14 +82,14 @@
 - 句庫編輯器「從公開句庫／主題包加入」改讀新句庫：A1、A2 免費、B1 與主題包訂閱。
 - 成績冊的設定名稱：`pool-A1`→「公開句庫 A1」、`pack-food-A1`→「🎯 飲食與點餐 · A1」、舊 `pool`→「舊公開題庫（改版前）」。
 
-## 墨龍飛天：主題、練習範圍、班級連結（**尚未開放，顯示維修中**）
+## 墨龍飛天：主題、練習範圍、班級連結（2026-10-21 已開放）
 
-- 狀態開關：`js/dragon.js` 的 `READY=false`；只有網址帶 `?dev=dragon`（同一個分頁會記住）才看得到完整功能，其他人在首頁、遊戲設定、班級連結、列印頁、說明頁看到的是「🔧 維修中」或完全不出現。
+- 狀態開關：`js/dragon.js` 的 `READY=true`（已開放）。要暫時改回「🔧 維修中」就改成 `false`；網址帶 `?dev=dragon` 仍可測試（同一個分頁會記住）。遊戲那邊對應的是 `RELEASE`。
 - 方案：免費＝練習連結，可用 5 個內建主題（食物、動物、顏色、交通、家裡）；訂閱＝10 個內建主題＋自訂主題（最多 3 個，每個 6～40 詞）＋練習範圍（最多 15 組）＋班級連結（成績進成績冊）＋學習單 PDF。
 - 資料：`dragon_sets/{uid}` = `{ themes:[{id,name,words}], sets:[{id,name,builtin,custom,sid?}], updatedAt }`；`shared_dragon/{sid}` = `{ owner, name, builtin, custom:[{id,name,words}], updatedAt }`，學生連結（`?d=<sid>`）讀這份，範圍一改就跟著改。詞的格式 `[繁, 簡, 拼音, 西, 英]`，簡體和拼音用 opencc-js／pinyin-pro 自動產生，可手改。
 - 成績：`class_scores` 的 `game='dragon'`，`k`＝主題 id，`extra = {c: 吃對數, a: 飛行高度, wr: 錯字（最多 5 個）}`。
-- **新規則在 `firestore-rules-dragon.txt`（完整版，整份貼上取代）**（`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`）。要先貼到 subscription-48d3c 的 Firebase 規則，才能開放。
-- 開放步驟：① 貼規則 ② 遊戲 `el-dragon-de-tinta/index.html` 的 `RELEASE` 改 `true`（公開頁會從 10 個主題縮成 3 個）③ 這裡 `js/dragon.js` 的 `READY` 改 `true` ④ 分享區墨龍卡片（desc、guide、訂閱比較表那一列）換成正式文字 ⑤ 用真實帳號走一遍：快速連結、班級連結、成績回傳。
+- 規則在 `firestore-rules-dragon.txt`（完整版，已貼到 subscription-48d3c）：`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`。
+- 開放時做過：① 貼規則 ② 遊戲 `RELEASE=true` ③ 中心 `READY=true` ④ 分享區卡片與訂閱比較表換成正式文字。
 
 ## 檔案
 

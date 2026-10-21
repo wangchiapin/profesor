@@ -72,18 +72,15 @@ server.listen(0, 'localhost', async () => {
   BASE = 'http://localhost:' + server.address().port;
   const browser = await chromium.launch();
 
-  console.log('\n[A] 還沒完成（沒有 ?dev=dragon）：每個放到的地方都顯示維修中');
+  console.log('\n[A] 已開放（不用 ?dev=dragon）：各頁都是正常功能，沒有維修中');
   { const { page, errors, ctx } = await open(browser);
-    ok((await text(page)).includes('墨龍飛天') && (await text(page)).includes('維修中'), '首頁遊戲清單：墨龍標「維修中」');
-    ok(!(await text(page)).includes('墨龍飛天：自訂主題'), '首頁用量沒有墨龍');
-    await go(page, '#/settings'); await page.waitForSelector('#dragonCard');
-    ok((await text(page, '#dragonCard')).includes('維修中'), '遊戲設定：墨龍卡片維修中');
-    ok(!(await page.$('[data-act=dgnew]')) && !(await page.$('[data-act=dqk]')), '沒有任何可操作的墨龍按鈕');
-    await go(page, '#/print'); await page.waitForSelector('#dragonWsCard');
-    ok((await text(page, '#dragonWsCard')).includes('維修中'), '學習單：墨龍維修中');
-    await go(page, '#/class/0'); await page.waitForSelector('#linksCard');
-    ok((await text(page, '#linksCard')).includes('維修中'), '班級連結：墨龍維修中');
-    ok(!(await page.$('[data-act=game][data-g=dragon]')), '成績冊沒有墨龍分頁');
+    ok((await text(page)).includes('墨龍飛天') && !(await text(page)).includes('維修中'), '首頁：墨龍沒有維修中');
+    await go(page, '#/settings'); await page.waitForSelector('#dragonCard [data-act=dqk]');
+    ok(!(await text(page, '#dragonCard')).includes('維修中'), '遊戲設定：墨龍卡片可操作');
+    await go(page, '#/print'); await page.waitForSelector('#dragonWsCard [data-act=dwst]');
+    await go(page, '#/class/0'); await page.waitForSelector('select[data-sel=dragonsel]');
+    ok(!!(await page.$('[data-act=game][data-g=dragon]')), '成績冊有墨龍分頁');
+    await go(page, '#/help'); await page.waitForSelector('#hDragon'); ok(true, '說明頁有墨龍段落');
     ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[B] 訂閱老師（?dev=dragon）：快速連結、自訂主題、練習範圍');
@@ -201,9 +198,8 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page, '#dragonCard')).includes(w), lang + '：卡片文字含「' + w + '」');
     ok(await noOverflow(page), lang + '：沒有橫向捲動'); ok(errors.length === 0, lang + '：沒有頁面錯誤', errors); await ctx.close(); }
 
-  console.log('\n[F] 說明頁：墨龍段落開放前不出現，?dev=dragon 才出現');
-  { let r = await open(browser, { hash: '#/help' }); await r.page.waitForSelector('#hBbk');
-    ok(!(await r.page.$('#hDragon')) && !(await text(r.page)).includes('墨龍'), '開放前：說明頁沒有墨龍'); ok(r.errors.length === 0, '沒有頁面錯誤', r.errors); await r.ctx.close();
+  console.log('\n[F] 說明頁：四種語言都有墨龍段落');
+  { let r;
     for(const [lang, w] of [['tc', '自訂主題'], ['sc', '自定义主题'], ['es', 'Temas propios'], ['en', 'Custom themes']]){
       r = await open(browser, { q: '?dev=dragon', hash: '#/help', lang }); await r.page.waitForSelector('#hDragon');
       ok((await text(r.page, '#hDragon')).includes(w) && (await text(r.page, '.jump')).includes('🐉'), lang + '：說明頁有墨龍段落與跳轉鈕');

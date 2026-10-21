@@ -4,8 +4,8 @@
 'use strict';
 const T = (k, p) => I18N.t(k, p);
 
-// 正式完成前（RELEASE=false），墨龍在老師中心各頁都顯示「維修中」。網址加 ?dev=dragon 可以先測試（同一個分頁會記住）。
-const READY = false;
+// 開關：READY=true 已開放。若要暫時改回「維修中」，把 READY 改 false（網址加 ?dev=dragon 仍可測試，同一個分頁會記住）。
+const READY = true;
 function ready(){
   if(READY) return true;
   try{
