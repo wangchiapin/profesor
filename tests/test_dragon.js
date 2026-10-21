@@ -114,6 +114,10 @@ server.listen(0, 'localhost', async () => {
     await page.fill('#dgName', 'x'); await page.fill('#dgText', '機場\n護照');
     await page.click('[data-act=dggen]'); await page.waitForSelector('#dragonCard .err');
     ok((await text(page, '#dragonCard .err')).includes('至少要 6'), '詞太少會擋下來');
+    ok(!(await page.$eval('[data-act=dggen]', e => e.disabled)), '詞太少失敗後，產生按鈕仍可按');
+    await page.fill('#dgText', '機場\n護照\n飛機\n行李\n機票\n接駁車\n火車');
+    await page.click('[data-act=dggen]'); await page.waitForSelector('table.dgt', { timeout: 20000 });
+    ok((await page.$$eval('table.dgt tr', t => t.length - 1)) === 7, '補到 7 個詞後可以再按產生成功');
     await page.click('[data-act=dgcancel]');
     // 練習範圍
     await page.click('[data-act=dsnew]'); await page.waitForSelector('#dsName');
