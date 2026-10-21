@@ -155,9 +155,8 @@ async function loadBook(){
 // ---- 畫面 ----
 function headerHtml(){
   const lang = I18N.getLang();
-  const seg = arr => '<div class="seg">' + arr.map(l => '<button class="' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('') + '</div>';
-  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b>' + (S.user ? '<small>' + esc(T('signedInAs', { email: '' }).trim()) + '<span>' + esc(S.user.email) + '</span></small>' : '') + '</div><div class="topr"><div class="langs">' +
-    seg([['tc', '繁'], ['sc', '简']]) + seg([['es', 'ES'], ['en', 'EN']]) + '</div>' +
+  const langs = [['tc', '繁'], ['sc', '简'], ['es', 'ES'], ['en', 'EN']].map(l => '<button class="lg ' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('<span class="lgsep">｜</span>');
+  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b>' + (S.user ? '<small>' + esc(T('signedInAs', { email: '' }).trim()) + '<span>' + esc(S.user.email) + '</span></small>' : '') + '</div><div class="topr"><div class="langtxt">' + langs + '</div>' +
     (S.user ? '<div class="langs"><button class="pill xs" data-act="feedback">' + esc(T('fbBtn')) + '</button><button class="pill xs" data-act="logout">' + esc(T('logout')) + '</button></div>' : '') + '</div></div>';
 }
 function navHtml(){

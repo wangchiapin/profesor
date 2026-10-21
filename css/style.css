@@ -21,11 +21,12 @@ small,.mut{color:var(--mut)}
 .brand small{font-size:.74rem;color:var(--mut);margin-top:4px}
 .brand small span{display:block;word-break:break-all}
 .brand b{font-size:1.2rem}.brand span{font-size:.78rem;color:var(--mut)}
-.topr{flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.topr{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.langtxt{display:flex;align-items:center;font-size:1.2rem;font-weight:700;color:var(--brown)}
+.langtxt .lg{border:0;background:none;padding:2px 4px;font:inherit;color:inherit;cursor:pointer;opacity:.5}
+.langtxt .lg.on{opacity:1;text-decoration:underline;text-underline-offset:5px}
+.langtxt .lgsep{opacity:.5}
 .langs{display:flex;gap:6px}
-.langs .seg{flex:1 1 0}
-.langs .seg button{flex:1 1 0;min-width:0}
-.langs .pill.xs{flex:1 1 0}
 .seg{height:34px;box-sizing:border-box;display:inline-flex;border:1.5px solid var(--brown);border-radius:999px;overflow:hidden}
 .seg button{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-width:46px;border:0;background:transparent;color:var(--brown);font:inherit;font-size:.8rem;font-weight:600;padding:0 12px;min-height:0;cursor:pointer;white-space:nowrap}
 .seg button+button{border-left:1.5px solid var(--brown)}
