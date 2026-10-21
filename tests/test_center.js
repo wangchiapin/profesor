@@ -1020,7 +1020,7 @@ server.listen(0, 'localhost', async () => {
     const opts2 = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
     ok(['公開句庫 A1', '公開句庫 B1', '🎯 飲食與點餐', '🎯 比較句 · A2', '🎯 nosuch'].every(x => opts2.includes(x)), '成績冊的設定名稱：pool-A1／pool-B1／pack-題包／pack-題包-等級', opts2);
     await shot(page, 'r1_setk_corre');
-    await page.click('.gsw [data-g=bbk]'); await page.waitForSelector('[data-sel=setk]');
+    await page.click('.gsw [data-g=bbk]'); await page.waitForSelector('[data-sel=setk]'); await page.waitForFunction(() => __profesor.S.playsState === 'ok' && __profesor.S.scoresState === 'ok');
     await page.evaluate(() => { const S = __profesor.S, now = Date.now();
       S.plays.unshift({ id: 'y1', cid: 'class0000aaaa', owner: 'u1', game: 'bbk', h: '0000000000000002', nick: 'Beto', ms: now, th: 'people', lv: 2, rg: 'd=height,age&t=pick&n=10', r: 'rng000011112', score: 100, max: 100, qs: [{ t: 'pick', d: 'height', f: 'BI', p: 1, ok: true, f1: true }] });
       document.querySelector('[data-act=lang][data-l=tc]').click(); });
@@ -1080,7 +1080,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3)\b/.test(ix) && (ix.match(/\?v=7-4/g) || []).length >= 11 && ix.includes('js/help.js?v=7-4') && ix.includes('js/pubbank.js?v=7-4'), 'index.html 的 css／js 都改成 ?v=7-4（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4)\b/.test(ix) && (ix.match(/\?v=7-5/g) || []).length >= 11 && ix.includes('js/help.js?v=7-5') && ix.includes('js/pubbank.js?v=7-5'), 'index.html 的 css／js 都改成 ?v=7-5（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }

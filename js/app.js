@@ -155,8 +155,9 @@ async function loadBook(){
 // ---- 畫面 ----
 function headerHtml(){
   const lang = I18N.getLang();
-  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b><span>' + esc(T('appSub')) + '</span></div><div class="langs">' +
-    [['tc', '繁'], ['sc', '简'], ['es', 'ES'], ['en', 'EN']].map(l => '<button class="pill sm ' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('') + '</div></div>';
+  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b><span>' + esc(T('appSub')) + '</span></div><div class="topr"><div class="langs">' +
+    [['tc', '繁'], ['sc', '简'], ['es', 'ES'], ['en', 'EN']].map(l => '<button class="pill xs ' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('') + '</div>' +
+    (S.user ? '<button class="pill xs" data-act="logout">' + esc(T('logout')) + '</button>' : '') + '</div></div>';
 }
 function navHtml(){
   const items = [['home', 'navHome'], ['classes', 'navClasses']];
@@ -169,7 +170,7 @@ function loginHtml(){
     (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
 }
 function whoHtml(){
-  return '<div class="who"><span>' + esc(T('signedInAs', { email: S.user.email })) + '</span><button class="pill sm" data-act="feedback">' + esc(T('fbBtn')) + '</button><button class="pill sm" data-act="logout">' + esc(T('logout')) + '</button></div>';
+  return '<div class="who"><span>' + esc(T('signedInAs', { email: S.user.email })) + '</span><button class="pill sm" data-act="feedback">' + esc(T('fbBtn')) + '</button></div>';
 }
 function planNoticeHtml(){
   const P = S.a.plan;
@@ -200,10 +201,11 @@ function homeHtml(){
   const A = S.a, P = A.plan, nCls = Object.keys(A.classes).length;
   const plan = '<div class="card"><h3>' + esc(T('planTitle')) + '</h3><div class="kv"><span><span class="badge ' + (P.active ? 'pro' : '') + '">' + esc(planLabel(P)) + '</span></span><span class="mut">' +
     (P.expiresAt ? esc(T(P.active ? 'planUntil' : 'planExpired', { date: fdate(P.expiresAt) })) : '') + '</span></div>' + planNoticeHtml() +
-    '<div class="kv"><span>' + esc(T('usageClasses')) + '</span><b>' + nCls + ' / ' + DATA.MAX_CLASSES + '</b></div></div>';
+    '<div class="grow"><div class="ginfo"><b>' + esc(T('usageClasses')) + '</b><small class="mut">' + nCls + ' / ' + DATA.MAX_CLASSES + '</small></div>' +
+    '<div class="row" style="margin:0"><button class="pill fill sm" data-act="nav" data-r="classes">' + esc(T('manage')) + '</button></div></div></div>';
   const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3><p class="hint">' + esc(T('gamesPick')) + '</p>' + GAME_IDS.map(g =>
     '<div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small>' +
-    ((g === 'dragon' && !DR.ready()) ? '' : '<small class="mut">' + esc(usageOf(g)) + '</small>') + '</div>' +
+    ((g === 'dragon' && !DR.ready()) ? '' : usageOf(g).split('　·　').map(u => '<small class="mut">' + esc(u) + '</small>').join('')) + '</div>' +
     ((g === 'dragon' && !DR.ready()) ? '<span class="badge">🔧 ' + esc(T('maint')) + '</span>'
       : '<div class="row" style="margin:0"><button class="pill fill sm" data-act="togame" data-g="' + g + '" data-t="content">' + esc(T('manage')) + '</button>' +
         '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>') + '</div>').join('') + '</div>';
