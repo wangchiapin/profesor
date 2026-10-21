@@ -156,7 +156,7 @@ async function loadBook(){
 function headerHtml(){
   const lang = I18N.getLang();
   const langs = [['tc', '繁'], ['sc', '简'], ['es', 'ES'], ['en', 'EN']].map(l => '<button class="lg ' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('<span class="lgsep">｜</span>');
-  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b>' + (S.user ? '<small>' + esc(T('signedInAs', { email: '' }).trim()) + '<span>' + esc(S.user.email) + '</span></small>' : '') + '</div><div class="topr"><div class="langtxt">' + langs + '</div>' +
+  return '<div class="top"><div class="brand">' + (S.user && S.route !== 'home' ? '<button class="backhome" data-act="nav" data-r="home">← ' + esc(T('appTitle')) + '</button>' : '<b>' + esc(T('appTitle')) + '</b>') + '' + (S.user ? '<small>' + esc(T('signedInAs', { email: '' }).trim()) + '<span>' + esc(S.user.email) + '</span></small>' : '') + '</div><div class="topr"><div class="langtxt">' + langs + '</div>' +
     (S.user ? '<div class="langs"><button class="pill xs" data-act="feedback">' + esc(T('fbBtn')) + '</button><button class="pill xs" data-act="logout">' + esc(T('logout')) + '</button></div>' : '') + '</div></div>';
 }
 function navHtml(){
@@ -655,7 +655,7 @@ function gameHtml(){
   const g = S.g;
   ensureCls();
   let h = '<div class="ctabs gsw">' + GAME_IDS.map(x => '<button class="pill ' + (g === x ? 'on' : '') + '" data-act="togame" data-g="' + x + '" data-t="' + S.gt + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>' +
-    '<div class="gtitle"><h2>' + esc(T(GAME_KEY[g])) + '</h2><a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">▶ ' + esc(T('openGame')) + '</a></div>';
+    '<div class="gtitle"><a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">▶ ' + esc(T('openGame')) + '</a></div>';
   if(g === 'dragon' && !DR.ready()) return h + maintBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]], ['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]].map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
@@ -691,7 +691,7 @@ function wsFormHtml(){
   const A = S.a, W = S.ws || (S.ws = wsDefaults());
   let h = '<div class="card" id="wsCard"><h3>' + esc(T('gameColores')) + '</h3>';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
-  if(!A.configs.length) return h + '<p class="hint">' + esc(T('wsNoCfg')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="colores" data-t="content">' + esc(T('navSettings')) + '</button></div></div>';
+  if(!A.configs.length) return h + '<p class="hint">' + esc(T('wsNoCfg')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="colores" data-t="content">' + esc(T('gtBankColores')) + '</button></div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   h += '<div class="field"><label>' + esc(T('configLabel')) + '</label><select data-sel="wscfg"><option value="">' + esc(T('configPick')) + '</option>' +
     A.configs.map((it, i) => '<option value="' + i + '" ' + (W.cfg === String(i) ? 'selected' : '') + '>' + esc((it.cfg && it.cfg.name) || ('#' + (i + 1))) + '</option>').join('') + '</select>' +
@@ -720,7 +720,7 @@ function cwsFormHtml(){
   const A = S.a, W = S.cws || (S.cws = cwsDefaults());
   let h = '<div class="card" id="cwsCard"><h3>' + esc(T('gameCorre')) + '</h3><p class="hint">' + esc(T('cwsHint')) + '</p>';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
-  if(!A.banks.length) return h + '<p class="hint">' + esc(T('cwsNoBank')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="corre" data-t="content">' + esc(T('navSettings')) + '</button></div></div>';
+  if(!A.banks.length) return h + '<p class="hint">' + esc(T('cwsNoBank')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="corre" data-t="content">' + esc(T('gtBankCorre')) + '</button></div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
   const b = W.bank !== '' ? CORRE.bankOf(A, +W.bank) : null;
@@ -825,7 +825,7 @@ function render(){
   let h = headerHtml();
   if(!S.authSeen) h += '<p class="hint center">' + esc(T('loading')) + '</p>';
   else if(!isReal()) h += loginHtml();
-  else h += (S.route === 'home' ? '' : navHtml()) + bodyHtml();
+  else h += bodyHtml();
   const keep = document.activeElement && document.activeElement.id;
   const vals = {}; app.querySelectorAll('input[type=text]').forEach(i => { if(i.id) vals[i.id] = i.value; });
   CORRE.capture();                                    // 句庫編輯器：記下還沒加入的輸入

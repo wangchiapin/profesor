@@ -263,11 +263,11 @@ table.t small.setk{color:var(--mut);font-size:.8rem;font-weight:400;white-space:
 #clsCard,#linksCard,#bookCard{scroll-margin-top:60px}
 .notice.alert{background:#fde9e2;border-color:#e3a593;color:#7a2e1f;font-weight:700}
 /* 遊戲頁：遊戲切換、標題、固定在上方的分頁列 */
-.gsw{margin:0 -2px 4px}
-.gtitle{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 0}
-.gtitle h2{margin:0}
+.gsw{display:flex;gap:6px;overflow-x:auto;margin:0 0 6px;padding:0 0 4px}
+.gsw .pill{flex:1 1 auto;min-width:0;padding:6px 8px;font-size:.88rem;min-height:40px}
+.gtitle{display:flex;justify-content:flex-end;margin:0 0 2px}
 .gtabs{position:sticky;top:0;z-index:6;display:flex;gap:6px;overflow-x:auto;background:var(--bg);padding:8px 0;margin:6px 0 4px;border-bottom:1px solid var(--line);-webkit-overflow-scrolling:touch}
-.gtabs .pill{flex:0 0 auto}
+.gtabs .pill{flex:1 0 auto;padding:4px 8px}
 .grow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .grow:last-child{border-bottom:0}
 .ginfo{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -279,3 +279,5 @@ details.hsec>summary::-webkit-details-marker{display:none}
 details.hsec>summary::after{content:"＋";float:right;color:var(--mut)}
 details.hsec[open]>summary::after{content:"－"}
 details.hsec[open]>summary{margin-bottom:8px}
+
+.backhome{border:0;background:none;padding:0;font:inherit;font-size:1.2rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
