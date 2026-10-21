@@ -59,7 +59,7 @@ async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc' } = {}){
   await page.addInitScript(`window.__SEED=${JSON.stringify(seed(seedOpt))};window.__USER=${JSON.stringify(TEACH)};window.__GOOGLE=${JSON.stringify(TEACH)};try{localStorage.setItem('profesorLang','${lang}')}catch(e){}`);
   await page.addInitScript(MOCK);
   await page.goto(BASE + '/index.html' + q + hash);
-  await page.waitForSelector('.nav');
+  await page.waitForSelector('.brand small');
   return { page, errors, ctx };
 }
 const db = page => page.evaluate(t => window.__DB[t], T);

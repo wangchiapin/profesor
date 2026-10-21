@@ -18,6 +18,8 @@ small,.mut{color:var(--mut)}
 /* 頂部 */
 .top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:6px 0 10px}
 .brand{display:flex;flex-direction:column;flex:1 1 0;min-width:0}
+.brand small{font-size:.74rem;color:var(--mut);margin-top:4px}
+.brand small span{display:block;word-break:break-all}
 .brand b{font-size:1.2rem}.brand span{font-size:.78rem;color:var(--mut)}
 .topr{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .langs{display:flex;gap:6px}

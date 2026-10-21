@@ -156,7 +156,7 @@ async function loadBook(){
 function headerHtml(){
   const lang = I18N.getLang();
   const seg = arr => '<div class="seg">' + arr.map(l => '<button class="' + (lang === l[0] ? 'on' : '') + '" data-act="lang" data-l="' + l[0] + '">' + l[1] + '</button>').join('') + '</div>';
-  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b></div><div class="topr"><div class="langs">' +
+  return '<div class="top"><div class="brand"><b>' + esc(T('appTitle')) + '</b>' + (S.user ? '<small>' + esc(T('signedInAs', { email: '' }).trim()) + '<span>' + esc(S.user.email) + '</span></small>' : '') + '</div><div class="topr"><div class="langs">' +
     seg([['tc', '繁'], ['sc', '简']]) + seg([['es', 'ES'], ['en', 'EN']]) + '</div>' +
     (S.user ? '<div class="langs"><button class="pill xs" data-act="feedback">' + esc(T('fbBtn')) + '</button><button class="pill xs" data-act="logout">' + esc(T('logout')) + '</button></div>' : '') + '</div></div>';
 }
@@ -828,7 +828,7 @@ function render(){
   let h = headerHtml();
   if(!S.authSeen) h += '<p class="hint center">' + esc(T('loading')) + '</p>';
   else if(!isReal()) h += loginHtml();
-  else h += whoHtml() + navHtml() + bodyHtml();
+  else h += (S.route === 'home' ? '' : navHtml()) + bodyHtml();
   const keep = document.activeElement && document.activeElement.id;
   const vals = {}; app.querySelectorAll('input[type=text]').forEach(i => { if(i.id) vals[i.id] = i.value; });
   CORRE.capture();                                    // 句庫編輯器：記下還沒加入的輸入

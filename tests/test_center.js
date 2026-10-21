@@ -113,14 +113,14 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=lang][data-l=es]');
     ok(await page.evaluate(() => localStorage.getItem('profesorLang')) === 'es', '語言記在這台裝置');
     ok(await page.evaluate(() => document.documentElement.lang) === 'es', 'html lang 跟著換');
-    await page.click('[data-act=login]'); await page.waitForSelector('.nav');
+    await page.click('[data-act=login]'); await page.waitForSelector('.badge');
     ok(!!(await db(page)).site_members.u1, '登入後建立 site_members');
     ok(await noOverflow(page), '手機寬度沒有橫向捲動');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[B] 訂閱老師：首頁與用量');
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' } });
-    await page.waitForSelector('.nav'); await page.waitForSelector('.badge');
+    await page.waitForSelector('.badge'); await page.waitForSelector('.badge');
     const t = await text(page);
     ok(t.includes('訂閱') && t.includes('到期日'), '顯示訂閱與到期日');
     ok(/班級（四款遊戲共用）\s*2 \/ 3/.test(t), '班級用量 2 / 3', t);
@@ -151,7 +151,7 @@ server.listen(0, 'localhost', async () => {
 
   console.log('\n[D] 班級：建立、改名、排行榜、刪除');
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' } });
-    await page.waitForSelector('.nav'); await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('h2:has-text("週三班")');
+    await page.waitForSelector('.badge'); await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('h2:has-text("週三班")');
     ok(page.url().endsWith('#/class/0'), '按「班級」直接顯示第一班', page.url());
     ok(JSON.stringify(await page.$$eval('.ctabs .pill', a => a.map(x => x.textContent.trim()))) === JSON.stringify(['🏫 週三班', '🏫 週五班', '＋ 建立班級']), '分頁：班名＋最後是「＋ 建立班級」', await page.$$eval('.ctabs .pill', a => a.map(x => x.textContent)));
     ok(await page.$eval('.ctabs .pill.on', e => e.textContent.includes('週三班')), '目前那班的分頁是亮的');
@@ -1020,10 +1020,8 @@ server.listen(0, 'localhost', async () => {
     const opts2 = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
     ok(['公開句庫 A1', '公開句庫 B1', '🎯 飲食與點餐', '🎯 比較句 · A2', '🎯 nosuch'].every(x => opts2.includes(x)), '成績冊的設定名稱：pool-A1／pool-B1／pack-題包／pack-題包-等級', opts2);
     await shot(page, 'r1_setk_corre');
-    await page.click('.gsw [data-g=bbk]'); await page.waitForSelector('[data-sel=setk]'); await page.waitForFunction(() => __profesor.S.playsState === 'ok' && __profesor.S.scoresState === 'ok');
-    await page.evaluate(() => { const S = __profesor.S, now = Date.now();
-      S.plays.unshift({ id: 'y1', cid: 'class0000aaaa', owner: 'u1', game: 'bbk', h: '0000000000000002', nick: 'Beto', ms: now, th: 'people', lv: 2, rg: 'd=height,age&t=pick&n=10', r: 'rng000011112', score: 100, max: 100, qs: [{ t: 'pick', d: 'height', f: 'BI', p: 1, ok: true, f1: true }] });
-      document.querySelector('[data-act=lang][data-l=tc]').click(); });
+    await page.click('.gsw [data-g=bbk]'); await page.waitForSelector('[data-sel=setk]');     await page.evaluate(([t, o]) => { window.__DB[t].class_plays.y1 = o; }, [T, { cid: 'class0000aaaa', owner: 'u1', game: 'bbk', h: '0000000000000002', nick: 'Beto', at: Date.now(), th: 'people', lv: 2, rg: 'd=height,age&t=pick&n=10', r: 'rng000011112', score: 100, max: 100, qs: [{ t: 'pick', d: 'height', f: 'BI', p: 1, ok: true, f1: true }] }]);
+    await page.click('[data-act=pickcls][data-slot="0"]'); await page.waitForFunction(() => __profesor.S.playsState === 'ok' && __profesor.S.plays.some(p => p.id === 'y1' || p.nick === 'Beto' && p.r === 'rng000011112'));
     ok(await page.$eval('[data-sel=setk]', e => e.value) === '', '換遊戲：選單回到全部');
     const bo = await page.$$eval('[data-sel=setk] option', o => o.map(x => x.textContent));
     ok(bo.includes('📐 身高年齡') && bo.includes('一般模式') && bo.includes('其他範圍'), '比比看選單：範圍名稱、一般模式、舊格式範圍', bo);
@@ -1080,7 +1078,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6)\b/.test(ix) && (ix.match(/\?v=7-7/g) || []).length >= 11 && ix.includes('js/help.js?v=7-7') && ix.includes('js/pubbank.js?v=7-7'), 'index.html 的 css／js 都改成 ?v=7-7（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8)\b/.test(ix) && (ix.match(/\?v=7-9/g) || []).length >= 11 && ix.includes('js/help.js?v=7-9') && ix.includes('js/pubbank.js?v=7-9'), 'index.html 的 css／js 都改成 ?v=7-9（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
