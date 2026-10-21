@@ -88,7 +88,7 @@
 - 方案：免費＝練習連結，可用 5 個內建主題（食物、動物、顏色、交通、家裡）；訂閱＝10 個內建主題＋自訂主題（最多 3 個，每個 6～40 詞）＋練習範圍（最多 15 組）＋班級連結（成績進成績冊）＋學習單 PDF。
 - 資料：`dragon_sets/{uid}` = `{ themes:[{id,name,words}], sets:[{id,name,builtin,custom,sid?}], updatedAt }`；`shared_dragon/{sid}` = `{ owner, name, builtin, custom:[{id,name,words}], updatedAt }`，學生連結（`?d=<sid>`）讀這份，範圍一改就跟著改。詞的格式 `[繁, 簡, 拼音, 西, 英]`，簡體和拼音用 opencc-js／pinyin-pro 自動產生，可手改。
 - 成績：`class_scores` 的 `game='dragon'`，`k`＝主題 id，`extra = {c: 吃對數, a: 飛行高度, wr: 錯字（最多 5 個）}`。
-- **新規則在 `firestore-rules-dragon.txt`**（`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`）。要先貼到 subscription-48d3c 的 Firebase 規則，才能開放。
+- **新規則在 `firestore-rules-dragon.txt`（完整版，整份貼上取代）**（`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`）。要先貼到 subscription-48d3c 的 Firebase 規則，才能開放。
 - 開放步驟：① 貼規則 ② 遊戲 `el-dragon-de-tinta/index.html` 的 `RELEASE` 改 `true`（公開頁會從 10 個主題縮成 3 個）③ 這裡 `js/dragon.js` 的 `READY` 改 `true` ④ 分享區墨龍卡片（desc、guide、訂閱比較表那一列）換成正式文字 ⑤ 用真實帳號走一遍：快速連結、班級連結、成績回傳。
 
 ## 檔案
