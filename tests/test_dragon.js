@@ -106,8 +106,8 @@ server.listen(0, 'localhost', async () => {
     await page.fill('input[data-dgr="1"][data-f="es"]', 'pasaporte');
     await page.click('[data-act=dgsave]'); await page.waitForSelector('.setrow');
     let d = (await db(page)).dragon_sets.u1;
-    ok(d.themes.length === 1 && /^c[a-z0-9]{10}$/.test(d.themes[0].id) && d.themes[0].words.length === 6 && d.themes[0].words[0].length === 5, '存進 dragon_sets（1 個主題、6 詞、每詞 5 欄）', d);
-    ok(d.themes[0].words[1][3] === 'pasaporte', '改過的西文有存');
+    ok(d.themes.length === 1 && /^c[a-z0-9]{10}$/.test(d.themes[0].id) && d.themes[0].words.length === 6 && typeof d.themes[0].words[0] === 'string' && d.themes[0].words[0].split('\t').length === 5, '存進 dragon_sets（1 個主題、6 詞、每詞一個字串含 5 欄，不含巢狀陣列）', d);
+    ok(d.themes[0].words[1].split('\t')[3] === 'pasaporte', '改過的西文有存');
     const themeId = d.themes[0].id;
     // 詞太少
     await page.click('[data-act=dgnew]'); await page.waitForSelector('#dgName');

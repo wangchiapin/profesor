@@ -109,7 +109,7 @@
     const ref = (c, id) => ({
       id,
       get: async () => { window.__reads[pid] = (window.__reads[pid] || 0) + 1; return docSnap(pid, c, id); },
-      set: async d => { const v = stamp(d); checkWrite(pid, c, id, v, auth.currentUser); col(pid, c)[id] = clone(v); window.__writes.push(c + '/' + id); },
+      set: async d => { const v = stamp(d); (function nest(x, inArr){ if(Array.isArray(x)){ if(inArr) throw new Error('Function DocumentReference.set() called with invalid data. Nested arrays are not supported (found in document ' + c + '/' + id + ')'); x.forEach(y => nest(y, true)); } else if(x && typeof x === 'object' && !(x instanceof Date) && typeof x.toMillis !== 'function') Object.keys(x).forEach(k => nest(x[k], false)); })(v, false); checkWrite(pid, c, id, v, auth.currentUser); col(pid, c)[id] = clone(v); window.__writes.push(c + '/' + id); },
       delete: async () => { delete col(pid, c)[id]; window.__writes.push('del ' + c + '/' + id); }
     });
     return {

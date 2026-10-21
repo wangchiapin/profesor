@@ -91,7 +91,7 @@ async function loadAccount(user){
   }catch(e){ console.warn('bbk sets unavailable', e); acct.bbkReady = false; }
   try{
     const dx = await db.collection('dragon_sets').doc(user.uid).get();
-    if(dx.exists){ const d = dx.data(); acct.dragon = { themes: Array.isArray(d.themes) ? d.themes.filter(validDragonTheme) : [], sets: Array.isArray(d.sets) ? d.sets.filter(validDragonSet) : [] }; }
+    if(dx.exists){ const d = dx.data(); acct.dragon = { themes: Array.isArray(d.themes) ? dragonThemesDec(d.themes.filter(validDragonTheme)) : [], sets: Array.isArray(d.sets) ? d.sets.filter(validDragonSet) : [] }; }
   }catch(e){ console.warn('dragon sets unavailable', e); acct.dragonReady = false; }
   return acct;
 }
@@ -196,19 +196,24 @@ async function ensureBbkSid(items, i){
 }
 
 // ---- 墨龍飛天：自訂主題與練習範圍（訂閱功能）----
-// dragon_sets/{uid} = { themes:[{id,name,words:[[繁,簡,拼音,西,英]]}], sets:[{id,name,builtin:[內建主題id],custom:[自訂主題id],sid?}], updatedAt }
+// dragon_sets/{uid} = { themes:[{id,name,words:["繁\t簡\t拼音\t西\t英"]}]（每詞一個字串，Tab 隔開；Firestore 不收巢狀陣列）, sets:[{id,name,builtin:[內建主題id],custom:[自訂主題id],sid?}], updatedAt }
 // shared_dragon/{sid} = { owner, name, builtin, custom:[{id,name,words}], updatedAt }   學生連結 ?d=<sid> 讀這份（任何人可讀單筆）
 // 有連結碼（sid）的範圍，只要範圍或它用到的自訂主題一改，shared_dragon 就跟著改，已發出去的連結用新內容。
 const DRAGON_THEMES_MAX = 3, DRAGON_WORDS_MAX = 40, DRAGON_WORDS_MIN = 6, DRAGON_SETS_MAX = 15;
 function validDragonTheme(x){ return x && typeof x.id === 'string' && /^c[a-z0-9]{1,31}$/.test(x.id) && typeof x.name === 'string' && Array.isArray(x.words); }
 function validDragonSet(x){ return x && typeof x.id === 'string' && typeof x.name === 'string' && Array.isArray(x.builtin) && Array.isArray(x.custom); }
+// Firestore 不允許「陣列裡再放陣列」，所以每個詞存成一個字串（五欄用 Tab 隔開）；讀進來再拆回五欄
+const dwEnc = w => w.map(x => String(x == null ? '' : x).replace(/[\t\r\n]+/g, ' ')).join('\t');
+const dwDec = w => Array.isArray(w) ? w : String(w == null ? '' : w).split('\t');
+const dragonThemesEnc = themes => themes.map(t => ({ id: t.id, name: t.name, words: t.words.map(dwEnc) }));
+const dragonThemesDec = themes => themes.map(t => Object.assign({}, t, { words: Array.isArray(t.words) ? t.words.map(dwDec) : [] }));
 const dragonSetClean = x => { const o = { id: x.id, name: x.name, builtin: x.builtin.slice(), custom: x.custom.slice() }; if(x.sid) o.sid = x.sid; return o; };
 const dragonShared = (set, themes) => ({ owner: uid(), name: set.name, builtin: set.builtin.slice(),
-  custom: set.custom.map(id => themes.find(t => t.id === id)).filter(Boolean).map(t => ({ id: t.id, name: t.name, words: t.words })), updatedAt: serverTs() });
+  custom: set.custom.map(id => themes.find(t => t.id === id)).filter(Boolean).map(t => ({ id: t.id, name: t.name, words: t.words.map(dwEnc) })), updatedAt: serverTs() });
 // 寫入整份（自訂主題＋範圍），再把有連結碼的範圍同步到 shared_dragon
 async function writeDragon(themes, sets){
   const cleanSets = sets.map(dragonSetClean);
-  await db.collection('dragon_sets').doc(uid()).set({ themes, sets: cleanSets, updatedAt: serverTs() });
+  await db.collection('dragon_sets').doc(uid()).set({ themes: dragonThemesEnc(themes), sets: cleanSets, updatedAt: serverTs() });
   await Promise.all(cleanSets.filter(x => x.sid).map(x =>
     db.collection('shared_dragon').doc(x.sid).set(dragonShared(x, themes)).catch(e => console.warn('shared_dragon update failed', e))));
   return { themes, sets: cleanSets };
