@@ -21,14 +21,17 @@ small,.mut{color:var(--mut)}
 .brand small{font-size:.74rem;color:var(--mut);margin-top:4px}
 .brand small span{display:block;word-break:break-all}
 .brand b{font-size:1.2rem}.brand span{font-size:.78rem;color:var(--mut)}
-.topr{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.topr{flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:6px}
 .langs{display:flex;gap:6px}
-.seg{display:inline-flex;border:1.5px solid var(--brown);border-radius:999px;overflow:hidden}
-.seg button{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-width:46px;border:0;background:transparent;color:var(--brown);font:inherit;font-size:.8rem;font-weight:600;padding:4px 12px;min-height:30px;cursor:pointer;white-space:nowrap}
+.langs .seg{flex:1 1 0}
+.langs .seg button{flex:1 1 0;min-width:0}
+.langs .pill.xs{flex:1 1 0}
+.seg{height:34px;box-sizing:border-box;display:inline-flex;border:1.5px solid var(--brown);border-radius:999px;overflow:hidden}
+.seg button{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-width:46px;border:0;background:transparent;color:var(--brown);font:inherit;font-size:.8rem;font-weight:600;padding:0 12px;min-height:0;cursor:pointer;white-space:nowrap}
 .seg button+button{border-left:1.5px solid var(--brown)}
 .seg button.on{background:var(--brown);color:#fff}
 .seg button:not(.on):hover{background:var(--brown-l)}
-.pill.xs{min-height:30px;padding:3px 12px;font-size:.8rem;min-width:0}
+.pill.xs{height:34px;box-sizing:border-box;min-height:0;padding:0 12px;font-size:.8rem;min-width:0}
 .ph{display:flex;align-items:center;gap:10px}
 .ph .badge{font-size:.8rem}
 .ph .pexp{margin-left:auto;font-size:.85rem;font-weight:400;color:var(--mut)}
