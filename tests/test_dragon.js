@@ -66,6 +66,8 @@ const db = page => page.evaluate(t => window.__DB[t], T);
 const text = (page, sel = '#app') => page.$eval(sel, e => e.innerText);
 const noOverflow = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 const go = async (page, hash) => { await page.evaluate(h => { location.hash = h; }, hash); await page.waitForTimeout(250); };
+// 字庫編輯器分成「建立字庫」「字詞表」兩個分頁：按「產生」後，要切到「字詞表」分頁才看得到表格
+const dgGen = async page => { await page.click('[data-act=dggen]'); await page.click('[data-act=edtab][data-e=dg][data-k=more]'); };
 const shot = async (page, name) => { if(SHOT) await page.screenshot({ path: path.join(SHOT, name + '.png'), fullPage: true }); };
 
 server.listen(0, 'localhost', async () => {
@@ -97,7 +99,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=dgnew]'); await page.waitForSelector('#dgName');
     await page.fill('#dgName', '旅行');
     await page.fill('#dgText', '機場，aeropuerto，airport\n護照\n行李\n登機證\n海關\n飛機，avión');
-    await page.click('[data-act=dggen]'); await page.waitForSelector('table.dgt', { timeout: 20000 });
+    await dgGen(page); await page.waitForSelector('table.dgt', { timeout: 20000 });
     const rows = await page.$$eval('table.dgt tr', t => t.length - 1);
     ok(rows === 6, '產生 6 列', rows);
     const py = await page.$$eval('input[data-f=p]', e => e.map(x => x.value));
@@ -118,25 +120,27 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page, '#dragonCard .err')).includes('至少要 6'), '詞太少會擋下來');
     ok(!(await page.$eval('[data-act=dggen]', e => e.disabled)), '詞太少失敗後，產生按鈕仍可按');
     await page.fill('#dgText', '機場\n護照\n飛機\n行李\n機票\n接駁車\n火車');
-    await page.click('[data-act=dggen]'); await page.waitForSelector('table.dgt', { timeout: 20000 });
+    await dgGen(page); await page.waitForSelector('table.dgt', { timeout: 20000 });
     ok((await page.$$eval('table.dgt tr', t => t.length - 1)) === 7, '補到 7 個詞後可以再按產生成功');
     await page.click('[data-act=dgcancel]');
     // 練習範圍
+    await go(page, '#/game/dragon/ranges'); await page.waitForSelector('[data-act=dsnew]');   // 練習範圍現在是獨立的「練習範圍」分頁
     await page.click('[data-act=dsnew]'); await page.waitForSelector('#dsName');
-    await page.click('[data-act=dssave]'); await page.waitForSelector('#dragonCard .err');
-    ok((await text(page, '#dragonCard .err')).includes('至少選一個'), '沒選主題不能存');
+    await page.click('[data-act=dssave]'); await page.waitForSelector('#dragonSets .err');
+    ok((await text(page, '#dragonSets .err')).includes('至少選一個'), '沒選主題不能存');
     await page.fill('#dsName', '旅行課'); await page.click('[data-act=dsb][data-k=food]'); await page.click('[data-act=dsc]');
-    await page.click('[data-act=dssave]'); await page.waitForSelector('[data-act=dspractice]');
+    await page.click('[data-act=dssave]'); await page.waitForSelector('[data-act=dsplay]');
     d = (await db(page)).dragon_sets.u1;
     ok(d.sets.length === 1 && d.sets[0].name === '旅行課' && d.sets[0].builtin.join() === 'food' && d.sets[0].custom.join() === themeId && !d.sets[0].sid, '範圍存好（還沒有連結碼）', d.sets);
-    await page.click('[data-act=dspractice][data-k="0"]'); await page.waitForSelector('a.pill[href*="?d="]');
+    await page.click('[data-act=dsplay][data-k="0"]'); await page.waitForSelector('a.pill[href*="?d="]');
     d = (await db(page)).dragon_sets.u1; const sid = d.sets[0].sid;
     const sh = (await db(page)).shared_dragon[sid];
     ok(/^[a-z0-9]{12}$/.test(sid) && sh && sh.owner === 'u1' && sh.builtin.join() === 'food' && sh.custom.length === 1 && sh.custom[0].words.length === 6, '產生連結碼並寫入 shared_dragon（內含自訂主題）', sh);
     // 改自訂主題 → shared_dragon 跟著改
+    await go(page, '#/game/dragon/content'); await page.waitForSelector('[data-act=dgedit]');
     await page.click('[data-act=dgedit][data-k="0"]'); await page.waitForSelector('#dgText');
     await page.fill('#dgText', (await page.inputValue('#dgText')) + '\n旅館，hotel');
-    await page.click('[data-act=dggen]'); await page.waitForFunction(() => document.querySelectorAll('table.dgt tr').length === 8, null, { timeout: 20000 });
+    await dgGen(page); await page.waitForFunction(() => document.querySelectorAll('table.dgt tr').length === 8, null, { timeout: 20000 });
     ok((await page.$$eval('input[data-f=es]', e => e.map(x => x.value)))[1] === 'pasaporte', '重新產生時保留改過的西文');
     await page.click('[data-act=dgsave]'); await page.waitForSelector('.setrow');
     ok((await db(page)).shared_dragon[sid].custom[0].words.length === 7, '已發出的連結跟著新單字');
@@ -167,7 +171,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('[data-act=dgnew]');
     await page.click('[data-act=dgnew]'); await page.fill('#dgName', '旅行');
     await page.fill('#dgText', '機場，aeropuerto\n護照，pasaporte\n行李，equipaje\n登機證，tarjeta de embarque\n海關，aduana\n飛機，avión');
-    await page.click('[data-act=dggen]'); await page.waitForSelector('table.dgt', { timeout: 20000 });
+    await dgGen(page); await page.waitForSelector('table.dgt', { timeout: 20000 });
     await page.click('[data-act=dgsave]'); await page.waitForSelector('.setrow');
     await go(page, '#/game/dragon/sheet'); await page.waitForSelector('#dragonWsCard [data-act=dwst]');
     ok((await page.$eval('[data-act=dwsmake]', e => e.disabled)), '沒選主題不能產生');
@@ -199,7 +203,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[E] 四種語言、手機寬度');
-  for(const [lang, w] of [['sc', '自定义主题'], ['es', 'Temas propios'], ['en', 'Custom themes']]){
+  for(const [lang, w] of [['sc', '自定义字库'], ['es', 'Mis temas'], ['en', 'Custom word banks']]){
     const { page, errors, ctx } = await open(browser, { q: '?dev=dragon', hash: '#/game/dragon/content', lang });
     await page.waitForSelector('#dragonCard [data-act=dgnew]');
     ok((await text(page, '#dragonCard')).includes(w), lang + '：卡片文字含「' + w + '」');
@@ -207,7 +211,7 @@ server.listen(0, 'localhost', async () => {
 
   console.log('\n[F] 說明頁：四種語言都有墨龍段落');
   { let r;
-    for(const [lang, w] of [['tc', '自訂主題'], ['sc', '自定义主题'], ['es', 'Temas propios'], ['en', 'Custom themes']]){
+    for(const [lang, w] of [['tc', '自訂字庫'], ['sc', '自定字库'], ['es', 'Bancos propios'], ['en', 'word banks']]){
       r = await open(browser, { q: '?dev=dragon', hash: '#/game/dragon/help', lang }); await r.page.waitForSelector('#hDragon');
       ok((await text(r.page, '#hDragon')).includes(w) && (await text(r.page, '.gsw')).length > 0, lang + '：說明頁有墨龍段落與跳轉鈕');
       ok(await noOverflow(r.page), lang + '：說明頁沒有橫向捲動'); ok(r.errors.length === 0, lang + '：沒有頁面錯誤', r.errors); await r.ctx.close(); } }
