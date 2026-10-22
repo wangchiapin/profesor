@@ -466,7 +466,7 @@ function colEditorHtml(){
     '<input type="text" maxlength="12" placeholder="' + esc(T('colColorSay')) + '" value="' + esc(c.s) + '" data-cc="' + i + '" data-f="s">' +
     '<button class="x" data-act="colsay" data-k="' + i + '" title="' + esc(T('colListen')) + '">🔊</button><button class="x" data-act="colcdel" data-k="' + i + '">✕</button>' +
     '<input type="text" class="cpy" maxlength="40" placeholder="' + esc(T('colColorPy')) + '" value="' + esc(c.p || '') + '" data-cc="' + i + '" data-f="p"></div>').join('');
-  const tab = E.tab || 'basic', cur = E.i >= 0 && S.a.configs[E.i];
+  const tab = E.tab || 'basic';
   const fName = '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="colName" maxlength="20" placeholder="' + esc(T('colNamePh')) + '" value="' + esc(dr.name) + '"></div>';
   const fMode = '<div class="field"><label>' + esc(T('colMode')) + '</label><div class="row" style="margin-top:0">' + pills('colmode', dr.mode, [['A', T('colModeA')], ['B', T('colModeB')]]) + '</div></div>';
   const fGrid = '<div class="field"><label>' + esc(T('colGrid')) + '（' + dr.rows * dr.cols + '）</label><div class="row" style="margin-top:0">' +
@@ -482,9 +482,11 @@ function colEditorHtml(){
   const fNums = '<div class="field"><label>' + esc(T('colNums')) + '</label><div class="row" style="margin-top:0">' +
       pills('colnmode', dr.nmode, [['999', '0 – 999'], ['9999', '0 – 9999'], ['list', T('colList') + (pro ? '' : ' 🔒')]]) + '</div>' +
       (dr.nmode === 'list' ? '<textarea id="colList" rows="3" placeholder="1, 2, 3, 10-20, 100">' + esc(dr.list) + '</textarea><p class="hint">' + esc(T('colListHint')) + '</p>' : '') + '</div>';
-  const linkRow = cur && cur.sid ? '<div class="field"><div class="row" style="margin-top:0"><span class="hint">' + esc(T('colLinkActive')) + '</span><button class="pill sm" data-act="coloff" data-k="' + E.i + '">' + esc(T('colLinkOffBtn')) + '</button></div></div>' : '';
-  let h = '<div class="editor">' + edTabsHtml('col', tab, [['basic', 'edTabBasic'], ['more', 'edTabColors']]) +
-    (tab === 'basic' ? fName + '<div class="optgrid">' + fMode + fGrid + fHearts + '</div>' + linkRow : fPreset + fCustom + fNums);
+  // 跟跑吧一樣：整頁只剩編輯畫面，上面一列「回上一頁｜基本設定｜顏色與數字」
+  let h = '<div class="gtabs etabs"><button class="pill sm" data-act="colcancel">' + esc(CORRE.tr('back')) + '</button>' +
+    [['basic', 'edTabBasic'], ['more', 'edTabColors']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="col" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div>' +
+    '<div class="editor">' +
+    (tab === 'basic' ? fName + '<div class="optgrid">' + fMode + fGrid + fHearts + '</div>' : fPreset + fCustom + fNums);
   if(!pro && tab === 'more') h += '<p class="hint">🔒 ' + esc(T('colProOnly')) + '</p>';
   if(S.colMsg) h += '<div class="err">' + esc(S.colMsg) + '</div>';
   h += '<div class="row"><button class="pill fill sm" data-act="colsave">' + esc(T('save')) + '</button><button class="pill sm" data-act="colcancel">' + esc(T('cancel')) + '</button></div></div>';
@@ -494,17 +496,16 @@ function colCardHtml(){
   const A = S.a, max = DATA.coloresMax(A.plan), E = S.colEdit;
   let h = '<div class="card" id="colCard">' + phHead(T('colSetsTitle'), A.extrasReady ? T('bbkQuota', { n: A.configs.length, max }) : '');
   if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-  if(!A.configs.length && !(E && E.i < 0)) h += '<p class="hint">' + esc(T('colEmpty')) + '</p>';
+  if(E) return '<div class="card" id="colCard">' + colEditorHtml() + '</div>';
+  if(!A.configs.length) h += '<p class="hint">' + esc(T('colEmpty')) + '</p>';
   A.configs.forEach((it, i) => {
-    if(E && E.i === i){ h += colEditorHtml(); return; }
     const c = it.cfg || {};
     h += '<div class="setrow"><div><b>🎨 ' + esc(c.name || ('#' + (i + 1))) + '</b><small>' + esc(colSummary(c)) + '</small></div><div class="row">' +
       '<button class="pill sm" data-act="coledit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
       (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkColoresPractice(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '<button class="pill sm" data-act="colplay" data-k="' + i + '">' + esc(T('test')) + '</button>') +
       '<button class="pill sm" data-act="coldel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
   });
-  if(E && E.i < 0) h += colEditorHtml();
-  else if(!E){
+  {
     if(A.configs.length < max) h += '<div class="row"><button class="pill fill sm" data-act="colnew">＋ ' + esc(T('colNew')) + '</button></div>';
     else h += (A.plan.active ? '' : '<div class="row">' + lockBtn(T('colNew')) + '</div>') + '<div class="notice">' + esc(T(A.plan.active ? 'bbkFullPro' : 'bbkFullFree')) + (A.plan.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
   }
@@ -642,6 +643,15 @@ function classLinksHtml(g){
   return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T({ corre: 'linksHintCorre', colores: 'linksHintColores', bbk: 'linksHintBbk', dragon: 'linksHintDragon' }[g])) + '</p>' + classPickHtml() +
     (clsC() ? linkCardHtml(g) : '') + '</div>';
 }
+// 色數的預設色：遊戲本來就支援 ?t=（把設定編進網址），不用建連結碼、不寫資料庫
+function colPresetUrl(kind){
+  const B = COL.SETS.basic, A = COL.SETS.adv;
+  const ids = kind === 'basic' ? B : kind === 'adv' ? A : [...new Set(B.concat(A))];
+  const name = T(kind === 'basic' ? 'colPresetBasic' : kind === 'adv' ? 'colPresetAdv' : 'colPresetBoth');
+  const bytes = new TextEncoder().encode(JSON.stringify({ name, mode: 'A', rows: 5, cols: 4, hearts: 5, ids, range: 999 }));
+  let bin = ''; bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return DATA.GAME_URL.colores + '?t=' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
 // 色數、比比看：不屬於班級的練習連結（不回傳成績）
 function practiceCardHtml(g){
   const A = S.a;
@@ -649,14 +659,17 @@ function practiceCardHtml(g){
   let url = '';
   if(g === 'colores'){
     if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-    if(!A.configs.length) return h + '<p class="hint">' + esc(T('configNone')) + '</p></div>';
-    const k = S.colPrac || '';
-    h += '<div class="field"><label>' + esc(T('configLabel')) + '</label><select data-sel="colprac"><option value="">' + esc(T('configPick')) + '</option>' +
-      A.configs.map((it, i) => '<option value="' + i + '" ' + (k === String(i) ? 'selected' : '') + '>' + esc((it.cfg && it.cfg.name) || ('#' + (i + 1))) + '</option>').join('') + '</select></div>';
-    const it = k !== '' ? A.configs[+k] : null;
-    if(!it) return h + '</div>';
-    if(!it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="colprmake">🔗 ' + esc(T('makeLink')) + '</button></div></div>';
-    url = DATA.linkColoresPractice(it.sid);
+    const k = S.colPrac || 'p:basic';
+    h += '<div class="field"><label>' + esc(T('configLabel')) + '</label><select data-sel="colprac">' +
+      [['p:basic', 'colPresetBasic'], ['p:adv', 'colPresetAdv'], ['p:both', 'colPresetBoth']].map(x => '<option value="' + x[0] + '" ' + (k === x[0] ? 'selected' : '') + '>' + esc(T(x[1])) + '</option>').join('') +
+      (A.configs.length ? '<optgroup label="' + esc(T('colPresetOwn')) + '">' + A.configs.map((it, i) => '<option value="' + i + '" ' + (k === String(i) ? 'selected' : '') + '>' + esc((it.cfg && it.cfg.name) || ('#' + (i + 1))) + '</option>').join('') + '</optgroup>' : '') + '</select></div>';
+    if(k.slice(0, 2) === 'p:') url = colPresetUrl(k.slice(2));
+    else{
+      const it = A.configs[+k];
+      if(!it) return h + '</div>';
+      if(!it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="colprmake">🔗 ' + esc(T('makeLink')) + '</button></div></div>';
+      url = DATA.linkColoresPractice(it.sid);
+    }
   }else{
     if(!A.bbkReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
     const k = S.bbkPrac || '';
@@ -714,7 +727,7 @@ function helpHtml(game){
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
   const l = I18N.getLang();
-  return { cfg: '', kind: 'listen', read: true, count: 10, legend: true, simp: l === 'sc', help: l === 'en' ? 'en' : 'es', answers: true };
+  return { cfg: '', kind: 'listen', read: false, count: 10, legend: true, simp: l === 'sc', help: l === 'en' ? 'en' : 'es', answers: true };
 }
 function wsFormHtml(){
   const A = S.a, W = S.ws || (S.ws = wsDefaults());
@@ -728,14 +741,16 @@ function wsFormHtml(){
     '<div class="field"><label>' + esc(T('wsKind')) + '</label><div class="kinds">' +
     [['listen', 'wsListen'], ['write', 'wsWrite'], ['color', 'wsColor']].map(k => '<button class="kind ' + (W.kind === k[0] ? 'on' : '') + '" data-act="wskind" data-k="' + k[0] + '"><b>' + esc(T(k[1])) + '</b><small>' + esc(T(k[1] + 'Desc')) + '</small></button>').join('') + '</div></div>';
   if(W.kind === 'listen'){
-    h += '<div class="field"><label>' + esc(T('wsQuestions')) + '</label><div class="row" style="margin-top:0">' + pills('wsread', W.read ? 1 : 0, [[1, T('wsReadOn')], [0, T('wsReadOff')]]) + '</div></div>' +
-      '<div class="field"><label>' + esc(T('wsCount')) + '</label><div class="row" style="margin-top:0">' + pills('wscount', W.count, [[5, '5'], [10, '10'], [15, '15'], [20, '20']]) + '</div></div>' +
-      '<div class="field"><div class="row" style="margin-top:0"><button class="pill sm chip ' + (W.legend ? 'on' : '') + '" data-act="wslegend">' + (W.legend ? '✓ ' : '') + esc(T('wsLegendOpt')) + '</button></div></div>';
+    h += '<div class="field"><label>' + esc(T('wsQuestions')) + '</label><div class="row" style="margin-top:0">' + pills('wsread', W.read ? 1 : 0, [[0, T('wsReadOff')], [1, T('wsReadOn')]]) + '</div></div>' +
+      '<div class="field"><label>' + esc(T('wsCount')) + '</label><div class="row" style="margin-top:0">' + pills('wscount', W.count, [[5, '5'], [10, '10'], [15, '15'], [20, '20']]) + '</div></div>';
   }
   h += '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('wssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('wsHelp')) + '</label><div class="row" style="margin-top:0">' + pills('wshelp', W.help, [['none', T('wsNone')], ['es', 'Español'], ['en', 'English']]) + '</div></div>' +
-    '<div class="field"><div class="row" style="margin-top:0"><button class="pill sm chip ' + (W.answers ? 'on' : '') + '" data-act="wsans">' + (W.answers ? '✓ ' : '') + esc(T('wsAnswersOpt')) + '</button></div></div>' +
-    '<div class="row"><button class="pill fill" data-act="wsmake" ' + (W.cfg === '' ? 'disabled' : '') + '>📄 ' + esc(T('wsMake')) + '</button></div>';
+    '<div class="field"><div class="row" style="margin-top:0">' + (W.kind === 'listen' ? '<button class="pill sm chip ' + (W.legend ? 'on' : '') + '" data-act="wslegend">' + (W.legend ? '✓ ' : '') + esc(T('wsLegendOpt')) + '</button>' : '') +
+    '<button class="pill sm chip ' + (W.answers ? 'on' : '') + '" data-act="wsans">' + (W.answers ? '✓ ' : '') + esc(T('wsAnswersOpt')) + '</button></div></div>' +
+    '<div class="row"><button class="pill" data-act="wspreview" ' + (W.cfg === '' ? 'disabled' : '') + '>' + esc(T('cwsPreview')) + '</button>' +
+    '<button class="pill fill" data-act="wsexport" ' + (W.cfg === '' ? 'disabled' : '') + '>📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div>';
+  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('wsPrevTitle')) + '</b><button class="pill xs" data-act="wspreview">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill xs" data-act="wsprevclose">' + esc(T('cwsPrevClose')) + '</button></div><div class="ws">' + W.prev + '</div></div>';
   return h + '</div>';
 }
 function wsSheetHtml(){
@@ -1235,30 +1250,35 @@ const actions = {
     catch(e){ console.error(e); S.colMsg = err(e); }
     render();
   }); },
-  coloff(el){ return run(async () => {
-    const i = +el.dataset.k; if(!confirm(T('colConfirmOff'))) return;
-    try{ S.a.configs = await DATA.coloresLinkOff(S.a.configs, i); S.colMsg = ''; render(); toast(T('colOffDone')); }
-    catch(e){ console.error(e); S.colMsg = err(e); render(); }
-  }); },
   colpractice(el){ return run(async () => {
     const i = +el.dataset.k;
     try{ const r = await DATA.ensureColoresSid(S.a.configs, i); S.a.configs = r.items; S.colMsg = ''; render(); await copyText(DATA.linkColoresPractice(r.sid)); }
     catch(e){ console.error(e); S.colMsg = T('configFail', { m: err(e) }); render(); }
   }); },
   // ---- 色數學習單 ----
-  wskind(el){ S.ws.kind = el.dataset.k; render(); },
-  wsread(el){ S.ws.read = el.dataset.k === '1'; render(); },
-  wscount(el){ S.ws.count = +el.dataset.k; render(); },
-  wslegend(){ S.ws.legend = !S.ws.legend; render(); },
-  wssimp(el){ S.ws.simp = el.dataset.k === '1'; render(); },
-  wshelp(el){ S.ws.help = el.dataset.k; render(); },
-  wsans(){ S.ws.answers = !S.ws.answers; render(); },
+  wskind(el){ S.ws.kind = el.dataset.k; S.ws.prev = null; render(); },
+  wsread(el){ S.ws.read = el.dataset.k === '1'; S.ws.prev = null; render(); },
+  wscount(el){ S.ws.count = +el.dataset.k; S.ws.prev = null; render(); },
+  wslegend(){ S.ws.legend = !S.ws.legend; S.ws.prev = null; render(); },
+  wssimp(el){ S.ws.simp = el.dataset.k === '1'; S.ws.prev = null; render(); },
+  wshelp(el){ S.ws.help = el.dataset.k; S.ws.prev = null; render(); },
+  wsans(){ S.ws.answers = !S.ws.answers; S.ws.prev = null; render(); },
+  wsBuild(){
+    const W = S.ws, it = W && S.a.configs[+W.cfg]; if(!it || !S.a.plan.active) return null;
+    const c = COL.normalizeCfg(it.cfg); if(!c) return null;
+    return COL.worksheet(c, Object.assign({}, W, { title: c.name }), COL.makeBoard(c), k => I18N.D[k]);
+  },
+  wspreview(){ const h = actions.wsBuild(); if(h){ S.ws.prev = h; render(); } },
+  wsprevclose(){ S.ws.prev = null; render(); },
+  // 輸出PDF：用預覽的同一張（看到什麼印什麼），沒預覽就現做一張，再叫出列印
+  wsexport(){
+    const h = S.ws.prev || actions.wsBuild(); if(!h) return;
+    S.ws.prev = h; S.wsKind = 'colores'; S.wsSheet = h; render(); window.scrollTo(0, 0);
+    setTimeout(() => window.print(), 400);
+  },
   wsmake(){
-    const W = S.ws, it = W && S.a.configs[+W.cfg]; if(!it || !S.a.plan.active) return;
-    const c = COL.normalizeCfg(it.cfg); if(!c) return;
-    const opts = Object.assign({}, W, { title: c.name });
-    S.wsKind = 'colores';
-    S.wsSheet = COL.worksheet(c, opts, COL.makeBoard(c), k => I18N.D[k]);
+    const h = actions.wsBuild(); if(!h) return;
+    S.wsKind = 'colores'; S.wsSheet = h; S.ws.prev = h;
     render(); window.scrollTo(0, 0);
   },
   wsback(){ S.wsSheet = null; S.wsKind = ''; render(); },
@@ -1415,7 +1435,7 @@ document.addEventListener('change', e => {
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'dragonsel'){ S.dragonSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'setk'){ S.setK = s.value; S.sel = null; }
-  if(s.dataset.sel === 'wscfg') S.ws.cfg = s.value;
+  if(s.dataset.sel === 'wscfg'){ S.ws.cfg = s.value; S.ws.prev = null; }
   if(s.dataset.sel === 'bwssel'){
     S.bws.sel = s.value; S.bws.msg = '';
     const it = s.value[0] !== 'L' && S.a.bbk[+s.value]; if(it && it.n) S.bws.n = [5, 10, 15, 20].indexOf(it.n) >= 0 ? it.n : S.bws.n;   // 題數預設跟範圍一樣

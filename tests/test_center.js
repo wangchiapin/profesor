@@ -127,7 +127,7 @@ server.listen(0, 'localhost', async () => {
     const t = await text(page);
     ok(t.includes('訂閱') && t.includes('到期日'), '顯示訂閱與到期日');
     ok(/班級（四款遊戲共用）\s*2 \/ 3/.test(t), '班級用量 2 / 3', t);
-    ok(/句庫\s*1 \/ 5/.test(t) && /設定組\s*2 \/ 15/.test(t), '句庫 1 / 5、設定組 2 / 15');
+    ok(/句庫\s*1 \/ 5/.test(t) && /自訂設定\s*2 \/ 15/.test(t), '句庫 1 / 5、設定組 2 / 15');
     ok(!t.includes('建立班級、成績簿、列印需要訂閱'), '訂閱中沒有提示');
     await shot(page, 'b1_home');
     ok(await noOverflow(page), '沒有橫向捲動');
@@ -137,7 +137,7 @@ server.listen(0, 'localhost', async () => {
   { const { page, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' } });
     await page.waitForSelector('.badge'); const t = await text(page);
     ok(t.includes('免費') && t.includes('需要訂閱'), '免費：提示需要訂閱');
-    ok(/句庫\s*1 \/ 1/.test(t) && /設定組\s*2 \/ 3/.test(t), '免費額度 1 / 3');
+    ok(/句庫\s*1 \/ 1/.test(t) && /自訂設定\s*2 \/ 3/.test(t), '免費額度 1 / 3');
     await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('.ctabs');
     ok(page.url().endsWith('#/class/0'), '按「班級」直接打開第一班', page.url());
     ok((await page.$$('input[id^=newCls]')).length === 0, '免費沒有建立班級的欄位');
@@ -254,7 +254,7 @@ server.listen(0, 'localhost', async () => {
   { const { page, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/colores/links' });
     await page.waitForSelector('#linksCard .lk');
     await page.evaluate(() => { __profesor.S.a.configs = []; }); await page.evaluate(() => document.querySelector('[data-act=lang][data-l=tc]').click());
-    ok((await text(page)).includes('還沒有設定組'), '沒有設定組：提示先去建立'); await ctx.close(); }
+    ok((await text(page)).includes('還沒有自訂設定'), '沒有設定組：提示先去建立'); await ctx.close(); }
 
   console.log('\n[F] 成績簿：跑吧／色數／比比看（各遊戲的「成績」分頁）');
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/corre/scores' });
@@ -482,13 +482,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('#colCard [data-act=colplay][data-k="2"]'); await page.waitForFunction(() => window.__w.location.href);
     d = await db(page); const sid = d.teacher_configs.u1.items[2].sid;
     ok(/^[a-z0-9]{12}$/.test(sid) && d.shared_configs[sid].pro === true && (await page.evaluate(() => window.__w.location.href)) === 'https://wangchiapin.github.io/pop-colores-numeros/?c=' + sid, '試玩連結 ?c=代碼（用到訂閱功能 pro=true）');
-    // 停用連結
-    ok(await page.$('#colCard [data-act=coloff]') === null, '停用鈕不在列上，只在編輯畫面');
-    await page.click('#colCard [data-act=coledit][data-k="2"]');
-    await page.click('#colCard .editor [data-act=coloff][data-k="2"]'); await page.waitForFunction(() => !document.querySelector('#colCard [data-act=coloff]'));
-    await page.click('[data-act=colcancel]');
-    d = await db(page);
-    ok(!d.teacher_configs.u1.items[2].sid && !d.shared_configs[sid], '停用連結：刪 shared_configs，設定組留著');
+    ok(await page.$('[data-act=coloff]') === null, '已拿掉「停用練習連結」');
     // 刪除
     await page.click('#colCard [data-act=coldel][data-k="1"]'); await page.waitForFunction(() => document.querySelectorAll('#colCard .setrow').length === 2);
     d = await db(page);
@@ -513,11 +507,12 @@ server.listen(0, 'localhost', async () => {
   console.log('\n[L] 色數學習單');
   { const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/colores/sheet' });
     await page.waitForSelector('#wsCard');
-    ok(await page.$eval('[data-act=wsmake]', b => b.disabled), '沒選設定組不能產生');
+    ok(await page.$eval('[data-act=wspreview]', b => b.disabled), '沒選設定組不能產生');
     await page.selectOption('[data-sel=wscfg]', '0');
     await shot(page, 'l0_form');
     // 聽讀找色
-    await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    await page.click('[data-act=wsread][data-k="1"]');
+    await page.click('[data-act=wspreview]'); await page.waitForSelector('.ws');
     let info = await page.evaluate(() => ({ cells: document.querySelectorAll('.ws-board:not(.ws-key .ws-board) .ws-cell').length,
       qs: document.querySelectorAll('.ws > .ws-qs li').length, key: document.querySelectorAll('.ws-key li').length,
       nums: [...document.querySelectorAll('.ws > .ws-board .ws-cell .d')].map(e => +e.textContent),
@@ -529,21 +524,21 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'l1_listen');
     if(SHOT) await page.pdf({ path: path.join(SHOT, 'l1_listen.pdf'), format: 'A4', printBackground: true });
     const before = info.nums.join();
-    await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    await page.click('[data-act=wspreview]'); await page.waitForSelector('.ws');
     const after = await page.$$eval('.ws > .ws-board .ws-cell .d', e => e.map(x => x.textContent).join());
     ok(before !== after, '「換一張」數字會變');
     // 老師唸
-    await page.click('[data-act=wsback]'); await page.click('[data-act=wsread][data-k="0"]'); await page.click('[data-act=wscount][data-k="5"]'); await page.click('[data-act=wsmake]');
+    await page.click('[data-act=wsread][data-k="0"]'); await page.click('[data-act=wscount][data-k="5"]'); await page.click('[data-act=wspreview]');
     await page.waitForSelector('.ws');
     ok((await page.$$eval('.ws > .ws-qs .q', e => e.length)) === 0 && (await page.$$eval('.ws > .ws-qs li', e => e.length)) === 5 && (await text(page, '.ws')).includes('聽老師唸'), '老師唸：紙上沒題目、5 個空格');
     // 看色寫數
-    await page.click('[data-act=wsback]'); await page.click('[data-act=wskind][data-k=write]'); await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    await page.click('[data-act=wskind][data-k=write]'); await page.click('[data-act=wspreview]'); await page.waitForSelector('.ws');
     info = await page.evaluate(() => ({ groups: document.querySelectorAll('.ws > .ws-qs li').length, key: [...document.querySelectorAll('.ws-key li')].map(e => e.textContent) }));
     ok(info.groups === 2 && info.key.length === 2 && info.key.every(t => /^(紅色|藍色)/.test(t)), '看色寫數：每個顏色一題（設定 2 色）', info);
     await shot(page, 'l2_write');
     // 著色版，簡體、不附答案
-    await page.click('[data-act=wsback]'); await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wssimp][data-k="1"]'); await page.click('[data-act=wshelp][data-k=none]'); await page.click('[data-act=wsans]');
-    await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wssimp][data-k="1"]'); await page.click('[data-act=wshelp][data-k=none]'); await page.click('[data-act=wsans]');
+    await page.click('[data-act=wspreview]'); await page.waitForSelector('.ws');
     info = await page.evaluate(() => ({ blank: document.querySelectorAll('.ws-cell.blank').length, key: !!document.querySelector('.ws-key'), t: document.querySelector('.ws').innerText }));
     ok(info.blank === 16 && !info.key && info.t.includes('色数消消乐') && info.t.includes('涂上') && !info.t.includes('Respuestas'), '著色版：16 格空白、簡體、無答案頁、無輔助語言', info.t.slice(0, 80));
     await shot(page, 'l3_color');
@@ -551,13 +546,13 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const { page, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/game/colores/sheet' });
     await page.waitForSelector('#wsCard');
-    ok((await text(page, '#wsCard')).includes('學習單是訂閱功能') && await page.$('[data-act=wsmake]') === null, '免費老師：學習單上鎖');
+    ok((await text(page, '#wsCard')).includes('學習單是訂閱功能') && await page.$('[data-act=wspreview]') === null, '免費老師：學習單上鎖');
     await ctx.close(); }
   { const big = { id: 'b1', cfg: { name: '大', mode: 'A', rows: 8, cols: 6, hearts: 5, ids: ['red', 'blue', 'green'], range: 9999 } };
     const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'en' }, hash: '#/game/colores/sheet' });
     await page.waitForSelector('#wsCard');
     await page.evaluate(c => { __profesor.S.a.configs = [c]; }, big); await page.click('[data-act=lang][data-l=en]');
-    await page.selectOption('[data-sel=wscfg]', '0'); await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wsmake]'); await page.waitForSelector('.ws');
+    await page.selectOption('[data-sel=wscfg]', '0'); await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wspreview]'); await page.waitForSelector('.ws');
     ok((await page.$$eval('.ws-cell.blank', e => e.length)) === 48, '8×6、0–9999 也做得出來');
     ok(await noOverflow(page), '大格子在手機上也不橫向捲動');
     await shot(page, 'l4_big');
@@ -1005,7 +1000,7 @@ server.listen(0, 'localhost', async () => {
     ok(!(await page.$('#linksCard .notice.alert')) && !(await page.$('#linksCard .link')) && !t.includes('學生遊戲連結'), '紅底提醒框、多包的遊戲名稱小框都拿掉了');
     ok(!(await page.$('.ghead')) && !(await text(page)).includes('開啟遊戲'), '遊戲頁沒有「開啟遊戲」那一欄');
     { const pt = await text(page, '#pubCard'); ok(pt.includes('🔗 公開句庫連結') && pt.includes('題目來源可選擇公開句庫或主題包，可選擇不同程度；此遊戲連結不回傳學生成績，也不會進入排行榜。') && !pt.includes('要收成績，請到「班級」頁') && !pt.includes('不用建立句庫'), '「公開句庫連結」新標題與說明，複製連結下方的說明拿掉', pt.slice(0, 200)); }
-    for(const [g, w] of [['colores', '可選擇設定組，學生成績會自動回傳至成績分頁'], ['bbk', '可選擇練習範圍，學生成績會自動回傳至成績分頁'], ['dragon', '可選擇練習範圍，學生成績會自動回傳至成績分頁']]){
+    for(const [g, w] of [['colores', '可選擇自訂設定，學生成績會自動回傳至成績分頁'], ['bbk', '可選擇練習範圍，學生成績會自動回傳至成績分頁'], ['dragon', '可選擇練習範圍，學生成績會自動回傳至成績分頁']]){
       await page.evaluate(g => __profesor.go('game/' + g + '/links'), g); await page.waitForSelector('#linksCard .lk');
       const lt = await text(page, '#linksCard'); ok(lt.includes('🔗 班級遊戲連結') && lt.includes(w) && lt.includes('⚠️ 注意：如有同暱稱之學生') && !(await page.$('#linksCard .link')), g + '：班級遊戲連結說明', lt.slice(0, 120)); }
     await page.evaluate(() => __profesor.go('game/corre/links')); await page.waitForSelector('#linksCard .lk'); t = await text(page, '#linksCard');
@@ -1088,7 +1083,7 @@ server.listen(0, 'localhost', async () => {
   { // 說明頁：看成績補一句
     global.window = {}; eval(fs.readFileSync(path.join(ROOT, 'js', 'help.js'), 'utf8')); const H = global.window.HELP;
     const all = JSON.stringify(H);
-    ok(all.includes('成績會依句庫、設定組或範圍分開記錄') && all.includes('成绩会依句库、设置组或范围分开记录') && all.includes('menú «Mostrar»') && all.includes('“Show” menu'), '說明頁「看成績」補上依設定分開（四語）'); }
+    ok(all.includes('成績會依句庫、自訂設定或範圍分開記錄') && all.includes('成绩会依句库、自定设置或范围分开记录') && all.includes('menú «Mostrar»') && all.includes('“Show” menu'), '說明頁「看成績」補上依設定分開（四語）'); }
   { // 6-4 比比看主題：範圍編輯器
     const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('[data-act=bbknew]'); await page.click('[data-act=bbknew]'); await page.waitForSelector('[data-act=bbkth]');
@@ -1129,7 +1124,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26)\b/.test(ix) && (ix.match(/\?v=7-27/g) || []).length >= 11 && ix.includes('js/help.js?v=7-27') && ix.includes('js/pubbank.js?v=7-27'), 'index.html 的 css／js 都改成 ?v=7-27（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27)\b/.test(ix) && (ix.match(/\?v=7-28/g) || []).length >= 11 && ix.includes('js/help.js?v=7-28') && ix.includes('js/pubbank.js?v=7-28'), 'index.html 的 css／js 都改成 ?v=7-28（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1175,12 +1170,23 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/colores/content' });
     await page.waitForSelector('#colCard');
-    ok((await text(page, '#colCard .ph span')) === '設定組', '色數：標題＝分頁名');
+    ok((await text(page, '#colCard .ph span')) === '自訂設定', '色數：標題＝分頁名');
     await page.click('#colCard [data-act=coledit][data-k="0"]');
-    ok((await page.$$eval('#colCard .esubs [data-act=edtab]', e => e.map(x => x.textContent))).join() === '基本設定,顏色與數字', '色數編輯器有兩個分頁');
-    await page.click('[data-act=colcancel]');
+    ok((await page.$$eval('#colCard .etabs button', e => e.map(x => x.textContent))).join() === '回上一頁,基本設定,顏色與數字', '色數編輯器：回上一頁｜基本設定｜顏色與數字');
+    ok(await page.$('#colCard .setrow') === null && await page.$('#colCard [data-act=colnew]') === null, '編輯時整頁只剩編輯畫面');
+    await page.click('#colCard .etabs [data-act=colcancel]'); await page.waitForSelector('#colCard .setrow');
     await page.evaluate(() => __profesor.go('game/colores/links')); await page.waitForSelector('#pracCard');
-    ok(await page.$('#pracCard [data-sel=colprac]') !== null, '色數連結頁有「練習連結」卡');
+    ok((await page.$$eval('[data-sel=colprac] > option', e => e.map(x => x.textContent))).join() === '基本色,進階色,基本色＋進階色', '練習連結卡：最上面三個預設色');
+    const pu = new URL(await page.$eval('#pracCard .url', e => e.textContent));
+    const pc = JSON.parse(Buffer.from(pu.searchParams.get('t').replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'));
+    ok(pc.ids.length === 9 && pc.mode === 'A' && pc.range === 999, '預設色連結：?t= 帶基本色 9 色', pc);
+    await page.selectOption('[data-sel=colprac]', 'p:both');
+    ok(JSON.parse(Buffer.from(new URL(await page.$eval('#pracCard .url', e => e.textContent)).searchParams.get('t').replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')).ids.length === 17, '基本色＋進階色 = 17 色');
+    await page.evaluate(() => __profesor.go('game/colores/sheet')); await page.waitForSelector('#wsCard');
+    ok((await page.$$eval('[data-act=wsread]', e => e.map(x => x.textContent))).join() === '老師唸,印在紙上', '聽讀找色：老師唸在前');
+    ok((await page.$$eval('#wsCard .kind b', e => e.map(x => x.textContent))).includes('色數著色版'), '色數著色版改名');
+    await page.selectOption('[data-sel=wscfg]', '0'); await page.click('[data-act=wspreview]'); await page.waitForSelector('#wsCard .cws-prev .ws');
+    ok(await page.$('#wsCard [data-act=wsexport]') !== null, '預覽旁邊是「輸出PDF」，預覽出現在下方');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/dragon/links' });
     await page.waitForSelector('#dragonQuick');

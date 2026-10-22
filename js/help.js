@@ -23,11 +23,11 @@ window.HELP = {
     "steps": [
      [
       "建立",
-      "進入遊戲頁，在第一個分頁（句庫、設定組、練習範圍或主題）建立你要的內容。"
+      "進入遊戲頁，在第一個分頁（句庫、自訂設定、練習範圍或主題）建立你要的內容。"
      ],
      [
       "產生連結",
-      "連結有兩種：<ul><li><b>練習連結</b>：在遊戲頁「連結」分頁最上面的卡片就能產生，也可以複製各項目旁的「試玩」連結，不用開班級。學生打開就能玩，但成績不會回傳給你。</li><li><b>班級連結</b>（訂閱功能）：到遊戲頁的「連結」分頁，上面選班級，再選好句庫、設定組或範圍，產生連結。學生輸入暱稱後，每一回合的成績會自動回傳到成績冊。</li></ul>"
+      "連結有兩種：<ul><li><b>練習連結</b>：在遊戲頁「連結」分頁最上面的卡片就能產生，也可以複製各項目旁的「試玩」連結，不用開班級。學生打開就能玩，但成績不會回傳給你。</li><li><b>班級連結</b>（訂閱功能）：到遊戲頁的「連結」分頁，上面選班級，再選好句庫、自訂設定或範圍，產生連結。學生輸入暱稱後，每一回合的成績會自動回傳到成績冊。</li></ul>"
      ],
      [
       "傳給學生",
@@ -35,7 +35,7 @@ window.HELP = {
      ],
      [
       "看成績",
-      "到遊戲頁的「成績」分頁，上面選班級就能看成績冊。成績會依句庫、設定組或範圍分開記錄，可以用成績冊上方的「顯示」選單切換。"
+      "到遊戲頁的「成績」分頁，上面選班級就能看成績冊。成績會依句庫、自訂設定或範圍分開記錄，可以用成績冊上方的「顯示」選單切換。"
      ]
     ],
     "tip": "💡 改了設定，已經發出去的連結會自動更新，不用重傳。"
@@ -59,8 +59,8 @@ window.HELP = {
    },
    {
     "id": "hCol",
-    "h": "🎨 色數消消樂：設定組",
-    "intro": "<b>設定組</b>決定這一局怎麼玩。",
+    "h": "🎨 色數消消樂：自訂設定",
+    "intro": "<b>自訂設定</b>決定這一局怎麼玩。",
     "items": [
      "<b>玩法</b>：「聽數字，選顏色」或「聽顏色，輸入數字」",
      "<b>格數</b>：色塊板有幾列、幾欄",
@@ -68,7 +68,7 @@ window.HELP = {
      "<b>顏色</b>：<ul><li>基本色（9 種）：紅、黃、藍、綠、黑、白、灰、橘、紫</li><li>進階色（14 種）：再加上粉紅、咖啡、深淺灰、深淺藍、深淺綠</li><li>自訂顏色（訂閱功能）</li></ul>",
      "<b>數字</b>：<ul><li>0–999</li><li>0–9999</li><li>自訂數字（訂閱功能）：用逗號分開，可以寫範圍，例如「1, 2, 10-20, 100」，最多 200 個</li></ul>"
     ],
-    "note": "不想再讓學生用某組設定時，可以在編輯畫面按「停用練習連結」，設定組會留著。",
+    "note": "不想再讓學生用某組設定時，把它刪掉，連結就會失效。",
     "plan": [
      "3 組",
      "15 組，可以自訂顏色和數字"
@@ -167,11 +167,11 @@ window.HELP = {
     "steps": [
      [
       "创建",
-      "进入游戏页，在第一个分页（句库、设置组、练习范围或主题）创建你要的内容。"
+      "进入游戏页，在第一个分页（句库、自定设置、练习范围或主题）创建你要的内容。"
      ],
      [
       "生成链接",
-      "链接有两种：<ul><li><b>练习链接</b>：在游戏页“链接”分页最上面的卡片就能生成，也可以复制各项目旁的“试玩”链接，不用开班级。学生打开就能玩，但成绩不会回传给你。</li><li><b>班级链接</b>（订阅功能）：到游戏页的“链接”分页，上面选班级，再选好句库、设置组或范围，生成链接。学生输入昵称后，每一回合的成绩会自动回传到成绩册。</li></ul>"
+      "链接有两种：<ul><li><b>练习链接</b>：在游戏页“链接”分页最上面的卡片就能生成，也可以复制各项目旁的“试玩”链接，不用开班级。学生打开就能玩，但成绩不会回传给你。</li><li><b>班级链接</b>（订阅功能）：到游戏页的“链接”分页，上面选班级，再选好句库、自定设置或范围，生成链接。学生输入昵称后，每一回合的成绩会自动回传到成绩册。</li></ul>"
      ],
      [
       "传给学生",
@@ -179,7 +179,7 @@ window.HELP = {
      ],
      [
       "看成绩",
-      "到游戏页的“成绩”分页，上面选班级就能看成绩册。成绩会依句库、设置组或范围分开记录，可以用成绩册上方的“显示”选单切换。"
+      "到游戏页的“成绩”分页，上面选班级就能看成绩册。成绩会依句库、自定设置或范围分开记录，可以用成绩册上方的“显示”选单切换。"
      ]
     ],
     "tip": "💡 改了设置，已经发出去的链接会自动更新，不用重传。"
@@ -203,8 +203,8 @@ window.HELP = {
    },
    {
     "id": "hCol",
-    "h": "🎨 色数消消乐：设置组",
-    "intro": "<b>设置组</b>决定这一局怎么玩。",
+    "h": "🎨 色数消消乐：自定设置",
+    "intro": "<b>自定设置</b>决定这一局怎么玩。",
     "items": [
      "<b>玩法</b>：“听数字，选颜色”或“听颜色，输入数字”",
      "<b>格数</b>：色块板有几列、几栏",
@@ -212,7 +212,7 @@ window.HELP = {
      "<b>颜色</b>：<ul><li>基本色（9 种）：红、黄、蓝、绿、黑、白、灰、橘、紫</li><li>进阶色（14 种）：再加上粉红、咖啡、深浅灰、深浅蓝、深浅绿</li><li>自定颜色（订阅功能）</li></ul>",
      "<b>数字</b>：<ul><li>0–999</li><li>0–9999</li><li>自定数字（订阅功能）：用逗号分开，可以写范围，例如“1, 2, 10-20, 100”，最多 200 个</li></ul>"
     ],
-    "note": "不想再让学生用某组设置时，可以在编辑画面按“停用练习链接”，设置组会留着。",
+    "note": "不想再让学生用某组设置时，把它删掉，链接就会失效。",
     "plan": [
      "3 组",
      "15 组，可以自定颜色和数字"
@@ -356,7 +356,7 @@ window.HELP = {
      "<b>Colores</b>:<ul><li>Básicos (9): rojo, amarillo, azul, verde, negro, blanco, gris, naranja, morado</li><li>Avanzados (14): además rosa, marrón, gris oscuro y claro, azul oscuro y claro, verde oscuro y claro</li><li>Colores propios (suscripción)</li></ul>",
      "<b>Números</b>:<ul><li>0–999</li><li>0–9999</li><li>Números propios (suscripción): sepáralos con comas; puedes escribir rangos, por ejemplo «1, 2, 10-20, 100». Máximo 200.</li></ul>"
     ],
-    "note": "Si ya no quieres que tus alumnos usen una configuración, abre su edición y pulsa «Desactivar enlace de práctica»; la configuración se guarda.",
+    "note": "Si ya no quieres que tus alumnos usen una configuración, bórrala y su enlace dejará de funcionar.",
     "plan": [
      "3",
      "15, con colores y números propios"
@@ -500,7 +500,7 @@ window.HELP = {
      "<b>Colors</b>:<ul><li>Basic (9): red, yellow, blue, green, black, white, gray, orange, purple</li><li>Advanced (14): adds pink, brown, dark and light gray, dark and light blue, dark and light green</li><li>Custom colors (subscription)</li></ul>",
      "<b>Numbers</b>:<ul><li>0–999</li><li>0–9999</li><li>Custom numbers (subscription): separate with commas, ranges allowed, e.g. “1, 2, 10-20, 100”. Up to 200.</li></ul>"
     ],
-    "note": "If you no longer want students to use a setup, open its editor and press “Turn off practice link”; the setup is kept.",
+    "note": "If you no longer want students to use a setup, delete it and its link stops working.",
     "plan": [
      "3",
      "15, with custom colors and numbers"
