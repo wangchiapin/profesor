@@ -119,15 +119,14 @@ const D = {
   fbSending: ['送出中…', '送出中…', 'Enviando…', 'Sending…'],
 
   // ---- 跑吧！漢字：句庫（步驟 4）----
-  correBanksTitle: ['跑吧！漢字：句庫', '跑吧！汉字：句库', 'Corre Hanzi: bancos de frases', 'Run Hanzi: sentence banks'],
-  correBanksHint: ['自己出題：每個句庫是一組句子，學生用連結就能玩。改了句子，已發出去的連結會自動用新的句子。', '自己出题：每个句库是一组句子，学生用链接就能玩。改了句子，已发出去的链接会自动用新的句子。', 'Crea tus propias frases: cada banco es un grupo de frases que tus alumnos juegan con un enlace. Si cambias las frases, los enlaces ya enviados usan las nuevas.', 'Write your own sentences: each bank is a set of sentences students play from a link. If you change the sentences, links already sent use the new ones.'],
+  correBanksTitle: ['自訂句庫', '自定义句库', 'Bancos propios', 'Custom banks'],
   correQuota: ['已用 {n} / {max} 個句庫', '已用 {n} / {max} 个句库', 'Usados {n} / {max} bancos', '{n} / {max} banks used'],
   correNew: ['建立句庫', '创建句库', 'Crear banco', 'Create bank'],
   correLocked: ['訂閱後可用', '订阅后可用', 'requiere suscripción', 'subscribers only'],
   correFreeNote: ['免費版：1 個句庫，每庫最多 50 句。訂閱後最多 5 個句庫，每庫 80 句。', '免费版：1 个句库，每库最多 50 句。订阅后最多 5 个句库，每库 80 句。', 'Plan gratis: 1 banco, hasta 50 frases. Con suscripción: hasta 5 bancos de 80 frases.', 'Free plan: 1 bank, up to 50 sentences. With a subscription: up to 5 banks of 80 sentences.'],
-  correPracticeHint: ['「練習連結」不屬於任何班級：學生打開就能玩這個句庫，但成績不會回傳給你。要收成績，請到「班級」頁，在跑吧！漢字的「題目來源」選這個句庫，再複製班級連結。', '「练习链接」不属于任何班级：学生打开就能玩这个句库，但成绩不会回传给你。要收成绩，请到「班级」页，在跑吧！汉字的「题目来源」选这个句库，再复制班级链接。', 'El «enlace de práctica» no pertenece a ninguna clase: el alumno juega este banco, pero las notas no te llegan. Para recibir notas, ve a la página de la clase, elige este banco en «Origen de las frases» de Corre Hanzi y copia el enlace de la clase.', 'A "practice link" belongs to no class: students play this bank, but scores are not sent to you. To collect scores, go to the class page, choose this bank as the Run Hanzi "sentence source" and copy the class link.'],
+  correPracticeHint: ['如果複製試玩連結，此連結不會回傳學生成績。', '如果复制试玩链接，此链接不会回传学生成绩。', 'Si copias el enlace de «Probar», ese enlace no envía las notas de los alumnos.', 'If you copy the Try it link, that link does not send student scores.'],
   cwsHint: ['選一個句庫，產生 PDF 學習單：句子（附拼音或注音與翻譯），可再加「排列句子」練習和答案頁。', '选一个句库，生成 PDF 学习单：句子（附拼音或注音与翻译），可再加「排列句子」练习和答案页。', 'Elige un banco y crea una ficha en PDF: las frases (con pinyin o zhuyin y traducción) y, si quieres, un ejercicio de ordenar palabras con respuestas.', 'Pick a bank to make a PDF worksheet: the sentences (with pinyin or zhuyin and translation), plus an optional word-order exercise with answers.'],
-  cwsNoBank: ['還沒有句庫。先到「句庫」分頁建立一個。', '还没有句库。先到“句库”分页创建一个。', 'Aún no tienes bancos. Crea uno en la pestaña «Bancos».', 'No banks yet. Create one in the "Banks" tab first.'],
+  cwsNoBank: ['還沒有句庫。先到「自訂句庫」分頁建立一個。', '还没有句库。先到“自定义句库”分页创建一个。', 'Aún no tienes bancos. Crea uno en la pestaña «Bancos propios».', 'No banks yet. Create one in the "Custom banks" tab first.'],
   cwsBank: ['句庫', '句库', 'Banco de frases', 'Sentence bank'],
   // ---- 比比看：練習範圍（步驟 2）----
   bbkSetsTitle: ['比比看：練習範圍', '比比看：练习范围', 'Compara y Adivina: rangos de práctica', 'Compare & Guess: practice ranges'],
@@ -252,7 +251,7 @@ const D = {
   pickClass: ['選擇班級', '选择班级', 'Elige la clase', 'Choose a class'],
   classShortcuts: ['這個班級的快速入口', '这个班级的快速入口', 'Accesos rápidos de esta clase', 'Shortcuts for this class'],
   classShortcutsHint: ['做班級連結、看成績都在各遊戲的頁面，按下面按鈕會直接跳過去。', '做班级链接、看成绩都在各游戏的页面，按下面按钮会直接跳过去。', 'Los enlaces de clase y las notas están en la página de cada juego; los botones te llevan directo.', 'Class links and scores live on each game\'s page; the buttons take you straight there.'],
-  gtBankCorre: ['📚 句庫', '📚 句库', '📚 Bancos', '📚 Banks'],
+  gtBankCorre: ['📚 自訂句庫', '📚 自定义句库', '📚 Bancos propios', '📚 Custom banks'],
   gtBankColores: ['⚙️ 設定組', '⚙️ 设置组', '⚙️ Configuraciones', '⚙️ Configs'],
   gtBankBbk: ['📐 練習範圍', '📐 练习范围', '📐 Rangos', '📐 Ranges'],
   gtBankDragon: ['🐉 主題與範圍', '🐉 主题与范围', '🐉 Temas y rangos', '🐉 Themes & ranges'],

@@ -510,7 +510,7 @@ function colCardHtml(){
 // ---- 跑吧！漢字：句庫 ----
 function correCardHtml(){
   const A = S.a, P = A.plan;
-  let h = '<div class="card" id="correCard"><h3>' + esc(T('correBanksTitle')) + '</h3><p class="hint">' + esc(T('correBanksHint')) + '</p>';
+  let h = '<div class="card" id="correCard"><h3>' + esc(T('correBanksTitle')) + '</h3>';
   if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
   h += '<p class="hint"><b>' + esc(T('correQuota', { n: A.banks.length, max: P.active ? CORRE.PRO_SLOTS : CORRE.FREE_SLOTS })) + '</b></p>';
   for(let i = 0; i < CORRE.PRO_SLOTS; i++){
@@ -519,8 +519,6 @@ function correCardHtml(){
       h += '<div class="setrow"><div><b>📚 ' + esc(CORRE.bankName(b)) + '</b><small>' + esc(CORRE.tr('slotN', { n: i + 1 }) + ' · ' + CORRE.summary(b, P)) + '</small>' +
         (CORRE.paused(b, P) ? '<small class="err">' + esc(CORRE.tr('paused')) + '</small>' : '') + '</div><div class="row">' +
         '<button class="pill sm" data-act="bankedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
-        '<button class="pill sm" data-act="bankpractice" data-k="' + i + '">🔗 ' + esc(T('bbkPractice')) + '</button>' +
-        '<button class="pill sm" data-act="bankqr" data-k="' + i + '">' + esc(T('qr')) + '</button>' +
         '<a class="pill sm" href="' + esc(DATA.linkCorrePractice(b.sid) + '&preview=1') + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' +
         '<button class="pill sm" data-act="bankdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
     }else if(i < CORRE.FREE_SLOTS || P.active){
@@ -963,13 +961,6 @@ const actions = {
   },
   // ---- 跑吧句庫 ----
   bankedit(el){ S.bankMsg = ''; go('bank', el.dataset.k); },
-  async bankpractice(el){ const b = CORRE.bankOf(S.a, +el.dataset.k); if(b) await copyText(DATA.linkCorrePractice(b.sid)); },
-  async bankqr(el){
-    const b = CORRE.bankOf(S.a, +el.dataset.k); if(!b) return;
-    const title = CORRE.bankName(b);
-    try{ await document.fonts.load('900 40px "Noto Sans TC"', title + '跑吧！漢字每天一分鐘'); }catch(e){}
-    qrModal(CORRE.qrCanvas(DATA.linkCorrePractice(b.sid), title), T('gameCorre') + ' · ' + title, 'corre-qr-' + safeName(title) + '.png', DATA.linkCorrePractice(b.sid));
-  },
   bankdel(el){ return run(async () => {
     const i = +el.dataset.k, b = CORRE.bankOf(S.a, i); if(!b || !confirm(CORRE.tr('delConfirm', { name: CORRE.bankName(b) }))) return;
     try{ await CORRE.remove(S.a, i); S.bankMsg = ''; if(S.cws && S.cws.bank === String(i)) S.cws.bank = ''; }

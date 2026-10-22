@@ -562,11 +562,10 @@ server.listen(0, 'localhost', async () => {
     let t = await text(page, '#correCard');
     ok(t.includes('已用 1 / 5 個句庫') && t.includes('點飲料') && t.includes('2 / 80 句'), '卡片：額度、名稱、句數', t);
     ok((await page.$$('#correCard [data-act=bankedit]')).length === 5, '5 個位置：1 個編輯＋4 個建立');
-    ok(t.includes('練習連結') && t.includes('成績不會回傳'), '有練習連結的說明');
+    ok(t.includes('如果複製試玩連結，此連結不會回傳學生成績。') && !t.includes('不屬於任何班級') && !t.includes('自己出題'), '新的試玩連結說明；舊的兩句說明拿掉', t);
+    ok(t.includes('自訂句庫') && !t.includes('跑吧！漢字：句庫') && !(await page.$('#correCard [data-act=bankpractice]')) && !(await page.$('#correCard [data-act=bankqr]')), '標題改「自訂句庫」；沒有「練習連結」「QR」按鈕');
+    ok((await page.$$eval('#correCard .setrow .pill', e => e.map(x => x.textContent.trim()))).join('|') === '編輯|試玩|🗑 刪除', '句庫列只剩：編輯、試玩、刪除');
     ok((await page.$eval('#correCard a.pill', a => a.href)).endsWith('/corre/?bank=bank00001111&preview=1'), '試玩連結＝?bank=…&preview=1');
-    await page.click('#correCard [data-act=bankqr][data-k="0"]'); await page.waitForSelector('.modal canvas');
-    ok((await text(page, '.modal')).includes('點飲料'), 'QR 視窗有句庫名稱');
-    await shot(page, 'm0_qr'); await page.click('.modal [data-m=close]');
     await shot(page, 'm1_settings');
 
     // 建立第 2 個句庫
@@ -1084,7 +1083,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17)\b/.test(ix) && (ix.match(/\?v=7-18/g) || []).length >= 11 && ix.includes('js/help.js?v=7-18') && ix.includes('js/pubbank.js?v=7-18'), 'index.html 的 css／js 都改成 ?v=7-18（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18)\b/.test(ix) && (ix.match(/\?v=7-19/g) || []).length >= 11 && ix.includes('js/help.js?v=7-19') && ix.includes('js/pubbank.js?v=7-19'), 'index.html 的 css／js 都改成 ?v=7-19（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
