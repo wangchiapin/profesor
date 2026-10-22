@@ -163,7 +163,7 @@ function worksheet(c, opts, board, tx){
   }else if(opts.kind === 'write'){
     const groups = []; board.cells.forEach(x => { let g = groups.find(y => y.c === x.c); if(!g) groups.push(g = { c: x.c, ns: [] }); if(g.ns.indexOf(x.n) < 0) g.ns.push(x.n); });
     sheet += '<p class="ws-ins">' + bi('wsInsWrite') + '</p>' + cellsHtml('digits') +
-      '<ol class="ws-qs wide">' + groups.map((g, i) => '<li><span class="no">' + (i + 1) + '.</span><span class="q"><b class="sw" style="background:' + g.c.bg + '"></b>' + esc(cName(g.c, simp)) + (helpName(g.c, help) ? ' <small>' + esc(helpName(g.c, help)) + '</small>' : '') + '</span>' + '<span class="line full"></span>'.repeat(Math.max(1, Math.ceil(g.ns.length / 3))) + '</li>').join('') + '</ol>';
+      '<ol class="ws-qs wide">' + groups.map((g, i) => '<li><span class="no">' + (i + 1) + '.</span><span class="q"><b class="sw" style="background:' + g.c.bg + '"></b>' + esc(cName(g.c, simp)) + (helpName(g.c, help) ? ' <small>' + esc(helpName(g.c, help)) + '</small>' : '') + '</span>' + '<span class="line full"></span>' + '</li>').join('') + '</ol>';
     key = '<ol class="ws-qs wide key">' + groups.map(g => '<li><span class="q">' + esc(cName(g.c, simp)) + '</span>' + g.ns.map(n => esc(cnOf(n, simp))).join(simp ? '、' : '、') + '</li>').join('') + '</ol>';
     opts._max = groups.length;
   }else{

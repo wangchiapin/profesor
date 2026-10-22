@@ -535,6 +535,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=wskind][data-k=write]'); await page.click('[data-act=wspreview]'); await page.waitForSelector('.ws');
     info = await page.evaluate(() => ({ groups: document.querySelectorAll('.ws > .ws-qs li').length, key: [...document.querySelectorAll('.ws-key li')].map(e => e.textContent) }));
     ok(info.groups === 2 && info.key.length === 2 && info.key.every(t => /^(紅色|藍色)/.test(t)), '看色寫數：每個顏色一題（設定 2 色）', info);
+    ok((await page.$$eval('.ws-qs.wide:not(.key) > li', e => e.every(li => li.querySelectorAll('.line').length === 1))), '看色寫數：每個顏色只有一條線');
     await shot(page, 'l2_write');
     // 著色版，簡體、不附答案
     await page.click('[data-act=wskind][data-k=color]'); await page.click('[data-act=wssimp][data-k="1"]'); await page.click('[data-act=wshelp][data-k=none]'); await page.click('[data-act=wsans]');
@@ -1125,7 +1126,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32)\b/.test(ix) && (ix.match(/\?v=7-33/g) || []).length >= 11 && ix.includes('js/help.js?v=7-33') && ix.includes('js/pubbank.js?v=7-33'), 'index.html 的 css／js 都改成 ?v=7-33（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33)\b/.test(ix) && (ix.match(/\?v=7-34/g) || []).length >= 11 && ix.includes('js/help.js?v=7-34') && ix.includes('js/pubbank.js?v=7-34'), 'index.html 的 css／js 都改成 ?v=7-34（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
