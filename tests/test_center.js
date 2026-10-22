@@ -1129,7 +1129,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39)\b/.test(ix) && (ix.match(/\?v=7-40/g) || []).length >= 11 && ix.includes('js/help.js?v=7-40') && ix.includes('js/pubbank.js?v=7-40'), 'index.html 的 css／js 都改成 ?v=7-40（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39|7-40)\b/.test(ix) && (ix.match(/\?v=7-41/g) || []).length >= 11 && ix.includes('js/help.js?v=7-41') && ix.includes('js/pubbank.js?v=7-41'), 'index.html 的 css／js 都改成 ?v=7-41（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1210,6 +1210,22 @@ server.listen(0, 'localhost', async () => {
     ok(await page.$('[data-act=dwssize][data-k="16"]') !== null && await page.$eval('[data-act=dwsprev]', b => b.disabled), '龍學習單：有字大小、預覽鈕（沒選主題時不能按）');
     await page.click('[data-act=dwssize][data-k="16"]');
     ok(await page.$eval('[data-act=dwssize][data-k="16"]', b => b.classList.contains('on')), '龍學習單：字大小可切換');
+    ok((await text(page, '#dragonWsCard')).includes('配對') && (await text(page, '#dragonWsCard')).includes('聽寫') && (await text(page, '#dragonWsCard')).includes('造句') && (await text(page, '#dragonWsCard')).includes('附單字表') && !(await text(page, '#dragonWsCard')).includes('連連看'), '龍學習單：題型有 配對／翻譯／選擇／聽寫／造句，另有「附單字表」');
+    await page.click('[data-act=dwstype][data-k=dict]');
+    ok(await page.$eval('[data-act=dwstype][data-k=dict]', b => b.classList.contains('on')), '龍學習單：題型可勾選');
+    const dw = await page.evaluate(async () => {
+      const mk = n => ['護照','行李','機場','飛機','登機','海關','簽證','座位','安檢','航班'].slice(0, n).map((t, i) => [t, t, 'pīn' + i, 'es' + i, 'en' + i]);
+      const themes = [{ name: '機場', words: mk(10) }], o = {};
+      const base = { simp: false, pinyin: true, zhuyin: true, answers: true, count: 10, scale: 1, preview: true };
+      for(const lang of ['es', 'en', 'zh']){
+        const all = await window.DRAGON.makeWorksheet(themes, Object.assign({ lang, types: { match: true, t1: true, t2: true, choice: true, dict: true, sent: true }, list: true }, base));
+        const none = await window.DRAGON.makeWorksheet(themes, Object.assign({ lang, types: {}, list: false }, base));
+        const listOnly = await window.DRAGON.makeWorksheet(themes, Object.assign({ lang, types: {}, list: true }, base));
+        o[lang] = [all.pages, none.err || 0, listOnly.pages];
+      }
+      return o;
+    });
+    ok(dw.es[0] >= 5 && dw.en[0] >= 5 && dw.zh[0] >= 3 && dw.es[1] === 'empty' && dw.es[2] === 1 && dw.zh[2] === 1, '龍學習單：六種題型＋答案頁＋單字表都排得出來（中文版不含翻譯題）；什麼都沒選就不產生', dw);
     await page.evaluate(() => __profesor.go('game/dragon/content')); await page.waitForSelector('#dragonCard');
     ok((await text(page, '.gtabs')).includes('自訂字庫') && (await text(page, '.gtabs')).includes('練習範圍'), '龍：分頁「自訂字庫」「練習範圍」各自一頁');
     ok((await text(page, '#dragonCard h3')).includes('自訂字庫') && !(await text(page, '#dragonCard')).includes('練習範圍'), '龍：自訂字庫頁不再疊練習範圍');

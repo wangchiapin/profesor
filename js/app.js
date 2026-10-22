@@ -971,7 +971,8 @@ async function bwsExport(){
   setTimeout(() => window.print(), 400);
 }
 // ---- 列印：墨龍飛天詞表學習單 PDF ----
-function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, size: 14, prev: null, busy: false, msg: '', ok: false }; }
+function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, types: { match: true, t1: false, t2: false, choice: false, dict: false, sent: false }, list: true, answers: true, size: 14, prev: null, busy: false, msg: '', ok: false }; }
+const dwsHas = W => W.sel.length && (W.list || Object.keys(W.types).some(k => W.types[k] && !(W.lang === 'zh' && ['match', 't1', 't2', 'choice'].indexOf(k) >= 0)));
 function dwsFormHtml(){
   let h = '<div class="card" id="dragonWsCard">';
   if(!DR.ready()) return h + maintBox() + '</div>';
@@ -981,13 +982,15 @@ function dwsFormHtml(){
   const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
   h += '<div class="field"><label>' + esc(T('dragonWsThemes')) + '</label><div class="row" style="margin-top:0">' +
     DR.IDS.map(id => chip(W.sel.indexOf(id) >= 0, DR.builtinName(id), 'dwst', id)).join('') + A.dragon.themes.map(t => chip(W.sel.indexOf(t.id) >= 0, '★ ' + t.name, 'dwst', t.id)).join('') + '</div></div>' +
+    '<div class="field"><label>' + esc(T('dragonWsTypes')) + '</label><div class="row" style="margin-top:0">' +
+    [['match', 'dwtMatch', 1], ['t1', 'dwtT1', 1], ['t2', 'dwtT2', 1], ['choice', 'dwtChoice', 1], ['dict', 'dwtDict', 0], ['sent', 'dwtSent', 0]].filter(x => !(x[2] && W.lang === 'zh')).map(x => chipB(W.types[x[0]], T(x[1]), 'dwstype" data-k="' + x[0])).join('') + '</div></div>' +
+    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.list, T('dwtList'), 'dwslist') + chipB(W.answers, T('wsAnswersOpt'), 'dwsans') + '</div></div>' +
     '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('dwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('dwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('dwsphon', phonOf(W), PHON_LIST()) + '</div></div>' +
     '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('dwssize', W.size, [[14, '14'], [16, '16'], [18, '18']]) + '</div></div>' +
-    '<div class="field"><div class="row" style="margin-top:0">' + (W.lang === 'zh' ? '' : chipB(W.match, T('dragonWsMatch'), 'dwsmatch') + (W.match ? chipB(W.answers, T('wsAnswersOpt'), 'dwsans') : '')) + '</div></div>' +
-    '<div class="row"><button class="pill" data-act="dwsprev" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>' + esc(T('cwsPreview')) + '</button>' +
-    '<button class="pill fill" data-act="dwsmake" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
+    '<div class="row"><button class="pill" data-act="dwsprev" ' + (!dwsHas(W) || W.busy ? 'disabled' : '') + '>' + esc(T('cwsPreview')) + '</button>' +
+    '<button class="pill fill" data-act="dwsmake" ' + (!dwsHas(W) || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
     (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
   if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('cwsPrevTitle', { n: W.prev.length })) + '</b><button class="pill xs" data-act="dwsprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' +
     W.prev.map(u => '<img src="' + u + '" alt="">').join('') + '</div>';
@@ -1485,7 +1488,8 @@ const actions = {
   dwssimp(el){ S.dws.simp = el.dataset.k === '1'; S.dws.prev = null; render(); },
   dwslang(el){ S.dws.lang = el.dataset.k; S.dws.prev = null; render(); },
   dwsphon(el){ phonSet(S.dws, el.dataset.k); S.dws.prev = null; render(); },
-  dwsmatch(){ S.dws.match = !S.dws.match; S.dws.prev = null; render(); },
+  dwstype(el){ const W = S.dws; W.types[el.dataset.k] = !W.types[el.dataset.k]; W.prev = null; render(); },
+  dwslist(){ S.dws.list = !S.dws.list; S.dws.prev = null; render(); },
   dwsans(){ S.dws.answers = !S.dws.answers; S.dws.prev = null; render(); },
   dwsprevclose(){ S.dws.prev = null; render(); },
   dwssize(el){ S.dws.size = +el.dataset.k; S.dws.prev = null; render(); },
@@ -1503,7 +1507,8 @@ const actions = {
         const t = S.a.dragon.themes.find(x => x.id === id); return t ? { name: t.name, words: t.words } : null;
       }).filter(Boolean);
       if(!themes.length) throw new Error(T('dragonLibFail'));
-      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, match: W.match, answers: W.answers, count: 10, scale: sizeK(W.size), preview: !!preview });
+      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, list: W.list, answers: W.answers, count: 10, scale: sizeK(W.size), preview: !!preview });
+      if(r.err) throw new Error(T('dragonWsNone'));
       if(preview){ W.prev = r.previews; W.busy = false; render(); return; }
       saveBlob(r.blob, 'dragon-worksheet.pdf');
       W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;
