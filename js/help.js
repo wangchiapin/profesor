@@ -23,7 +23,7 @@ window.HELP = {
     "steps": [
      [
       "建立",
-      "進入遊戲頁，在第一個分頁（句庫、自訂設定或主題）建立你要的內容。"
+      "進入遊戲頁，在第一個分頁（自訂句庫、自訂設定或自訂字庫）建立你要的內容。"
      ],
      [
       "產生連結",
@@ -50,7 +50,7 @@ window.HELP = {
      "<b>批次匯入</b>：一行一句，格式是「中文 | 西班牙文 | 英文」。",
      "<b>從公開句庫／主題包加入</b>：不用自己一句一句打。可以從「公開句庫」（A1、A2 免費，B1 需訂閱）或「主題包」（訂閱）挑句子，或整包加入，複製進你的句庫（不會改到原本的句庫）。加進來後可以再修改。",
      "<b>干擾字</b>（訂閱功能）：遊戲出這一句時，會先用這些字當干擾，讓學生練習分辨相似字。每句最多 5 個。",
-     "<b>不建句庫也能用</b>：在「跑吧」遊戲頁的「連結」分頁，班級連結的「題目來源」選「公開句庫 A1／A2」（訂閱後還有 B1 和主題包），直接用內建的句子出題。內建句庫依《當代中文課程》1、2、3 冊的語法點分成 A1、A2、B1，詞彙不超過華語八千詞對應等級。同一個分頁的「公開句庫練習連結」可以直接做出不收成績的連結和 QR code。"
+     "<b>不建句庫也能用</b>：在「跑吧」遊戲頁的「連結」分頁，班級連結的「題目來源」選「公開句庫 A1／A2」（訂閱後還有 B1 和主題包），直接用內建的句子出題。內建句庫依《當代中文課程》1、2、3 冊的語法點分成 A1、A2、B1，詞彙不超過華語八千詞對應等級。同一個分頁的「練習連結」卡可以直接做出不收成績的連結和 QR code。"
     ],
     "plan": [
      "1 個句庫，每庫最多 50 句；公開句庫 A1、A2",
@@ -66,6 +66,7 @@ window.HELP = {
      "<b>格數</b>：色塊板有幾列、幾欄",
      "<b>愛心</b>：學生可以錯幾次（3、5 或無限）",
      "<b>顏色</b>：<ul><li>基本色（9 種）：紅、黃、藍、綠、黑、白、灰、橘、紫</li><li>進階色（14 種）：再加上粉紅、咖啡、深淺灰、深淺藍、深淺綠</li><li>自訂顏色（訂閱功能）</li></ul>",
+     "<b>練習連結</b>：不用先建立設定，「基本色」「進階色」「基本色＋進階色」可以直接在「連結」分頁做成連結。",
      "<b>數字</b>：<ul><li>0–999</li><li>0–9999</li><li>自訂數字（訂閱功能）：用逗號分開，可以寫範圍，例如「1, 2, 10-20, 100」，最多 200 個</li></ul>"
     ],
     "note": "不想再讓學生用某組設定時，把它刪掉，連結就會失效。",
@@ -118,20 +119,20 @@ window.HELP = {
    },
    {
     "id": "hDragon",
-    "h": "🐉 墨龍飛天：主題與練習範圍",
+    "h": "🐉 墨龍飛天：自訂字庫與練習範圍",
     "intro": "學生玩墨龍飛天時，只會吃你選的主題裡的字。免費和訂閱開放的主題不一樣。",
     "items": [
      "<b>內建主題（10 個）</b>：食物、水果、動物、顏色、交通、身體、衣服、職業、天氣、家裡",
      "<b>誰能用哪些主題</b>：公開頁面只開放食物、動物、顏色；免費老師的練習連結可以再加交通、家裡，共 5 個；訂閱老師 10 個主題全開",
-     "<b>自訂主題</b>（訂閱）：最多 3 個，每個 6～40 個詞。一行一個詞，可以直接寫「機場，aeropuerto，airport」；簡體、拼音和翻譯會自動產生，產生後也可以自己修改。",
-     "<b>練習範圍</b>（訂閱）：把內建主題和自訂主題組成一組，最多 15 組，再產生連結給學生。",
+     "<b>自訂字庫</b>（訂閱）：在「自訂字庫」分頁建立，最多 3 個，每個 6～40 個詞，每個詞最多 4 個字。一行一個詞，可以直接寫「機場，aeropuerto，airport」；簡體、拼音和翻譯會自動產生，產生後也可以自己修改。",
+     "<b>練習範圍</b>（訂閱）：在「練習範圍」分頁，把內建主題和自訂字庫組成一組，最多 15 組，再產生連結給學生。自訂字庫要放進練習範圍才能試玩或產生連結。",
      "<b>連結</b>：練習連結（免費）不記成績；班級連結（訂閱）請學生輸入暱稱，成績（分數、吃對幾個、飛行高度、常吃錯的字）會自動回到成績冊。",
-     "<b>學習單</b>（訂閱）：可勾選題型（配對、翻譯、選擇、聽寫、造句）、附答案頁和單字表，可選繁體或簡體，以及西文或英文輔助。"
+     "<b>學習單</b>（訂閱）：可勾選題型（配對、翻譯、選擇、聽寫、造句），可「混合出題」（把勾選的主題合在一起隨機出題）、附單字表和答案頁，可選繁體或簡體，以及西文或英文輔助。"
     ],
-    "note": "改了自訂主題的單字，已經傳出去的練習範圍連結會自動換成新單字。",
+    "note": "改了自訂字庫的單字，已經傳出去的練習範圍連結會自動換成新單字。",
     "plan": [
      "5 個內建主題的練習連結",
-     "10 個內建主題、3 個自訂主題、15 組練習範圍、班級連結、學習單"
+     "10 個內建主題、3 個自訂字庫、15 組練習範圍、班級連結、學習單"
     ]
    },
    {
@@ -140,7 +141,7 @@ window.HELP = {
     "items": [
      "建立班級（最多 3 班），成績自動回傳到成績冊",
      "比比看常錯統計、匯出 CSV",
-     "四款遊戲的學習單（列印／PDF，在各遊戲頁的「學習單」分頁）"
+     "四款遊戲的學習單（列印／PDF，在各遊戲頁的「學習單」分頁；語言、拼音／注音、字體大小的設定四款都一樣）"
     ]
    }
   ]
@@ -167,7 +168,7 @@ window.HELP = {
     "steps": [
      [
       "创建",
-      "进入游戏页，在第一个分页（句库、自定设置或主题）创建你要的内容。"
+      "进入游戏页，在第一个分页（自定句库、自定设置或自定字库）创建你要的内容。"
      ],
      [
       "生成链接",
@@ -210,7 +211,8 @@ window.HELP = {
      "<b>格数</b>：色块板有几列、几栏",
      "<b>爱心</b>：学生可以错几次（3、5 或无限）",
      "<b>颜色</b>：<ul><li>基本色（9 种）：红、黄、蓝、绿、黑、白、灰、橘、紫</li><li>进阶色（14 种）：再加上粉红、咖啡、深浅灰、深浅蓝、深浅绿</li><li>自定颜色（订阅功能）</li></ul>",
-     "<b>数字</b>：<ul><li>0–999</li><li>0–9999</li><li>自定数字（订阅功能）：用逗号分开，可以写范围，例如“1, 2, 10-20, 100”，最多 200 个</li></ul>"
+     "<b>数字</b>：<ul><li>0–999</li><li>0–9999</li><li>自定数字（订阅功能）：用逗号分开，可以写范围，例如“1, 2, 10-20, 100”，最多 200 个</li></ul>",
+     "<b>练习连结</b>：不用先创建设置，“基本色”“进阶色”“基本色＋进阶色”可以直接在“连结”分页做成连结。"
     ],
     "note": "不想再让学生用某组设置时，把它删掉，链接就会失效。",
     "plan": [
@@ -262,20 +264,20 @@ window.HELP = {
    },
    {
     "id": "hDragon",
-    "h": "🐉 墨龙飞天：主题与练习范围",
+    "h": "🐉 墨龙飞天：自定字库与练习范围",
     "intro": "学生玩墨龙飞天时，只会吃你选的主题里的字。免费和订阅开放的主题不一样。",
     "items": [
      "<b>内建主题（10 个）</b>：食物、水果、动物、颜色、交通、身体、衣服、职业、天气、家里",
      "<b>谁能用哪些主题</b>：公开页面只开放食物、动物、颜色；免费老师的练习连结可以再加交通、家里，共 5 个；订阅老师 10 个主题全开",
-     "<b>自定义主题</b>（订阅）：最多 3 个，每个 6～40 个词。一行一个词，可以直接写“机场，aeropuerto，airport”；简体、拼音和翻译会自动产生，产生后也可以自己修改。",
-     "<b>练习范围</b>（订阅）：把内建主题和自定义主题组成一组，最多 15 组，再产生连结给学生。",
+     "<b>自定字库</b>（订阅）：在“自定字库”分页创建，最多 3 个，每个 6～40 个词，每个词最多 4 个字。一行一个词，可以直接写“机场，aeropuerto，airport”；简体、拼音和翻译会自动产生，产生后也可以自己修改。",
+     "<b>练习范围</b>（订阅）：在“练习范围”分页，把内建主题和自定字库组成一组，最多 15 组，再产生连结给学生。自定字库要放进练习范围才能试玩或产生连结。",
      "<b>连结</b>：练习连结（免费）不记成绩；班级连结（订阅）请学生输入暱称，成绩（分数、吃对几个、飞行高度、常吃错的字）会自动回到成绩册。",
-     "<b>学习单</b>（订阅）：可勾选题型（配对、翻译、选择、听写、造句）、附答案页和单字表，可选繁体或简体，以及西文或英文辅助。"
+     "<b>学习单</b>（订阅）：可勾选题型（配对、翻译、选择、听写、造句），可“混合出题”（把勾选的主题合在一起随机出题）、附单字表和答案页，可选繁体或简体，以及西文或英文辅助。"
     ],
-    "note": "改了自定义主题的单字，已经传出去的练习范围连结会自动换成新单字。",
+    "note": "改了自定字库的单字，已经传出去的练习范围连结会自动换成新单字。",
     "plan": [
      "5 个内建主题的练习连结",
-     "10 个内建主题、3 个自定义主题、15 组练习范围、班级连结、学习单"
+     "10 个内建主题、3 个自定字库、15 组练习范围、班级连结、学习单"
     ]
    },
    {
@@ -284,7 +286,7 @@ window.HELP = {
     "items": [
      "创建班级（最多 3 班），成绩自动回传到成绩册",
      "比比看常错统计、导出 CSV",
-     "四款游戏的学习单（打印／PDF，在各游戏页的“学习单”分页）"
+     "四款游戏的学习单（打印／PDF，在各游戏页的“学习单”分页；语言、拼音／注音、字体大小的设置四款都一样）"
     ]
    }
   ]
@@ -311,7 +313,7 @@ window.HELP = {
     "steps": [
      [
       "Crear",
-      "Entra en la página del juego y, en la primera pestaña (bancos, configuraciones, rangos o temas), crea lo que necesites."
+      "Entra en la página del juego y, en la primera pestaña (bancos, configuraciones o bancos de palabras propios), crea lo que necesites."
      ],
      [
       "Generar el enlace",
@@ -338,7 +340,7 @@ window.HELP = {
      "<b>Importar en lote</b>: una frase por línea, con el formato «chino | español | inglés».",
      "<b>Añadir desde el banco público / paquetes temáticos</b>: no tienes que escribir frase por frase. Elige frases del «Banco público» (A1 y A2 gratis; B1 con suscripción) o de un «Paquete temático» (suscripción), o añade el paquete entero; se copian a tu banco (el original no cambia). Después puedes editarlas.",
      "<b>Distractores</b> (suscripción): cuando sale esa frase, el juego usa primero estas palabras como distractores para practicar caracteres parecidos. Hasta 5 por frase.",
-     "<b>Sin crear un banco</b>: en la pestaña «Enlaces» de Corre, en «Origen de las frases» del enlace de clase, elige «Banco público A1 / A2» (con suscripción también B1 y los paquetes temáticos) para usar las frases incluidas. Están divididas en A1, A2 y B1 según los puntos gramaticales de los libros 1, 2 y 3 de «Contemporary Chinese», con vocabulario dentro del nivel correspondiente de las 8000 palabras. En la misma pestaña puedes crear un «Enlace de práctica del banco público» (sin notas) y su QR."
+     "<b>Sin crear un banco</b>: en la pestaña «Enlaces» de Corre, en «Origen de las frases» del enlace de clase, elige «Banco público A1 / A2» (con suscripción también B1 y los paquetes temáticos) para usar las frases incluidas. Están divididas en A1, A2 y B1 según los puntos gramaticales de los libros 1, 2 y 3 de «Contemporary Chinese», con vocabulario dentro del nivel correspondiente de las 8000 palabras. En la misma pestaña puedes crear un tarjeta «Enlace de práctica» (sin notas) y su QR."
     ],
     "plan": [
      "1 banco, hasta 50 frases; banco público A1 y A2",
@@ -354,7 +356,8 @@ window.HELP = {
      "<b>Tamaño del tablero</b>: cuántas filas y columnas tiene",
      "<b>Corazones</b>: cuántos errores puede cometer el alumno (3, 5 o sin límite)",
      "<b>Colores</b>:<ul><li>Básicos (9): rojo, amarillo, azul, verde, negro, blanco, gris, naranja, morado</li><li>Avanzados (14): además rosa, marrón, gris oscuro y claro, azul oscuro y claro, verde oscuro y claro</li><li>Colores propios (suscripción)</li></ul>",
-     "<b>Números</b>:<ul><li>0–999</li><li>0–9999</li><li>Números propios (suscripción): sepáralos con comas; puedes escribir rangos, por ejemplo «1, 2, 10-20, 100». Máximo 200.</li></ul>"
+     "<b>Números</b>:<ul><li>0–999</li><li>0–9999</li><li>Números propios (suscripción): sepáralos con comas; puedes escribir rangos, por ejemplo «1, 2, 10-20, 100». Máximo 200.</li></ul>",
+     "<b>Enlace de práctica</b>: sin crear ninguna configuración, «Colores básicos», «Avanzados» y «Básicos + avanzados» se pueden convertir directamente en enlace en la pestaña «Enlaces»."
     ],
     "note": "Si ya no quieres que tus alumnos usen una configuración, bórrala y su enlace dejará de funcionar.",
     "plan": [
@@ -406,20 +409,20 @@ window.HELP = {
    },
    {
     "id": "hDragon",
-    "h": "🐉 El dragón de tinta: temas y rangos de práctica",
+    "h": "🐉 El dragón de tinta: bancos propios y rangos de práctica",
     "intro": "En este juego el alumno solo come las palabras de los temas que tú elijas. Los temas disponibles cambian entre gratis y suscripción.",
     "items": [
      "<b>Temas incluidos (10)</b>: comida, fruta, animales, colores, transporte, cuerpo, ropa, profesiones, clima y casa",
      "<b>Quién puede usar qué</b>: la página pública solo ofrece comida, animales y colores; con un profesor gratuito, el enlace de práctica puede añadir transporte y casa (5 en total); con suscripción están los 10 temas",
-     "<b>Temas propios</b> (suscripción): hasta 3, de 6 a 40 palabras cada uno. Escribe una palabra por línea, por ejemplo «機場，aeropuerto，airport»; el chino simplificado, el pinyin y las traducciones se generan solos y puedes corregirlos.",
-     "<b>Rangos de práctica</b> (suscripción): combina temas incluidos y propios en un grupo (hasta 15) y genera el enlace para tus alumnos.",
+     "<b>Bancos propios</b> (suscripción): se crean en la pestaña «Mis temas»; hasta 3, de 6 a 40 palabras cada uno, de hasta 4 caracteres. Escribe una palabra por línea, por ejemplo «機場，aeropuerto，airport»; el chino simplificado, el pinyin y las traducciones se generan solos y puedes corregirlos.",
+     "<b>Rangos de práctica</b> (suscripción): en la pestaña «Rangos», combina temas incluidos y bancos propios en un grupo (hasta 15) y genera el enlace para tus alumnos. Un banco propio solo se puede probar o enlazar dentro de un rango.",
      "<b>Enlaces</b>: el enlace de práctica (gratis) no guarda notas; el enlace de clase (suscripción) pide un apodo y envía solo las notas (puntos, aciertos, altura y palabras falladas) al libro de notas.",
-     "<b>Fichas</b> (suscripción): tipos de ejercicio a elegir (unir, traducir, elección múltiple, dictado, oraciones), con hoja de respuestas y lista de palabras; con chino tradicional o simplificado y ayuda en español o inglés."
+     "<b>Fichas</b> (suscripción): tipos de ejercicio a elegir (unir, traducir, elección múltiple, dictado, oraciones), con «Mezclar temas» (saca los ejercicios de todos los temas marcados a la vez), lista de palabras y hoja de respuestas; con chino tradicional o simplificado y ayuda en español o inglés."
     ],
-    "note": "Si cambias las palabras de un tema propio, los enlaces de rango que ya enviaste se actualizan solos.",
+    "note": "Si cambias las palabras de un banco propio, los enlaces de rango que ya enviaste se actualizan solos.",
     "plan": [
      "Enlace de práctica con 5 temas incluidos",
-     "10 temas incluidos, 3 propios, 15 rangos, enlace de clase y fichas"
+     "10 temas incluidos, 3 bancos propios, 15 rangos, enlace de clase y fichas"
     ]
    },
    {
@@ -428,7 +431,7 @@ window.HELP = {
     "items": [
      "Crear clases (hasta 3); las notas llegan solas al libro de notas",
      "Errores frecuentes en Compara y Adivina y exportar CSV",
-     "Hojas de trabajo de los cuatro juegos (imprimir / PDF, en la pestaña «Fichas» de cada juego)"
+     "Hojas de trabajo de los cuatro juegos (imprimir / PDF, en la pestaña «Fichas» de cada juego; idioma, pinyin / zhuyin y tamaño de letra se eligen igual en los cuatro)"
     ]
    }
   ]
@@ -455,7 +458,7 @@ window.HELP = {
     "steps": [
      [
       "Create",
-      "Open the game page and, in the first tab (banks, setups, ranges or themes), create what you need."
+      "Open the game page and, in the first tab (banks, setups or custom word banks), create what you need."
      ],
      [
       "Make a link",
@@ -482,7 +485,7 @@ window.HELP = {
      "<b>Bulk import</b>: one sentence per line, in the format “Chinese | Spanish | English”.",
      "<b>Add from the public bank / theme packs</b>: no need to type every sentence. Pick sentences from the Public bank (A1 and A2 free; B1 needs a subscription) or a Theme pack (subscription), or add a whole pack; they are copied into your bank (the original stays the same). You can edit them afterwards.",
      "<b>Decoys</b> (subscription): when this sentence comes up, the game uses these words as decoys first, so students practice telling similar characters apart. Up to 5 per sentence.",
-     "<b>No bank needed</b>: in the “Links” tab of Run Hanzi, set “Sentence source” of the class link to “Public bank A1 / A2” (subscribers also get B1 and theme packs) to use the built-in sentences. They are split into A1, A2 and B1 by the grammar points of Contemporary Chinese books 1, 2 and 3, with vocabulary within the matching level of the 8000-word list. In the same tab, “Public bank practice link” makes a link and QR code that does not collect scores."
+     "<b>No bank needed</b>: in the “Links” tab of Run Hanzi, set “Sentence source” of the class link to “Public bank A1 / A2” (subscribers also get B1 and theme packs) to use the built-in sentences. They are split into A1, A2 and B1 by the grammar points of Contemporary Chinese books 1, 2 and 3, with vocabulary within the matching level of the 8000-word list. In the same tab, the “Practice link” card makes a link and QR code that does not collect scores."
     ],
     "plan": [
      "1 bank, up to 50 sentences; public bank A1 and A2",
@@ -498,7 +501,8 @@ window.HELP = {
      "<b>Board size</b>: how many rows and columns",
      "<b>Hearts</b>: how many mistakes a student can make (3, 5 or unlimited)",
      "<b>Colors</b>:<ul><li>Basic (9): red, yellow, blue, green, black, white, gray, orange, purple</li><li>Advanced (14): adds pink, brown, dark and light gray, dark and light blue, dark and light green</li><li>Custom colors (subscription)</li></ul>",
-     "<b>Numbers</b>:<ul><li>0–999</li><li>0–9999</li><li>Custom numbers (subscription): separate with commas, ranges allowed, e.g. “1, 2, 10-20, 100”. Up to 200.</li></ul>"
+     "<b>Numbers</b>:<ul><li>0–999</li><li>0–9999</li><li>Custom numbers (subscription): separate with commas, ranges allowed, e.g. “1, 2, 10-20, 100”. Up to 200.</li></ul>",
+     "<b>Practice link</b>: without making a setup first, “Basic colors”, “Advanced colors” and “Basic + advanced” can be turned straight into a link in the “Links” tab."
     ],
     "note": "If you no longer want students to use a setup, delete it and its link stops working.",
     "plan": [
@@ -550,20 +554,20 @@ window.HELP = {
    },
    {
     "id": "hDragon",
-    "h": "🐉 Ink Dragon: themes and practice sets",
+    "h": "🐉 Ink Dragon: word banks and practice sets",
     "intro": "In this game students only eat words from the themes you choose. Free and subscription teachers get different themes.",
     "items": [
      "<b>Built-in themes (10)</b>: food, fruit, animals, colors, transport, body, clothes, jobs, weather and home",
      "<b>Who gets which themes</b>: the public page offers only food, animals and colors; a free teacher's practice link can add transport and home (5 in all); subscribers get all 10",
-     "<b>Custom themes</b> (subscription): up to 3, with 6–40 words each. Type one word per line, for example \"機場，aeropuerto，airport\"; simplified Chinese, pinyin and translations are generated for you and you can edit them.",
-     "<b>Practice sets</b> (subscription): combine built-in and custom themes into a set (up to 15) and make a link for your students.",
+     "<b>Custom word banks</b> (subscription): made in the “Custom word banks” tab; up to 3, with 6–40 words each, up to 4 characters per word. Type one word per line, for example \"機場，aeropuerto，airport\"; simplified Chinese, pinyin and translations are generated for you and you can edit them.",
+     "<b>Practice sets</b> (subscription): in the “Ranges” tab, combine built-in themes and custom word banks into a set (up to 15) and make a link for your students. A custom word bank can only be tried or linked inside a set.",
      "<b>Links</b>: a practice link (free) does not record scores; a class link (subscription) asks for a nickname and sends the results (score, correct count, altitude, commonly missed words) to the gradebook.",
-     "<b>Worksheets</b> (subscription): choose exercise types (matching, translation, multiple choice, dictation, sentences), with an answer page and a word list, in traditional or simplified Chinese with Spanish or English help."
+     "<b>Worksheets</b> (subscription): choose exercise types (matching, translation, multiple choice, dictation, sentences), with “Mix themes” (draws questions from all ticked themes at once), a word list and an answer page, in traditional or simplified Chinese with Spanish or English help."
     ],
-    "note": "If you change the words of a custom theme, practice-set links you already sent update automatically.",
+    "note": "If you change the words of a custom word bank, practice-set links you already sent update automatically.",
     "plan": [
      "Practice link with 5 built-in themes",
-     "10 built-in themes, 3 custom themes, 15 practice sets, class links and worksheets"
+     "10 built-in themes, 3 custom word banks, 15 practice sets, class links and worksheets"
     ]
    },
    {
@@ -572,7 +576,7 @@ window.HELP = {
     "items": [
      "Classes (up to 3), with scores sent automatically to the gradebook",
      "Common mistakes in Compare & Guess, and CSV export",
-     "Worksheets for all four games (print / PDF, in each game’s “Worksheets” tab)"
+     "Worksheets for all four games (print / PDF, in each game’s “Worksheets” tab; language, pinyin / zhuyin and letter size work the same in all four)"
     ]
    }
   ]

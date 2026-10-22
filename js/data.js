@@ -115,7 +115,7 @@ async function deleteAllOf(coll, cid){
     const b = db.batch(); snap.docs.forEach(d => b.delete(db.collection(coll).doc(d.id))); await b.commit();
   }
 }
-// 刪班：先刪三款遊戲的成績（class_scores＝跑吧／色數、class_plays＝比比看），最後才刪班級本身
+// 刪班：先刪各遊戲的成績（class_scores＝跑吧／色數、class_plays＝比比看），最後才刪班級本身
 async function deleteClass(slot, cls, cslots){
   await deleteAllOf('class_scores', cls.cid);
   await deleteAllOf('class_plays', cls.cid);
