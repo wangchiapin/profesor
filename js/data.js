@@ -19,6 +19,7 @@ const GAME_URL = {
 };
 const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colores, bbk: GAME_URL.bbk, dragon: GAME_URL.dragon };
 const MAX_CLASSES = 3;
+const ADMIN_EMAIL = 'a2224907@gmail.com';   // 管理員（Firestore 規則也是這個信箱）；管理員看得到維修中的遊戲
 const PLAN_OK = ['month', 'year', 'trial', 'pro'];
 let auth = null, db = null;
 
@@ -61,7 +62,7 @@ async function loadAccount(user){
   const d = p.exists ? p.data() : {};
   const plan = { plan: d.plan || 'free', expiresAt: tsMs(d.expiresAt) };
   plan.active = planActive(plan);
-  const acct = { plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true };
+  const acct = { admin: !!(user.email === ADMIN_EMAIL && user.emailVerified), maint: {}, plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true };
   try{
     const ix = await db.collection('teacher_classes').doc(user.uid).get();
     acct.cslots = ix.exists ? (ix.data().slots || {}) : {};
@@ -70,6 +71,11 @@ async function loadAccount(user){
       catch(e){ console.warn('class read failed', k, e); }
     }));
   }catch(e){ console.warn('classes unavailable', e); acct.clsReady = false; }
+  // 遊戲開關：portalStatus 裡 center-<遊戲代號>，off:true＝維修中（在 stats.html #sub「老師管理中心遊戲開關」設定）；讀不到就當全部開放
+  try{
+    const ps = await db.collection('portalStatus').get();
+    ps.docs.forEach(d => { if(d.id.indexOf('center-') === 0 && d.data().off === true) acct.maint[d.id.slice(7)] = true; });
+  }catch(e){ console.warn('game switches unavailable', e); }
   // 用量與連結來源：失敗不影響其他功能
   try{
     const bx = await db.collection('teacher_banks').doc(user.uid).get();

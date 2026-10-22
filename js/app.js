@@ -10,8 +10,17 @@ const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'ga
 const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon'];
 const GAME_TABS = ['content', 'ranges', 'links', 'scores', 'sheet', 'help'];
 const DR = window.DRAGON;
-const bookGames = () => DR.ready() ? GAMES.concat(['dragon']) : GAMES;     // 成績冊的遊戲分頁（墨龍正式開放前不顯示）
+// 遊戲開關：維修中的遊戲，一般老師只看到「維修中」；管理員（或網址加 ?dev=遊戲代號，例如 ?dev=dragon）照常能用
+function devOn(g){
+  try{ const m = /[?&]dev=([a-z,]+)/.exec(location.search); if(m) sessionStorage.setItem('gameDev', m[1]); return (sessionStorage.getItem('gameDev') || '').split(',').indexOf(g) >= 0; }
+  catch(e){ return false; }
+}
+const gameMaint = g => !!(S.a && S.a.maint && S.a.maint[g]);
+const gameOpen = g => !gameMaint(g) || !!(S.a && S.a.admin) || devOn(g);
+window.GAME_OPEN = gameOpen;
+const bookGames = () => GAME_IDS.filter(gameOpen);     // 成績冊的遊戲分頁（維修中的遊戲不顯示）
 const maintBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>：' + esc(T('maintNote')) + '</div>';
+const maintAdminBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>：' + esc(T('maintAdminNote')) + '</div>';
 
 const S = {
   authSeen: false, user: null, acct: '', msg: '', a: null,          // a = loadAccount 的結果
@@ -204,9 +213,9 @@ function homeHtml(){
     '<div class="row" style="margin:0"><button class="pill fill sm" data-act="nav" data-r="classes">' + esc(T('manage')) + '</button></div></div></div>';
   const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3><p class="hint">' + esc(T('gamesPick')) + '</p>' + GAME_IDS.map(g =>
     '<div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small>' +
-    ((g === 'dragon' && !DR.ready()) ? '' : usageOf(g).split('　·　').map(u => '<small class="mut">' + esc(u) + '</small>').join('')) + '</div>' +
-    ((g === 'dragon' && !DR.ready()) ? '<span class="badge">🔧 ' + esc(T('maint')) + '</span>'
-      : '<div class="row" style="margin:0"><button class="pill fill sm" data-act="togame" data-g="' + g + '" data-t="content">' + esc(T('manage')) + '</button>' +
+    (!gameOpen(g) ? '' : usageOf(g).split('　·　').map(u => '<small class="mut">' + esc(u) + '</small>').join('')) + '</div>' +
+    (!gameOpen(g) ? '<span class="badge">🔧 ' + esc(T('maint')) + '</span>'
+      : (gameMaint(g) ? '<span class="badge">🔧 ' + esc(T('maintAdminBadge')) + '</span>' : '') + '<div class="row" style="margin:0"><button class="pill fill sm" data-act="togame" data-g="' + g + '" data-t="content">' + esc(T('manage')) + '</button>' +
         '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>') + '</div>').join('') + '</div>';
   return plan + games;
 }
@@ -712,7 +721,8 @@ function gameHtml(){
   const g = S.g;
   ensureCls();
   let h = '<div class="ctabs gsw">' + GAME_IDS.map(x => '<button class="pill ' + (g === x ? 'on' : '') + '" data-act="togame" data-g="' + x + '" data-t="' + S.gt + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>';
-  if(g === 'dragon' && !DR.ready()) return h + maintBox();
+  if(!gameOpen(g)) return h + maintBox();
+  if(gameMaint(g)) h += maintAdminBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]]].concat(g === 'dragon' ? [['ranges', 'gtRangesDragon']] : []).concat([['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]]).map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
   if(S.gt === 'content') return h + (g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());

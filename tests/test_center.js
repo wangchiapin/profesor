@@ -28,7 +28,7 @@ const TEACH = { uid: 'u1', email: 'teacher@example.com', displayName: 'T', isAno
 const hx = n => ('0000000000000000' + n.toString(16)).slice(-16);
 const day = 86400000;
 function qs(n, firstOk){ return Array.from({ length: n }, (_, i) => ({ t: ['pick', 'tf', 'decode'][i % 3], d: ['height', 'age', 'hair'][i % 3], f: ['BI', 'MEI', 'SAME'][i % 3], p: i % 2 ? -1 : 1, ok: true, f1: i < firstOk, ids: ['P01', 'P02'], tv: i % 2 === 0 })); }
-function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = null } = {}){
+function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = null, maint = null } = {}){
   const s = { [T]: {
     classes: nocls ? {} : { [CID]: { owner: 'u1', slot: 0, name: '週三班', showBoard: false, updatedAt: 1 }, [CID2]: { owner: 'u1', slot: 1, name: '週五班', showBoard: true, updatedAt: 1 } },
     teacher_classes: nocls ? {} : { u1: { slots: { '0': CID, '1': CID2 }, updatedAt: 1 } },
@@ -59,6 +59,7 @@ function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = n
       trad: ['我', '有', String.fromCharCode(0x4e00 + i * 7)], simp: ['我', '有', String.fromCharCode(0x4e00 + i * 7)], pinyin: ['wǒ', 'yǒu', 'x'], es: 'Tengo ' + i, en: 'I have ' + i }])) } };
   if(pro) s[T].site_plans.u1 = { plan: 'year', expiresAt: Date.now() + (expired ? -1 : 1) * 30 * day };
   if(plan) s[T].site_plans.u1 = { plan: plan[0], expiresAt: Date.now() + plan[1] };
+  if(maint) s[T].portalStatus = Object.fromEntries(maint.map(g => ['center-' + g, { off: true }]));
   if(bbk) s[T].bbk_sets = { u1: { items: bbk, updatedAt: 1 } };
   return s;
 }
@@ -1129,7 +1130,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39|7-40|7-41|7-42|7-43|7-44)\b/.test(ix) && (ix.match(/\?v=7-45/g) || []).length >= 11 && ix.includes('js/help.js?v=7-45') && ix.includes('js/pubbank.js?v=7-45'), 'index.html 的 css／js 都改成 ?v=7-45（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39|7-40|7-41|7-42|7-43|7-44|7-45)\b/.test(ix) && (ix.match(/\?v=7-46/g) || []).length >= 11 && ix.includes('js/help.js?v=7-46') && ix.includes('js/pubbank.js?v=7-46'), 'index.html 的 css／js 都改成 ?v=7-46（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1245,6 +1246,22 @@ server.listen(0, 'localhost', async () => {
     await page.click('.gsw [data-act=togame][data-g=corre]'); await page.waitForSelector('#correCard');
     ok(await page.$('#correCard') !== null, '從墨龍「練習範圍」切到跑吧：回到自訂句庫，不會空白');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[M] 遊戲維修開關（portalStatus）');
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { maint: ['bbk'] }, ls: { profesorLang: 'tc' } });
+    await page.waitForSelector('.badge');
+    ok((await text(page)).includes('維修中'), '一般老師：首頁顯示 🔧 維修中');
+    await page.evaluate(() => __profesor.go('game/bbk/content'));
+    await page.waitForTimeout(300);
+    ok(await page.$('#bbkCard') === null && (await text(page)).includes('維修'), '一般老師：比比看的卡片收起來、顯示維修說明');
+    await page.evaluate(() => __profesor.go('game/corre/content')); await page.waitForSelector('#correCard');
+    ok(await page.$('#correCard') !== null, '其他遊戲不受影響');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { maint: ['bbk'] }, user: Object.assign({}, TEACH, { email: 'a2224907@gmail.com', emailVerified: true }), ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
+    await page.waitForSelector('#bbkCard');
+    ok(await page.$('#bbkCard') !== null && (await text(page)).includes('只有你看得到'), '管理者：卡片照常、並有「只有你看得到」的提示');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

@@ -4,15 +4,8 @@
 'use strict';
 const T = (k, p) => I18N.t(k, p);
 
-// 開關：READY=true 已開放。若要暫時改回「維修中」，把 READY 改 false（網址加 ?dev=dragon 仍可測試，同一個分頁會記住）。
-const READY = true;
-function ready(){
-  if(READY) return true;
-  try{
-    if(/[?&]dev=dragon\b/.test(location.search)){ sessionStorage.setItem('dragonDev', '1'); return true; }
-    return sessionStorage.getItem('dragonDev') === '1';
-  }catch(e){ return /[?&]dev=dragon\b/.test(location.search); }
-}
+// 開關：由老師管理中心的「遊戲開關」決定（app.js 的 gameOpen，資料在 portalStatus／center-dragon）；沒有 app 時視為開放。
+function ready(){ return typeof window.GAME_OPEN === 'function' ? window.GAME_OPEN('dragon') : true; }
 
 // 內建主題（順序和名稱跟遊戲一致：[繁, 簡, 西, 英]）
 const BUILTIN = [
