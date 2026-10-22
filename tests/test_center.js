@@ -665,12 +665,36 @@ server.listen(0, 'localhost', async () => {
     ok((await page.$$eval('[data-sel=corresrc] optgroup', g => g.map(x => x.label))).join('|') === '公開句庫|主題包（訂閱）|我的句庫', '來源選單分三組：公開句庫、主題包、我的句庫');
     // 列印：學習單 PDF
     await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForSelector('#cwsCard');
-    await page.selectOption('[data-sel=cwsbank]', '1');
+    await page.selectOption('[data-sel=cwssrc]', { label: '📚 第二課（改）' }); await page.waitForSelector('[data-act=cwsmake]:not([disabled])');
     ok(await page.$eval('[data-act=cwszy]', b => b.classList.contains('on')) && !(await page.$eval('[data-act=cwspy]', b => b.classList.contains('on'))), '學習單預設跟句庫一樣用注音');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=cwsmake]')]);
     const pdf = fs.readFileSync(await dl.path());
     ok(pdf.slice(0, 5).toString() === '%PDF-' && pdf.length > 20000 && /\/Count [2-9]/.test(pdf.toString('latin1')), '下載學習單 PDF（含排列句子與答案頁）', pdf.length);   // 檔名有中文時測試用瀏覽器會改叫 download，真的瀏覽器不會
     ok((await text(page, '#cwsCard')).includes('已下載'), '顯示已下載頁數');
+    { // 學習單：預覽、題型、題數、來源
+      const pages1 = +/\/Count (\d+)/.exec(pdf.toString('latin1'))[1];
+      await page.click('[data-act=cwsprev]'); await page.waitForSelector('.cws-prev img');
+      const np = (await page.$$('.cws-prev img')).length;
+      ok(np === pages1, '預覽頁數跟 PDF 一樣', np + '/' + pages1);
+      ok((await text(page, '#cwsCard')).includes('輸出PDF') && !(await text(page, '#cwsCard')).includes('跑吧！漢字'), '按鈕叫「輸出PDF」；學習單沒有遊戲名稱標題');
+      await page.click('[data-act=cwstype][data-k=fill]');
+      ok(await page.$('.cws-prev') === null && await page.$('[data-act=cwsfm]') !== null, '改內容後預覽收起，出現填空方式');
+      await page.click('[data-act=cwsfm][data-k=pick]');
+      ok((await page.$$('.cws-fill')).length >= 1, '老師指定：每句列出可點的詞');
+      await page.click('.cws-fill .pill.xs'); ok(await page.$eval('.cws-fill .pill.xs', b => b.classList.contains('on')), '點詞＝挖掉');
+      for(const k of ['trans', 'match', 'dict']) await page.click('[data-act=cwstype][data-k=' + k + ']');
+      const [dl2] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=cwsmake]')]);
+      const pages2 = +/\/Count (\d+)/.exec(fs.readFileSync(await dl2.path()).toString('latin1'))[1];
+      ok(pages2 > pages1, '加了填空／翻譯／連連看／聽寫，頁數變多', pages1 + '→' + pages2);
+      await page.selectOption('[data-sel=cwssrc]', 'L:A1'); await page.waitForFunction(() => /共 \d+ 句/.test(document.getElementById('cwsCard').innerText));
+      ok((await text(page, '#cwsCard')).includes('共 100 句') && await page.$eval('[data-act=cwsmode][data-k=n10]', b => b.classList.contains('on')), '公開句庫 A1：共 100 句，預設隨機 10 句');
+      ok(await page.$('[data-act=cwsmode][data-k=all]') === null && await page.$('[data-act=cwsscript]') !== null, '超過 50 句沒有「全部」；公開句庫可選字體');
+      await page.click('[data-act=cwsmode][data-k=pick]');
+      ok((await page.$$('.cws-row')).length === 100, '自己挑：列出 100 句');
+      await page.click('[data-act=cwsprev]'); await page.waitForSelector('.cws-prev img');
+      ok((await page.$$('.cws-prev img')).length >= 2, '公開句庫也能預覽');
+      await page.selectOption('[data-sel=cwssrc]', { label: '📚 第二課（改）' }); await page.waitForSelector('[data-act=cwsmake]:not([disabled])');
+    }
     if(SHOT) fs.copyFileSync(await dl.path(), path.join(SHOT, 'm3_worksheet.pdf'));
     await shot(page, 'm3_print');
     // 刪除
@@ -1097,7 +1121,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22)\b/.test(ix) && (ix.match(/\?v=7-23/g) || []).length >= 11 && ix.includes('js/help.js?v=7-23') && ix.includes('js/pubbank.js?v=7-23'), 'index.html 的 css／js 都改成 ?v=7-23（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23)\b/.test(ix) && (ix.match(/\?v=7-24/g) || []).length >= 11 && ix.includes('js/help.js?v=7-24') && ix.includes('js/pubbank.js?v=7-24'), 'index.html 的 css／js 都改成 ?v=7-24（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }

@@ -686,7 +686,7 @@ function wsDefaults(){
 }
 function wsFormHtml(){
   const A = S.a, W = S.ws || (S.ws = wsDefaults());
-  let h = '<div class="card" id="wsCard"><h3>' + esc(T('gameColores')) + '</h3>';
+  let h = '<div class="card" id="wsCard">';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
   if(!A.configs.length) return h + '<p class="hint">' + esc(T('wsNoCfg')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="colores" data-t="content">' + esc(T('gtBankColores')) + '</button></div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
@@ -712,23 +712,110 @@ function wsSheetHtml(){
     '<p class="hint">' + esc(T('wsPrintTip')) + '</p></div><div class="ws">' + S.wsSheet + '</div>';
 }
 // ---- 列印：跑吧學習單 PDF ----
-function cwsDefaults(){ return { bank: '', lang: I18N.getLang() === 'en' ? 'en' : 'es', pinyin: true, zhuyin: false, order: true, busy: false, msg: '', ok: false }; }
+const CWS_MAX = 50;
+function cwsDefaults(){
+  return { src: '', lv: '', pool: null, poolKey: '', loading: false, name: '', script: I18N.getLang() === 'sc' ? 'simp' : 'trad',
+    mode: 'all', n: 10, picked: [], blanks: {}, fillMode: 'random',
+    types: { read: true, order: true, fill: false, trans: false, match: false, dict: false },
+    lang: I18N.getLang() === 'en' ? 'en' : 'es', pinyin: true, zhuyin: false, busy: false, msg: '', ok: false, prev: null };
+}
+const cwsTouch = () => { const W = S.cws; W.msg = ''; W.prev = null; };
+const cwsDraw = (len, n) => { const a = []; for(let i = 0; i < len; i++) a.push(i); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a.slice(0, n); };
+// 目前會放進學習單的句子（在句子來源裡的位置）
+function cwsChosen(){
+  const W = S.cws, pool = W.pool || [];
+  if(W.mode === 'all') return pool.map((s, i) => i).slice(0, CWS_MAX);
+  if(W.mode === 'n'){
+    const n = Math.min(W.n, pool.length);
+    if(W.picked.length !== n || W.picked.some(i => i >= pool.length)) W.picked = cwsDraw(pool.length, n);
+  }
+  return W.picked.slice().sort((a, b) => a - b).slice(0, CWS_MAX);
+}
+function cwsData(){
+  const W = S.cws;
+  return { name: W.name, script: W.script, sentences: cwsChosen().map(i => {
+    const b = W.fillMode === 'pick' && W.blanks[i];
+    return b && b.length ? Object.assign({}, W.pool[i], { blank: b }) : W.pool[i];
+  }) };
+}
+async function cwsLoadPool(){
+  const W = S.cws, key = W.src + '|' + W.lv;
+  W.poolKey = key; W.pool = null; W.picked = []; W.blanks = {}; W.name = ''; cwsTouch();
+  if(!W.src){ render(); return; }
+  W.loading = true; render();
+  try{
+    let list;
+    if(W.src.slice(0, 2) === 'B:'){
+      const b = S.a.banks.find(x => x.sid === W.src.slice(2));
+      list = (b && b.data && b.data.sentences) || []; W.name = b ? CORRE.bankName(b) : '';
+      W.script = b && b.data && b.data.script === 'simp' ? 'simp' : 'trad';
+      const ph = (b && b.data && b.data.phonetic) || 'pinyin';
+      W.pinyin = ph !== 'zhuyin'; W.zhuyin = ph === 'zhuyin' || ph === 'both';   // 預設跟句庫的拼音／注音設定一樣
+    }else if(W.src.slice(0, 2) === 'L:'){
+      list = await PUB.loadLevel(W.src.slice(2)); W.name = T('srcLevel', { l: W.src.slice(2) });
+    }else{
+      const p = (S.packs || []).find(x => x.id === W.src.slice(2));
+      list = p ? await PUB.packSentences(p, W.lv) : []; W.name = p ? packLabel(p) : '';
+    }
+    if(W.poolKey !== key) return;
+    W.pool = list.filter(s => s && Array.isArray(s.trad));
+    W.mode = W.pool.length > CWS_MAX ? 'n' : 'all';
+  }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
+  W.loading = false; render();
+}
 function cwsFormHtml(){
   const A = S.a, W = S.cws || (S.cws = cwsDefaults());
-  let h = '<div class="card" id="cwsCard"><h3>' + esc(T('gameCorre')) + '</h3><p class="hint">' + esc(T('cwsHint')) + '</p>';
-  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
-  if(!A.banks.length) return h + '<p class="hint">' + esc(T('cwsNoBank')) + '</p><div class="row"><button class="pill sm" data-act="togame" data-g="corre" data-t="content">' + esc(T('gtBankCorre')) + '</button></div></div>';
+  let h = '<div class="card" id="cwsCard"><p class="hint">' + esc(T('cwsHint')) + '</p>';
+  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row"><button class="pill fill" data-act="needsub">📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div></div>';
+  ensurePacks();
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
-  const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
-  const b = W.bank !== '' ? CORRE.bankOf(A, +W.bank) : null;
-  h += '<div class="field"><label>' + esc(T('cwsBank')) + '</label><select data-sel="cwsbank"><option value="">' + esc(T('configPick')) + '</option>' +
-    A.banks.map(x => '<option value="' + x.slot + '" ' + (W.bank === String(x.slot) ? 'selected' : '') + '>📚 ' + esc(CORRE.bankName(x)) + '</option>').join('') + '</select>' +
-    (b ? '<p class="hint">' + esc(CORRE.summary(b, A.plan)) + '</p>' : '') + '</div>' +
-    '<div class="field"><label>' + esc(CORRE.tr('pdfLang')) + '</label><div class="row" style="margin-top:0">' + pills('cwslang', W.lang, [['es', 'Español'], ['en', 'English']]) + '</div></div>' +
-    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'cwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'cwszy') + '</div>' +
-    '<div class="row">' + chipB(W.order, CORRE.tr('pdfOrder'), 'cwsorder') + '</div></div>' +
-    '<div class="row"><button class="pill fill" data-act="cwsmake" ' + (!b || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
+  const chipB = (on, label, act, k) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '"' + (k ? ' data-k="' + k + '"' : '') + '>' + (on ? '✓ ' : '') + esc(label) + '</button>';
+  const pool = W.pool, chosen = pool ? cwsChosen() : [];
+  const anyType = Object.keys(W.types).some(k => W.types[k]);
+  // 句子來源
+  h += '<div class="field"><label>' + esc(T('sourceLabel')) + '</label><select data-sel="cwssrc"><option value="">' + esc(T('cwsPickSrc')) + '</option>' + srcOptions(W.src, true) + '</select></div>';
+  if(W.src.slice(0, 2) === 'P:') h += '<div class="field"><label>' + esc(T('srcLevelLabel')) + '</label><select data-sel="cwslv">' + srcLvOptions(W.lv) + '</select></div>';
+  if(W.loading) h += '<p class="hint">' + esc(T('cwsLoading')) + '</p>';
+  if(pool){
+    h += '<p class="hint">' + esc(T('cwsCount', { n: pool.length })) + '</p>';
+    if(W.src.slice(0, 2) !== 'B:') h += '<div class="field"><label>' + esc(CORRE.tr('script')) + '</label><div class="row" style="margin-top:0">' + pills('cwsscript', W.script, [['trad', CORRE.tr('trad')], ['simp', CORRE.tr('simp')]]) + '</div></div>';
+    // 題數／句子
+    const modes = [].concat(pool.length <= CWS_MAX ? [['all', T('cwsAll')]] : [], [['n10', T('cwsNSent', { n: 10 })], ['n20', T('cwsNSent', { n: 20 })], ['pick', T('cwsPickOwn')]]);
+    const curMode = W.mode === 'n' ? 'n' + W.n : W.mode;
+    h += '<div class="field"><label>' + esc(T('cwsAmount')) + '</label><div class="row" style="margin-top:0">' + pills('cwsmode', curMode, modes) +
+      (W.mode === 'n' ? '<button class="pill sm" data-act="cwsredraw">' + esc(T('cwsRedraw')) + '</button>' : '') + '</div>';
+    if(W.mode === 'pick'){
+      h += '<p class="hint">' + esc(T('cwsPickHint', { n: chosen.length })) + '</p><div class="cws-list">' + pool.map((s, i) => {
+        const on = W.picked.indexOf(i) >= 0;
+        return '<button class="pill sm cws-row ' + (on ? 'on' : '') + '" data-act="cwspick" data-i="' + i + '"><span>' + (on ? '✓ ' : '') + esc((s.trad || []).join('')) + '</span><small>' + esc((I18N.getLang() === 'en' ? (s.en || s.es) : s.es) || '') + '</small></button>';
+      }).join('') + '</div>';
+    }
+    h += '</div>';
+  }
+  // 內容（題型）
+  h += '<div class="field"><label>' + esc(CORRE.tr('pdfTypes')) + '</label><div class="row" style="margin-top:0">' +
+    [['read', 'pdfRead'], ['order', 'pdfOrder'], ['fill', 'pdfFill'], ['trans', 'pdfTrans'], ['match', 'pdfMatch'], ['dict', 'pdfDict']].map(x => chipB(W.types[x[0]], CORRE.tr(x[1]), 'cwstype', x[0])).join('') + '</div></div>';
+  if(W.types.fill){
+    h += '<div class="field"><label>' + esc(T('cwsFillMode')) + '</label><div class="row" style="margin-top:0">' + pills('cwsfm', W.fillMode, [['random', T('cwsFillRand')], ['pick', T('cwsFillPick')]]) + '</div>';
+    if(W.fillMode === 'pick' && pool){
+      h += '<p class="hint">' + esc(T('cwsFillHint')) + '</p><div class="cws-list">' + chosen.map(i => {
+        const s = pool[i], bl = W.blanks[i] || [];
+        return '<div class="cws-fill"><span class="no">' + (chosen.indexOf(i) + 1) + '.</span>' + (s.trad || []).map((w, k) =>
+          '<button class="pill xs ' + (bl.indexOf(k) >= 0 ? 'on' : '') + '" data-act="cwsblank" data-i="' + i + '" data-w="' + k + '">' + esc(w) + '</button>').join('') + '</div>';
+      }).join('') + '</div>';
+    }
+    h += '</div>';
+  }
+  // 翻譯語言、拼音／注音
+  h += '<div class="field"><label>' + esc(CORRE.tr('pdfLang')) + '</label><div class="row" style="margin-top:0">' + pills('cwslang', W.lang, [['es', 'Español'], ['en', 'English']]) + '</div></div>' +
+    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'cwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'cwszy') + '</div></div>';
+  const can = pool && chosen.length && anyType && !W.busy;
+  h += '<div class="row"><button class="pill" data-act="cwsprev" ' + (can ? '' : 'disabled') + '>' + esc(T('cwsPreview')) + '</button>' +
+    '<button class="pill fill" data-act="cwsmake" ' + (can ? '' : 'disabled') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
+    (pool && !anyType ? '<p class="hint">' + esc(T('cwsNoType')) + '</p>' : '') +
     (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
+  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('cwsPrevTitle', { n: W.prev.length })) + '</b><button class="pill xs" data-act="cwsprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' +
+    W.prev.map(u => '<img src="' + u + '" alt="">').join('') + '</div>';
   return h + '</div>';
 }
 // ---- 列印：比比看學習單（用遊戲那邊的 engine.js＋worksheet.js，出題跟遊戲完全一樣）----
@@ -755,7 +842,7 @@ function bwsRange(W){
 }
 function bwsFormHtml(){
   const A = S.a, W = S.bws || (S.bws = bwsDefaults());
-  let h = '<div class="card" id="bbkWsCard"><h3>' + esc(T('gameBbk')) + '</h3><p class="hint">' + esc(T('printBbk')) + '</p>';
+  let h = '<div class="card" id="bbkWsCard"><p class="hint">' + esc(T('printBbk')) + '</p>';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   const mine = A.bbkReady ? A.bbk : [];
@@ -789,7 +876,7 @@ async function bwsMake(){
 // ---- 列印：墨龍飛天詞表學習單 PDF ----
 function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, busy: false, msg: '', ok: false }; }
 function dwsFormHtml(){
-  let h = '<div class="card" id="dragonWsCard"><h3>🐉 ' + esc(T('gameDragon')) + '</h3>';
+  let h = '<div class="card" id="dragonWsCard">';
   if(!DR.ready()) return h + maintBox() + '</div>';
   const A = S.a, W = S.dws || (S.dws = dwsDefaults());
   h += '<p class="hint">' + esc(T('dragonWsHint')) + '</p>';
@@ -968,16 +1055,46 @@ const actions = {
     render();
   }); },
   // ---- 跑吧學習單 ----
-  cwslang(el){ S.cws.lang = el.dataset.k; S.cws.msg = ''; render(); },
-  cwspy(){ S.cws.pinyin = !S.cws.pinyin; S.cws.msg = ''; render(); },
-  cwszy(){ S.cws.zhuyin = !S.cws.zhuyin; S.cws.msg = ''; render(); },
-  cwsorder(){ S.cws.order = !S.cws.order; S.cws.msg = ''; render(); },
-  async cwsmake(){
-    const W = S.cws, b = W && W.bank !== '' && CORRE.bankOf(S.a, +W.bank); if(!b || W.busy || !S.a.plan.active) return;
+  cwslang(el){ S.cws.lang = el.dataset.k; cwsTouch(); render(); },
+  cwspy(){ S.cws.pinyin = !S.cws.pinyin; cwsTouch(); render(); },
+  cwszy(){ S.cws.zhuyin = !S.cws.zhuyin; cwsTouch(); render(); },
+  cwsscript(el){ S.cws.script = el.dataset.k; cwsTouch(); render(); },
+  cwstype(el){ const t = S.cws.types; t[el.dataset.k] = !t[el.dataset.k]; cwsTouch(); render(); },
+  cwsfm(el){ S.cws.fillMode = el.dataset.k; cwsTouch(); render(); },
+  cwsmode(el){
+    const W = S.cws, k = el.dataset.k;
+    if(k === 'all'){ W.mode = 'all'; }
+    else if(k === 'pick'){ W.picked = W.mode === 'pick' ? W.picked : cwsChosen(); W.mode = 'pick'; }
+    else{ W.mode = 'n'; W.n = +k.slice(1); W.picked = []; }
+    cwsTouch(); render();
+  },
+  cwsredraw(){ S.cws.picked = []; cwsTouch(); render(); },
+  cwspick(el){
+    const W = S.cws, i = +el.dataset.i, at = W.picked.indexOf(i);
+    if(at >= 0) W.picked.splice(at, 1); else if(W.picked.length < CWS_MAX) W.picked.push(i);
+    cwsTouch(); render();
+  },
+  cwsblank(el){
+    const W = S.cws, i = +el.dataset.i, k = +el.dataset.w, a = (W.blanks[i] || []).slice(), at = a.indexOf(k);
+    if(at >= 0) a.splice(at, 1); else a.push(k);
+    W.blanks[i] = a; cwsTouch(); render();
+  },
+  cwsprevclose(){ S.cws.prev = null; render(); },
+  async cwsprev(){
+    const W = S.cws; if(!W.pool || W.busy || !S.a.plan.active) return;
     W.busy = true; W.msg = ''; render();
     try{
-      const r = await CORRE.makeWorksheet(b.data, { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, order: W.order });
-      saveBlob(r.blob, 'worksheet-' + safeName(CORRE.bankName(b)) + '.pdf');
+      const r = await CORRE.makeWorksheet(cwsData(), { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, preview: true });
+      W.prev = r.previews;
+    }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
+    W.busy = false; render();
+  },
+  async cwsmake(){
+    const W = S.cws; if(!W || !W.pool || W.busy || !S.a.plan.active) return;
+    W.busy = true; W.msg = ''; render();
+    try{
+      const r = await CORRE.makeWorksheet(cwsData(), { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types });
+      saveBlob(r.blob, 'worksheet-' + safeName(W.name || 'corre') + '.pdf');
       W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;
     }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
     W.busy = false; render();
@@ -1232,11 +1349,8 @@ document.addEventListener('change', e => {
     S.bws.sel = s.value; S.bws.msg = '';
     const it = s.value[0] !== 'L' && S.a.bbk[+s.value]; if(it && it.n) S.bws.n = [5, 10, 15, 20].indexOf(it.n) >= 0 ? it.n : S.bws.n;   // 題數預設跟範圍一樣
   }
-  if(s.dataset.sel === 'cwsbank'){
-    S.cws.bank = s.value; S.cws.msg = '';
-    const b = s.value !== '' && CORRE.bankOf(S.a, +s.value), ph = (b && b.data && b.data.phonetic) || 'pinyin';
-    S.cws.pinyin = ph !== 'zhuyin'; S.cws.zhuyin = ph === 'zhuyin' || ph === 'both';   // 預設跟句庫的拼音／注音設定一樣
-  }
+  if(s.dataset.sel === 'cwssrc'){ S.cws.src = s.value; S.cws.lv = ''; cwsLoadPool(); return; }
+  if(s.dataset.sel === 'cwslv'){ S.cws.lv = s.value; cwsLoadPool(); return; }
   render();
 });
 document.addEventListener('input', e => {

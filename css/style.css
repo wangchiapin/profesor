@@ -331,3 +331,14 @@ details.hsec[open]>summary{margin-bottom:8px}
   .etabs .pill,.esubs .pill{font-size:.78rem;padding:4px 2px;white-space:normal;line-height:1.2;text-align:center}
 }
 @media (max-width:380px){ .esubs .pill{font-size:.72rem} }
+
+/* 學習單：挑句子、指定填空、預覽 */
+.cws-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:6px;margin-top:6px;background:#fff}
+.cws-row{display:flex;flex-direction:column;align-items:flex-start;width:100%;margin:3px 0;height:auto;min-height:0;text-align:left;white-space:normal;border-radius:14px}
+.cws-row small{font-size:.74rem;opacity:.75;font-weight:400}
+.cws-fill{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:6px 0}
+.cws-fill .no{font-size:.8rem;color:var(--muted,#8a7a6a);min-width:1.6em}
+.cws-prev{margin-top:12px}
+.cws-prev img{display:block;width:100%;max-width:520px;margin:10px 0;border:1px solid var(--line);border-radius:6px}
+.cws-row.on small{color:#fff;opacity:.9}
+.cws-row{padding:6px 14px}

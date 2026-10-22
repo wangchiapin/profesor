@@ -684,8 +684,10 @@ function qrCanvas(url, title){
 // ================= 學習單 PDF（canvas 畫成 A4 圖片頁，再包成 PDF，不會缺字）=================
 const PDFW = 1240, PDFH = 1754, PM = 90;
 const WS_TXT = {
-  es: { name: 'Nombre:', date: 'Fecha:', s1: 'Frases', s2: 'Ordena las palabras para formar la frase.', ans: 'Respuestas' },
-  en: { name: 'Name:', date: 'Date:', s1: 'Sentences', s2: 'Put the words in order to make a sentence.', ans: 'Answer key' }
+  es: { name: 'Nombre:', date: 'Fecha:', s1: 'Frases', s2: 'Ordena las palabras para formar la frase.', s3: 'Completa los espacios con la palabra correcta.', s4: 'Traduce al chino.', s5: 'Une cada frase con su traducción.', s6: 'Escucha y escribe la frase.', ans: 'Respuestas',
+    n2: 'Ordenar', n3: 'Completar', n4: 'Traducir', n5: 'Unir', n6: 'Dictado' },
+  en: { name: 'Name:', date: 'Date:', s1: 'Sentences', s2: 'Put the words in order to make a sentence.', s3: 'Fill in the blanks.', s4: 'Translate into Chinese.', s5: 'Match each sentence with its translation.', s6: 'Listen and write the sentence.', ans: 'Answer key',
+    n2: 'Ordering', n3: 'Fill in the blanks', n4: 'Translation', n5: 'Matching', n6: 'Dictation' }
 };
 function buildPdf(jpegs, pw, ph){
   const enc = new TextEncoder(), parts = [], offs = [];
@@ -723,11 +725,13 @@ function seededShuffle(arr, seed){
 async function makeWorksheet(data, opt){
   const script = data.script === 'simp' ? 'simp' : 'trad';
   const L = WS_TXT[opt.lang] || WS_TXT.es;
+  const T = opt.types || { read: true, order: !!opt.order };
   const sents = (data.sentences || []).filter(s => s && Array.isArray(s.trad)).map(s => ({
-    words: (s[script] || s.trad || []).slice(), py: (s.pinyin || []).slice(), tr: (opt.lang === 'en' ? (s.en || s.es) : s.es) || ''
+    words: (s[script] || s.trad || []).slice(), py: (s.pinyin || []).slice(), tr: (opt.lang === 'en' ? (s.en || s.es) : s.es) || '',
+    blank: Array.isArray(s.blank) ? s.blank : null
   }));
   const FF = '"Noto Sans TC","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",sans-serif';
-  const all = sents.map(s => s.words.join('') + s.py.join('') + ZY.conv(s.py.join(' ')) + s.tr).join('') + (data.name || '') + L.name + L.date + L.s1 + L.s2 + L.ans + '0123456789.:_ ';
+  const all = sents.map(s => s.words.join('') + s.py.join('') + ZY.conv(s.py.join(' ')) + s.tr).join('') + (data.name || '') + Object.keys(L).map(k => L[k]).join('') + '0123456789.:_ ';
   try{ await Promise.all([document.fonts.load('900 44px "Noto Sans TC"', all), document.fonts.load('500 26px "Noto Sans TC"', all)]); }catch(e){}
   const pages = [];
   let cv, c, y;
@@ -739,78 +743,177 @@ async function makeWorksheet(data, opt){
     let pw = 0, zw = 0, pt = '', zt = '';
     if(opt.pinyin){ pt = py; font(500, 22); pw = c.measureText(pt).width; }
     if(opt.zhuyin){ zt = ZY.conv(py); font(500, 22); zw = c.measureText(zt).width; }
-    return { word, pt, zt, w: Math.max(wh, pw, zw) };
+    return { word, pt, zt, w: Math.max(wh, pw, zw, 44) };
   };
   const lineH = (opt.pinyin ? 28 : 0) + 52 + (opt.zhuyin ? 30 : 0);
-  const drawCell = (ci, x, top) => {
+  // rev：答案頁。填空的空格在答案頁用紅字寫出來
+  const drawCell = (ci, x, top, rev) => {
     c.textAlign = 'center'; const cx = x + ci.w / 2; let yy = top;
     if(opt.pinyin){ font(500, 22); c.fillStyle = '#555'; c.fillText(ci.pt, cx, yy + 22); yy += 28; }
-    font(900, 44); c.fillStyle = '#111'; c.fillText(ci.word, cx, yy + 42); yy += 52;
+    font(900, 44);
+    if(ci.blank && !rev){ c.strokeStyle = '#111'; c.lineWidth = 3; c.beginPath(); c.moveTo(x, yy + 48); c.lineTo(x + ci.w, yy + 48); c.stroke(); }
+    else { c.fillStyle = ci.blank ? '#c0392b' : '#111'; c.fillText(ci.word, cx, yy + 42); }
+    yy += 52;
     if(opt.zhuyin){ font(500, 22); c.fillStyle = '#555'; c.fillText(ci.zt, cx, yy + 22); }
     c.textAlign = 'left';
   };
-  const layout = (words, py, x0, maxW, gap, pad) => {
+  const layout = (words, py, x0, maxW, gap, pad, blank) => {
     const lines = [[]]; let x = x0;
     words.forEach((w, i) => {
       const ci = cellInfo(w, py[i] || ''), cw = ci.w + pad * 2;
+      ci.blank = !!(blank && blank.has(i));
       if(x + cw > x0 + maxW && lines[lines.length - 1].length){ lines.push([]); x = x0; }
       lines[lines.length - 1].push({ x: x + pad, ci, cw }); x += cw + gap;
     });
     return lines;
+  };
+  const wrapText = (text, maxW) => {
+    const ws = String(text).split(/\s+/).filter(Boolean), out = []; let cur = '';
+    ws.forEach(w => { const t = cur ? cur + ' ' + w : w; if(c.measureText(t).width > maxW && cur){ out.push(cur); cur = w; } else cur = t; });
+    if(cur) out.push(cur); return out.length ? out : [''];
+  };
+  const wrapChars = (text, maxW) => {
+    const out = []; let cur = '';
+    for(const ch of String(text)){ if(c.measureText(cur + ch).width > maxW && cur){ out.push(cur); cur = ch; } else cur += ch; }
+    if(cur) out.push(cur); return out.length ? out : [''];
+  };
+  const hr = (x1, x2, yy, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1, yy); c.lineTo(x2, yy); c.stroke(); };
+  // 句子編號＋逐詞（拼音／注音＋字）
+  const sentCells = (s, idx, blank, rev, extra) => {
+    const lines = layout(s.words, s.py, PM + 70, PDFW - PM * 2 - 70, 26, 0, blank);
+    ensure(lines.length * (lineH + 10) + (extra || 40));
+    font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + (opt.pinyin ? 28 : 0) + 40);
+    lines.forEach(line => { line.forEach(o => drawCell(o.ci, o.x, y, rev)); y += lineH + 10; });
+  };
+  const blankOf = (s, idx) => {
+    const n = s.words.length;
+    if(s.blank && s.blank.length){ const b = s.blank.filter(i => i >= 0 && i < n); if(b.length) return new Set(b); }
+    return new Set(seededShuffle(s.words.map((w, i) => i), idx + 11).slice(0, n >= 6 ? 2 : 1));
+  };
+  const ans = [];
+  let first = true;
+  const section = title => {
+    if(!first) newPage(); first = false;
+    font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(title, PM, y + 28); y += 52;
   };
   newPage();
   font(900, 46); c.fillStyle = '#0a6b73'; c.fillText(data.name || '', PM, y + 44); y += 70;
   font(500, 26); c.fillStyle = '#333';
   c.fillText(L.name + ' ____________________', PM, y + 26);
   c.fillText(L.date + ' ______________', PDFW / 2 + 40, y + 26); y += 58;
-  c.strokeStyle = '#0a6b73'; c.lineWidth = 3; c.beginPath(); c.moveTo(PM, y); c.lineTo(PDFW - PM, y); c.stroke(); y += 30;
-  font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(L.s1, PM, y + 28); y += 52;
-  sents.forEach((s, idx) => {
-    const lines = layout(s.words, s.py, PM + 70, PDFW - PM * 2 - 70, 26, 0);
-    ensure(lines.length * (lineH + 10) + 44 + 24);
-    font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + (opt.pinyin ? 28 : 0) + 40);
-    lines.forEach(line => { line.forEach(o => drawCell(o.ci, o.x, y)); y += lineH + 10; });
-    font(500, 26); c.fillStyle = '#333'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
-    c.strokeStyle = '#ddd'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(PM, y); c.lineTo(PDFW - PM, y); c.stroke(); y += 24;
-  });
-  if(opt.order){
-    const ex = sents.filter(s => s.words.length >= 2);
-    if(ex.length){
-      newPage();
-      font(900, 40); c.fillStyle = '#0a6b73'; c.fillText(L.s2, PM, y + 38); y += 70;
-      ex.forEach((s, idx) => {
-        const sh = seededShuffle(s.words.map((w, i) => i), idx + 1);
-        const lines = layout(sh.map(i => s.words[i]), sh.map(i => s.py[i] || ''), PM + 70, PDFW - PM * 2 - 70, 18, 14);
-        ensure(44 + lines.length * (lineH + 34) + 80);
-        font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + 40);
-        font(500, 24); c.fillStyle = '#666'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
-        lines.forEach(line => {
-          line.forEach(o => {
-            c.strokeStyle = '#0a6b73'; c.lineWidth = 2.5;
-            const bx = o.x - 14, bw = o.ci.w + 28, bh = lineH + 20;
-            c.beginPath(); if(c.roundRect) c.roundRect(bx, y - 4, bw, bh, 12); else c.rect(bx, y - 4, bw, bh); c.stroke();
-            drawCell(o.ci, o.x, y + 6);
-          });
-          y += lineH + 34;
+  hr(PM, PDFW - PM, y, '#0a6b73', 3); y += 30;
+  // 1. 句子總表（讀一讀）
+  if(T.read){
+    section(L.s1);
+    sents.forEach((s, idx) => {
+      sentCells(s, idx, null, false, 44 + 24);
+      font(500, 26); c.fillStyle = '#333'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
+      hr(PM, PDFW - PM, y, '#ddd', 1.5); y += 24;
+    });
+  }
+  // 2. 排列句子
+  const ex = sents.filter(s => s.words.length >= 2);
+  if(T.order && ex.length){
+    section(L.s2);
+    ex.forEach((s, idx) => {
+      const sh = seededShuffle(s.words.map((w, i) => i), idx + 1);
+      const lines = layout(sh.map(i => s.words[i]), sh.map(i => s.py[i] || ''), PM + 70, PDFW - PM * 2 - 70, 18, 14);
+      ensure(44 + lines.length * (lineH + 34) + 80);
+      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + 40);
+      font(500, 24); c.fillStyle = '#666'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
+      lines.forEach(line => {
+        line.forEach(o => {
+          c.strokeStyle = '#0a6b73'; c.lineWidth = 2.5;
+          const bx = o.x - 14, bw = o.ci.w + 28, bh = lineH + 20;
+          c.beginPath(); if(c.roundRect) c.roundRect(bx, y - 4, bw, bh, 12); else c.rect(bx, y - 4, bw, bh); c.stroke();
+          drawCell(o.ci, o.x, y + 6);
         });
-        c.strokeStyle = '#999'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(PM + 70, y + 40); c.lineTo(PDFW - PM, y + 40); c.stroke();
-        y += 80;
+        y += lineH + 34;
       });
-      newPage();
-      font(900, 40); c.fillStyle = '#0a6b73'; c.fillText(L.ans, PM, y + 38); y += 70;
-      ex.forEach((s, idx) => {
-        const lines = layout(s.words, s.py, PM + 70, PDFW - PM * 2 - 70, 26, 0);
-        ensure(lines.length * (lineH + 10) + 40);
-        font(700, 28); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + (opt.pinyin ? 28 : 0) + 38);
-        lines.forEach(line => { line.forEach(o => drawCell(o.ci, o.x, y)); y += lineH + 10; });
-        y += 20;
+      hr(PM + 70, PDFW - PM, y + 40, '#999', 1.5);
+      y += 80;
+    });
+    ans.push({ t: L.n2, fn: () => ex.forEach((s, idx) => { sentCells(s, idx, null, true); y += 20; }) });
+  }
+  // 3. 填空
+  if(T.fill && sents.length){
+    section(L.s3);
+    const bl = sents.map((s, i) => blankOf(s, i));
+    sents.forEach((s, idx) => {
+      sentCells(s, idx, bl[idx], false, 44 + 24);
+      font(500, 26); c.fillStyle = '#333'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
+      hr(PM, PDFW - PM, y, '#ddd', 1.5); y += 24;
+    });
+    ans.push({ t: L.n3, fn: () => sents.forEach((s, idx) => { sentCells(s, idx, bl[idx], true); y += 20; }) });
+  }
+  // 4. 翻譯（看西／英文，寫中文）
+  if(T.trans && sents.length){
+    section(L.s4);
+    sents.forEach((s, idx) => {
+      font(500, 30);
+      const tl = wrapText(s.tr || '', PDFW - PM * 2 - 70);
+      ensure(tl.length * 40 + 2 * 78 + 40);
+      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + 30);
+      font(500, 30); c.fillStyle = '#222'; tl.forEach(t => { c.fillText(t, PM + 70, y + 30); y += 40; });
+      y += 20;
+      for(let k = 0; k < 2; k++){ hr(PM + 70, PDFW - PM, y + 56, '#999', 1.5); y += 78; }
+      y += 12;
+    });
+    ans.push({ t: L.n4, fn: () => sents.forEach((s, idx) => { sentCells(s, idx, null, true); y += 20; }) });
+  }
+  // 5. 連連看（每 6 句左右一組，右邊的翻譯打亂）
+  if(T.match && sents.length >= 2){
+    section(L.s5);
+    const nch = Math.ceil(sents.length / 6), per = Math.ceil(sents.length / nch), matchAns = [];
+    for(let st = 0; st < sents.length; st += per){
+      const ch = sents.slice(st, st + per).map((s, k) => ({ s, no: st + k + 1 }));
+      const order = seededShuffle(ch.map((o, i) => i), st + 5);
+      const rows = ch.map((o, i) => {
+        font(700, 32); const lw = wrapChars(o.s.words.join(''), 480);
+        font(500, 24); const rw = wrapText(ch[order[i]].s.tr || '', 405);
+        return { lw, rw, h: Math.max(lw.length * 42, rw.length * 32) + 36 };
       });
+      ensure(rows.reduce((a, r) => a + r.h, 0) + 20);
+      rows.forEach((r, i) => {
+        const y0 = y;
+        font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(ch[i].no + '.', PM, y0 + 34);
+        font(700, 32); c.fillStyle = '#111'; r.lw.forEach((t, k) => c.fillText(t, PM + 56, y0 + 34 + k * 42));
+        c.strokeStyle = '#0a6b73'; c.lineWidth = 2.5;
+        c.beginPath(); c.arc(650, y0 + 22, 8, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.arc(680, y0 + 22, 8, 0, Math.PI * 2); c.stroke();
+        font(700, 26); c.fillStyle = '#0a6b73'; c.fillText(String.fromCharCode(65 + i), 705, y0 + 32);
+        font(500, 24); c.fillStyle = '#333'; r.rw.forEach((t, k) => c.fillText(t, 745, y0 + 32 + k * 32));
+        y += r.h;
+      });
+      y += 20;
+      const pos = []; order.forEach((li, j) => { pos[li] = j; });
+      matchAns.push(ch.map((o, i) => o.no + ' – ' + String.fromCharCode(65 + pos[i])).join('     '));
     }
+    ans.push({ t: L.n5, fn: () => matchAns.forEach(t => { ensure(50); font(700, 28); c.fillStyle = '#333'; c.fillText(t, PM + 70, y + 30); y += 50; }) });
+  }
+  // 6. 聽寫
+  if(T.dict && sents.length){
+    section(L.s6);
+    sents.forEach((s, idx) => {
+      ensure(110);
+      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + 60);
+      hr(PM + 70, PDFW - PM, y + 70, '#999', 1.5); y += 110;
+    });
+    ans.push({ t: L.n6, fn: () => sents.forEach((s, idx) => { sentCells(s, idx, null, true); y += 20; }) });
+  }
+  if(ans.length){
+    newPage();
+    font(900, 40); c.fillStyle = '#0a6b73'; c.fillText(L.ans, PM, y + 38); y += 70;
+    ans.forEach(a => { ensure(140); font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(a.t, PM, y + 28); y += 50; a.fn(); y += 20; });
   }
   pages.forEach((p, i) => {
     const g = p.getContext('2d'); g.fillStyle = '#999'; g.font = '500 22px ' + FF; g.textAlign = 'center';
     g.fillText('每天一分鐘 · 跑吧！漢字 · ' + (i + 1) + ' / ' + pages.length, PDFW / 2, PDFH - 50);
   });
+  if(opt.preview){
+    const previews = pages.map(p => { const t = document.createElement('canvas'); t.width = PDFW / 2; t.height = PDFH / 2; t.getContext('2d').drawImage(p, 0, 0, t.width, t.height); return t.toDataURL('image/jpeg', 0.7); });
+    return { previews, pages: pages.length };
+  }
   const jpegs = pages.map(p => { const bin = atob(p.toDataURL('image/jpeg', 0.85).split(',')[1]), u = new Uint8Array(bin.length); for(let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k); return u; });
   return { blob: buildPdf(jpegs, PDFW, PDFH), pages: pages.length };
 }
