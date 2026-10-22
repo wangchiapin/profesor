@@ -305,3 +305,28 @@ details.hsec[open]>summary{margin-bottom:8px}
   .card{padding:14px}
   .card>h2:first-child,.card>h3:first-child{margin:-14px -14px 10px;padding:10px 14px;font-size:1.1rem}
 }
+
+/* 句庫設定：選項放在項目右邊（手機放不下就自動換行；電腦版左右對齊） */
+.optgrid{margin:6px 0}
+.optgrid .field{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin:10px 0}
+.optgrid .field label{margin:0 0 0 4px;flex:0 0 auto}
+.optgrid .field .row{margin:0}
+@media (min-width:601px){
+  .optgrid{display:grid;grid-template-columns:max-content 1fr;gap:12px 18px;align-items:center}
+  .optgrid .field{display:contents}
+  .optgrid .field label{margin:0 0 0 4px}
+}
+
+/* 句庫編輯頁：上方分頁（設定／加句子／句庫內的句子）、「加句子」裡的小切換 */
+.etabs .pill,.etabs .pill:first-child{flex:1 1 auto;white-space:nowrap}
+.esubs{margin:4px 0 6px}
+.esubs .pill{flex:1 1 auto;white-space:nowrap}
+
+/* 手機：選項那幾行縮小字體與按鈕，盡量一行放得下 */
+@media (max-width:600px){
+  .optgrid .field{gap:4px 8px;margin:8px 0}
+  .optgrid .field label{font-size:.84rem;margin-left:2px}
+  .optgrid .field .row{gap:5px}
+  .optgrid .pill,.optgrid .pill.sm{font-size:.82rem;padding:3px 9px;min-height:34px}
+  .etabs .pill,.esubs .pill{font-size:.84rem;padding:4px 6px}
+}

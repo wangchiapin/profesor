@@ -148,6 +148,7 @@ function open(acct, slot){
     ? { slot, sid: b.sid, name: d.name || '', speed: d.speed || 'normal', script: d.script || 'trad', boss: d.boss !== false, phonetic: d.phonetic || 'pinyin',
         sentences: (d.sentences || []).filter(s => s && Array.isArray(s.trad)).map(s => Object.assign({}, s)), dirty: false }
     : { slot, sid: null, name: '', speed: 'normal', script: 'trad', boss: true, phonetic: 'pinyin', sentences: [], dirty: false };
+  ED.tab = ED.sentences.length ? 'list' : 'set'; ED.sub = 'one';   // 新句庫先看「設定」；已有句子的先看「句庫內的句子」
   FORM = null; editingIdx = -1; bulkReady = []; resetPick();
   return null;
 }
@@ -167,13 +168,22 @@ function shellHtml(){
   })[g];
   return '<div class="row"><button class="pill sm" id="ce-back">' + esc(tr('back')) + '</button></div>' +
     '<div id="ce-notice"></div>' +
-    '<div class="card"><h3>' + esc(tr('bankSettings')) + ' · ' + esc(tr('slotN', { n: ED.slot + 1 })) + '</h3>' +
+    '<div class="gtabs etabs" id="ce-tabs">' +
+      '<button class="pill sm" data-etab="set">' + esc(tr('tabSet')) + '</button>' +
+      '<button class="pill sm" data-etab="add">' + esc(tr('tabAdd')) + '</button>' +
+      '<button class="pill sm" data-etab="list" id="ce-tabList">' + esc(tr('tabList')) + '</button></div>' +
+    '<div data-epanel="set"><div class="card"><h3>' + esc(tr('bankSettings')) + ' · ' + esc(tr('slotN', { n: ED.slot + 1 })) + '</h3>' +
       '<div class="field"><label for="ce-name">' + esc(tr('bankName')) + '</label><input type="text" id="ce-name" maxlength="40" placeholder="' + esc(tr('autoNameDefault')) + '"></div>' +
+      '<div class="optgrid">' +
       '<div class="field"><label>' + esc(tr('speed')) + '</label><div id="ce-g-speed"></div></div>' +
       '<div class="field"><label>' + esc(tr('script')) + '</label><div id="ce-g-script"></div></div>' +
       '<div class="field"><label>' + esc(tr('phonetic')) + '</label><div id="ce-g-phonetic"></div></div>' +
-      '<div class="field"><label>' + esc(tr('boss')) + '</label><div id="ce-g-boss"></div></div></div>' +
-    '<div class="card"><h3>' + esc(tr('sec1')) + '</h3><p class="hint">' + esc(tr('inputHint', { n: MAX_CHARS })) + '</p>' +
+      '<div class="field"><label>' + esc(tr('boss')) + '</label><div id="ce-g-boss"></div></div></div></div></div>' +
+    '<div data-epanel="add"><div class="ctabs esubs" id="ce-subs">' +
+      '<button class="pill sm" data-esub="one">' + esc(tr('subOne')) + '</button>' +
+      '<button class="pill sm" data-esub="bulk">' + esc(tr('subBulk')) + '</button>' +
+      '<button class="pill sm" data-esub="pick">' + esc(tr('subPick')) + '</button></div>' +
+    '<div data-esubp="one"><div class="card"><h3>' + esc(tr('sec1')) + '</h3><p class="hint">' + esc(tr('inputHint', { n: MAX_CHARS })) + '</p>' +
       '<textarea id="ce-sent" rows="2" placeholder="我 喜歡 吃 蘋果"></textarea>' +
       '<div class="field"><label for="ce-esTop">' + esc(tr('esLabel')) + '</label><textarea id="ce-esTop" rows="2" placeholder="Me gusta comer manzanas."></textarea></div>' +
       '<div class="field"><label for="ce-enTop">' + esc(tr('enLabel')) + '</label><textarea id="ce-enTop" rows="2" placeholder="I like eating apples."></textarea></div>' +
@@ -188,12 +198,12 @@ function shellHtml(){
         '<input type="text" id="ce-decoy" maxlength="40" placeholder="' + esc(tr('decoyPh')) + '"' + (planOn() ? '' : ' readonly') + '>' +
         '<p class="hint">' + esc(planOn() ? tr('decoyHint', { n: MAX_DECOY, len: DECOY_LEN }) : tr('decoyLocked')) + '</p></div>' +
       '<div class="row"><button class="pill fill" id="ce-addSent"></button><button class="pill" id="ce-cancelEdit" hidden>' + esc(tr('cancelEdit')) + '</button></div>' +
-      '<div class="st" id="ce-addSt"></div></div>' +
-    '<div class="card"><h3>' + esc(tr('bulk')) + '</h3><p class="hint">' + esc(tr('bulkHint')) + '</p>' +
+      '<div class="st" id="ce-addSt"></div></div></div>' +
+    '<div data-esubp="bulk"><div class="card"><h3>' + esc(tr('bulk')) + '</h3><p class="hint">' + esc(tr('bulkHint')) + '</p>' +
       '<textarea id="ce-bulk" rows="5" placeholder="我 喜歡 吃 蘋果 | Me gusta comer manzanas. | I like eating apples."></textarea>' +
       '<div class="row"><button class="pill" id="ce-bulkCheck">' + esc(tr('bulkCheck')) + '</button><button class="pill fill" id="ce-bulkGo" hidden>' + esc(tr('bulkGo')) + '</button></div>' +
-      '<div class="st" id="ce-bulkSt"></div><div id="ce-bulkPrev"></div></div>' +
-    '<div class="card"><h3>' + esc(tr('pickTitle')) + '</h3><p class="hint">' + esc(tr('pickHint', { n: MAX_CHARS })) + '</p>' +
+      '<div class="st" id="ce-bulkSt"></div><div id="ce-bulkPrev"></div></div></div>' +
+    '<div data-esubp="pick"><div class="card"><h3>' + esc(tr('pickTitle')) + '</h3><p class="hint">' + esc(tr('pickHint', { n: MAX_CHARS })) + '</p>' +
       '<div class="row" id="ce-pickSrc"></div>' +
       '<div id="ce-pickPanel" hidden>' +
         '<div id="ce-lvlBox" hidden><select id="ce-lvlSel"></select></div>' +
@@ -201,11 +211,20 @@ function shellHtml(){
         '<input type="text" id="ce-pickFilter" style="margin-top:8px">' +
         '<div class="row"><button class="pill fill sm" id="ce-pickAdd">' + esc(tr('pickAddSel')) + '</button><button class="pill sm" id="ce-pickAll" hidden>' + esc(tr('pickAddAll')) + '</button><span class="mut" id="ce-pickCount"></span></div>' +
         '<div class="st" id="ce-pickSt"></div><div id="ce-pickList"></div>' +
-      '</div></div>' +
-    '<div class="card"><h3>' + esc(tr('inBank')) + ' <span class="mut" id="ce-counter"></span></h3><div id="ce-sents"></div></div>' +
+      '</div></div></div></div>' +
+    '<div data-epanel="list"><div class="card"><h3>' + esc(tr('inBank')) + ' <span class="mut" id="ce-counter"></span></h3><div id="ce-sents"></div></div></div>' +
     '<div class="savebar"><button class="pill fill" id="ce-save">' + esc(tr('saveBank')) + '</button>' +
       '<span class="dirty" id="ce-dirty" hidden>' + esc(tr('unsaved')) + '</span><span class="st" id="ce-saveSt"></span></div>';
 }
+// 分頁：設定｜加句子（一句一句／批次／公開句庫）｜句庫內的句子。只是把沒選到的區塊藏起來，裡面的輸入框都還在
+function applyTabs(){
+  if(!ED) return;
+  document.querySelectorAll('#ce-tabs [data-etab]').forEach(b => b.classList.toggle('on', b.dataset.etab === ED.tab));
+  document.querySelectorAll('[data-epanel]').forEach(p => { p.hidden = p.dataset.epanel !== ED.tab; });
+  document.querySelectorAll('#ce-subs [data-esub]').forEach(b => b.classList.toggle('on', b.dataset.esub === ED.sub));
+  document.querySelectorAll('[data-esubp]').forEach(p => { p.hidden = p.dataset.esubp !== ED.sub; });
+}
+function setTab(t, sub){ if(!ED) return; if(t) ED.tab = t; if(sub) ED.sub = sub; applyTabs(); }
 function renderGroups(){
   $('g-speed').innerHTML = groupHtml('speed', ED.speed, [['facil', tr('facil')], ['normal', tr('normal')], ['dificil', tr('dificil')]]);
   $('g-script').innerHTML = groupHtml('script', ED.script, [['trad', tr('trad')], ['simp', tr('simp')]]);
@@ -220,6 +239,7 @@ function renderMeta(){
   const note = $('notice'); note.textContent = '';
   if(n > FREE_SENT) note.appendChild(mk('div', 'notice', tr('over50')));
   if(ED.slot > 0 && !planOn()) note.appendChild(mk('div', 'notice', tr('expiredNotice')));
+  const tl = $('tabList'); if(tl) tl.textContent = tr('tabList') + ' (' + n + ')';
   $('addSent').textContent = editingIdx >= 0 ? tr('updSent') : tr('addSent');
   $('cancelEdit').hidden = editingIdx < 0;
   $('dirty').hidden = !ED.dirty;
@@ -282,6 +302,7 @@ function startEdit(i){
   tokenRows({ trad: s.trad || [], simp: s.simp || [], pinyin: s.pinyin || [] });
   $('es').value = s.es || ''; $('en').value = s.en || ''; $('decoy').value = (s.decoy || []).join(' ');
   $('preview').hidden = false; setSt($('addSt'), '');
+  setTab('add', 'one');
   renderMeta();
   $('preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -310,13 +331,15 @@ async function runGenerate(){
 function parseDecoys(text, tokens){
   const list = [];
   String(text || '').split(/[\s,，、]+/).filter(Boolean).forEach(w => { if(list.indexOf(w) < 0 && (tokens || []).indexOf(w) < 0) list.push(w); });
-  const bad = list.find(w => !new RegExp('^[\u3400-\u9fff]{1,' + DECOY_LEN + '}$').test(w));
-  if(bad) return { err: tr('decoyBad', { len: DECOY_LEN, w: bad }) };
+  const bad = list.find(w => !/^[\u3400-\u9fff]+$/.test(w));
+  if(bad) return { err: tr('decoyBad', { w: bad }) };
+  const long = list.find(w => w.length > DECOY_LEN);
+  if(long) return { err: tr('decoyLong', { len: DECOY_LEN, w: long }) };
   if(list.length > MAX_DECOY) return { err: tr('decoyTooMany', { n: MAX_DECOY }) };
   return { list };
 }
 async function addSentence(){
-  const st = $('addSt'), tk = collect(), es = $('es').value.trim(), en = $('en').value.trim();
+  const st = $('addSt'), tk = collect(), es = $('es').value.trim(), en = $('en').value.trim(), wasEdit = editingIdx >= 0;
   if(!tk.trad.length || !tk.simp.length || !tk.pinyin.length){ setSt(st, tr('emptyCells'), 'err'); return; }
   if(tk.trad.length !== tk.simp.length || tk.trad.length !== tk.pinyin.length){ setSt(st, tr('mismatch'), 'err'); return; }
   const han = countHan(tk.trad);
@@ -341,7 +364,7 @@ async function addSentence(){
   }
   resetForm(); markDirty(); renderSents();
   setSt($('genSt'), msg, 'ok');
-  $('sent').focus();
+  if(wasEdit) setTab('list'); else $('sent').focus();
 }
 // ---- 批次匯入 ----
 async function bulkCheck(){
@@ -587,7 +610,7 @@ function mount(el, onBack){
     $('preview').hidden = !FORM.preview;
     $('pickFilter').value = FORM.filter || '';
   }
-  renderSents();
+  renderSents(); applyTabs();
   if(FORM){ const y = FORM.scroll; setTimeout(() => window.scrollTo(0, y), 0); }
   FORM = null;
   $('back').addEventListener('click', onBack);
@@ -600,7 +623,9 @@ function mount(el, onBack){
       if(k === 'phonetic' || k === 'script') renderSents();
       return;
     }
-    const p = e.target.closest('[data-pick]'); if(p) pickSetSrc(p.dataset.pick);
+    const p = e.target.closest('[data-pick]'); if(p){ pickSetSrc(p.dataset.pick); return; }
+    const t = e.target.closest('[data-etab]'); if(t){ setTab(t.dataset.etab); window.scrollTo(0, 0); return; }
+    const u = e.target.closest('[data-esub]'); if(u) setTab('add', u.dataset.esub);
   });
   $('name').addEventListener('input', () => { ED.name = $('name').value; markDirty(); });
   $('gen').addEventListener('click', runGenerate);

@@ -89,6 +89,9 @@ const db = page => page.evaluate(t => window.__DB[t], T);
 const shot = async (page, name) => { if(SHOT) await page.screenshot({ path: path.join(SHOT, name + '.png'), fullPage: true }); };
 const vshot = async (page, name) => { if(SHOT) await page.screenshot({ path: path.join(SHOT, name + '.png') }); };
 const text = (page, sel = '#app') => page.$eval(sel, e => e.innerText);
+// 句庫編輯頁的分頁：etab(page,'add','pick') = 切到「加句子」裡的「公開句庫」；ctr = 句數（藏起來時也讀得到）
+const etab = async (page, t, sub) => { await page.click('[data-etab=' + t + ']'); if(sub) await page.click('[data-esub=' + sub + ']'); };
+const ctr = page => page.$eval('#ce-counter', e => e.textContent);
 const noOverflow = page => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1);
 let BASE;
 // 句庫編輯器的繁簡轉換、拼音函式庫：測試時從本機讀（npm i opencc-js@1.4.1 pinyin-pro@3.20.0，或用 CORRE_LIBS 指到 node_modules 所在資料夾）
@@ -569,10 +572,12 @@ server.listen(0, 'localhost', async () => {
     await shot(page, 'm1_settings');
 
     // 建立第 2 個句庫
-    await page.click('#correCard [data-act=bankedit][data-k="1"]'); await page.waitForSelector('#ce-sent');
+    await page.click('#correCard [data-act=bankedit][data-k="1"]'); await page.waitForSelector('#ce-tabs');
+    ok((await page.$eval('#ce-tabs .on', e => e.dataset.etab)) === 'set', '新句庫：先看「設定」分頁');
+    await etab(page, 'add', 'one'); await page.waitForSelector('#ce-sent');
     ok(await page.evaluate(() => location.hash) === '#/bank/1', '網址 #/bank/1');
     ok((await text(page, '.backhome')).includes('←'), '句庫編輯頁：標題變成「← 老師管理中心」可回首頁');
-    ok((await text(page)).includes('(0 / 80)'), '訂閱：每庫 80 句');
+    ok((await ctr(page)).includes('(0 / 80)'), '訂閱：每庫 80 句');
     if(LIBS){
       await page.fill('#ce-sent', '我 不 要 一 個 蘋果');
       await page.fill('#ce-esTop', 'No quiero una manzana.');
@@ -587,15 +592,17 @@ server.listen(0, 'localhost', async () => {
       await page.click('#ce-addTok'); const ins = await page.$$('#ce-tokens input');
       await ins[0].fill('蘋果'); await ins[1].fill('苹果'); await ins[2].fill('píng guǒ'); await page.fill('#ce-es', 'Manzana'); await page.click('#ce-addSent');
     }
-    ok((await text(page)).includes('(1 / 80)') && !(await page.$eval('#ce-dirty', e => e.hidden)), '加入 1 句，顯示「有尚未上傳的修改」');
+    ok((await ctr(page)).includes('(1 / 80)') && (await text(page, '#ce-tabList')).includes('(1)') && !(await page.$eval('#ce-dirty', e => e.hidden)), '加入 1 句，分頁上句數＋「有尚未上傳的修改」');
+    await etab(page, 'add', 'bulk');
     // 批次匯入（翻譯自己寫，不用網路）
     await page.fill('#ce-bulk', '你 好 | Hola | Hello\n一 二 三 四 五 六 七 八 九 十 一 二 三 四 五 六 七 八 九 十 一 | demasiado\n你 好 | Hola\n謝謝 你 | Gracias');
     if(LIBS){
       await page.click('#ce-bulkCheck'); await page.waitForSelector('#ce-bulkGo:not([hidden])');
       ok((await text(page, '#ce-bulkSt')).includes('可加入 2 句，略過 2 句'), '批次：超過字數、重複都略過', await text(page, '#ce-bulkSt'));
       await page.click('#ce-bulkGo');
-      ok((await text(page)).includes('(3 / 80)'), '批次加入 2 句');
+      ok((await ctr(page)).includes('(3 / 80)'), '批次加入 2 句');
     }
+    await etab(page, 'add', 'pick');
     // 公開題庫
     await page.click('[data-pick=pool]'); await page.waitForSelector('#ce-pickList label');
     const n0 = (await page.$$('#ce-pickList label')).length;
@@ -615,17 +622,18 @@ server.listen(0, 'localhost', async () => {
     await page.click('#ce-pickAll');
     ok((await text(page, '#ce-pickSt')).includes('已加入'), '主題包整包加入');
     // 切語言：句子和還沒加入的輸入都要留著
-    await page.fill('#ce-sent', '還沒按加入'); await page.fill('#ce-name', '第二課');
+    await etab(page, 'add', 'one'); await page.fill('#ce-sent', '還沒按加入'); await etab(page, 'set'); await page.fill('#ce-name', '第二課'); await etab(page, 'add', 'one');
     await page.click('[data-act=lang][data-l=es]'); await page.waitForSelector('#ce-sent');
     ok(await page.inputValue('#ce-sent') === '還沒按加入' && await page.inputValue('#ce-name') === '第二課', '切語言後輸入還在');
-    ok((await text(page)).includes('Frases del banco') && (await text(page)).includes('Ajustes del banco'), '編輯器跟著換西文');
+    { const tcx = await page.$eval('#app', e => e.textContent); ok(tcx.includes('Frases del banco') && tcx.includes('Ajustes del banco') && tcx.includes('Ajustes') && tcx.includes('Una a una'), '編輯器跟著換西文（含分頁）'); }
     await page.click('[data-act=lang][data-l=tc]'); await page.waitForSelector('#ce-sent');
     const cnt = await page.$eval('#ce-counter', e => e.textContent);
-    // 修改一句
-    await page.click('#ce-sents .sent:first-child .acts button:first-child'); await page.waitForSelector('#ce-preview:not([hidden])');
+    // 修改一句：從清單按 ✏️ → 跳到「加句子」；改完按「更新」→ 回到清單
+    await etab(page, 'list'); await page.click('#ce-sents .sent:first-child .acts button:first-child'); await page.waitForSelector('#ce-preview:not([hidden])');
+    ok((await page.$eval('#ce-tabs .on', e => e.dataset.etab)) === 'add' && (await page.$eval('#ce-subs .on', e => e.dataset.esub)) === 'one', '按清單的 ✏️：自動跳到「加句子」');
     await page.fill('#ce-es', '¡Cambiado!'); await page.click('#ce-addSent');
-    ok((await text(page, '#ce-sents')).includes('¡Cambiado!'), '修改一句');
-    await page.selectOption && await page.click('[data-g=speed][data-v=dificil]'); await page.click('[data-g=phonetic][data-v=zhuyin]');
+    ok((await page.$eval('#ce-tabs .on', e => e.dataset.etab)) === 'list' && (await text(page, '#ce-sents')).includes('¡Cambiado!'), '修改一句：更新後回到清單');
+    await etab(page, 'set'); await page.selectOption && await page.click('[data-g=speed][data-v=dificil]'); await page.click('[data-g=phonetic][data-v=zhuyin]');
     ok((await text(page, '#ce-sents')).includes('ㄆㄧㄥˊ') || (await text(page, '#ce-sents')).includes('ㄨㄛˇ'), '選注音：清單顯示注音');
     await page.setViewportSize({ width: 390, height: 844 });
     ok(await noOverflow(page), '編輯器在手機寬度沒有橫向捲動');
@@ -645,7 +653,7 @@ server.listen(0, 'localhost', async () => {
     ok(!!b && b.sentences.length + ' / 80' === cnt.replace(/[()]/g, '').trim() && b.sentences.every(x => Object.keys(x).sort().join() === 'en,es,pinyin,simp,trad'), '句子格式與教師頁相同');
     ok(d.teacher_banks.u1.slots['0'] === 'bank00001111', '第 1 個句庫不受影響');
     // 再改一次：連結碼不變
-    await page.fill('#ce-name', '第二課（改）'); await page.click('#ce-save'); await page.waitForTimeout(150);
+    await etab(page, 'set'); await page.fill('#ce-name', '第二課（改）'); await page.click('#ce-save'); await page.waitForTimeout(150);
     d = await db(page);
     ok(d.teacher_banks.u1.slots['1'] === sid && d.shared_banks[sid].name === '第二課（改）', '再存一次：連結碼不變，已發出的連結跟著改');
     await page.click('#ce-back'); await page.waitForSelector('#correCard');
@@ -718,8 +726,10 @@ server.listen(0, 'localhost', async () => {
     ok(t.includes('已用 1 / 1 個句庫') && (t.match(/🔒/g) || []).length === 8 && (await page.$$('#correCard [data-act=needsub]')).length === 4 && t.includes('2 / 50 句'), '免費：1 / 1，其他 4 格上鎖（各有建議訂閱按鈕），每庫 50 句');
     await page.goto(BASE + '/index.html#/bank/2'); await page.waitForSelector('.notice');
     ok((await text(page)).includes('需要訂閱') && !(await page.$('#ce-sent')), '免費老師直接開 #/bank/2：顯示需要訂閱');
-    await page.goto(BASE + '/index.html#/bank/0'); await page.waitForSelector('#ce-sent');
-    ok((await text(page)).includes('(2 / 50)'), '免費：第 1 庫上限 50');
+    await page.goto(BASE + '/index.html#/bank/0'); await page.waitForSelector('#ce-tabs');
+    ok((await page.$eval('#ce-tabs .on', e => e.dataset.etab)) === 'list', '已有句子的句庫：先看「句庫內的句子」');
+    await etab(page, 'add', 'pick');
+    ok((await ctr(page)).includes('(2 / 50)'), '免費：第 1 庫上限 50');
     await page.click('[data-pick=pack]'); await page.waitForSelector('#ce-pickList .notice');
     ok((await text(page, '#ce-pickList')).includes('主題包是訂閱版功能'), '免費：主題包上鎖');
     await page.click('[data-pick=pool]'); await page.waitForSelector('#ce-pickList label');
@@ -739,7 +749,7 @@ server.listen(0, 'localhost', async () => {
     await page.evaluate(() => { const a = __profesor.S.a; a.banks.push({ slot: 1, sid: 'bank22223333', name: '舊訂閱庫', data: { name: '舊訂閱庫', pro: true, speed: 'normal', script: 'trad', sentences: [{ trad: ['好'], simp: ['好'], pinyin: ['hǎo'], es: 'bien', en: '' }] } }); a.bslots['1'] = 'bank22223333'; });
     await page.click('[data-act=lang][data-l=tc]');
     ok((await text(page, '#correCard')).includes('學生連結已暫停'), '到期：訂閱庫顯示連結暫停');
-    await page.click('#correCard [data-act=bankedit][data-k="1"]'); await page.waitForSelector('#ce-sent');
+    await page.click('#correCard [data-act=bankedit][data-k="1"]'); await page.waitForSelector('#ce-tabs');
     ok((await text(page, '#ce-notice')).includes('訂閱已到期'), '到期：編輯器上方說明');
     await page.click('#ce-save'); await page.waitForTimeout(100);
     ok((await text(page, '#ce-saveSt')).includes('需要有效的訂閱'), '到期：訂閱庫不能存');
@@ -797,14 +807,15 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page, '.gtabs')).includes('Fichas'), '西文：Fichas');
     await page.evaluate(() => window.__profesor.go('bank', '0')); await page.waitForSelector('#ce-decoy', { state: 'attached' });
     ok(await page.$eval('#ce-decoy', i => i.readOnly) && (await text(page, '#ce-decoyBox')).includes('requieren suscripción'), '免費：干擾字欄位上鎖');
-    await page.evaluate(() => { document.getElementById('ce-preview').hidden = false; });
+    await etab(page, 'add', 'one'); await page.evaluate(() => { document.getElementById('ce-preview').hidden = false; });
     await page.click('#ce-decoy'); ok(await page.$('.modal.sub') !== null, '免費：按干擾字跳出建議訂閱'); await page.click('.modal.sub [data-m=close]');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 訂閱老師：干擾字
     const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/bank/1' });
     await page.waitForSelector('#ce-decoy', { state: 'attached' });
     ok(!(await page.$eval('#ce-decoy', i => i.readOnly)), '訂閱：干擾字可以輸入');
-    await page.evaluate(() => { document.getElementById('ce-preview').hidden = false; });
+    await etab(page, 'add', 'one'); await page.evaluate(() => { document.getElementById('ce-preview').hidden = false; });
+    { const dt = await text(page, '#ce-decoyBox'); ok(dt.includes('最多 5 個') && !dt.includes('1～4') && !dt.includes('每個 1'), '干擾字說明：只寫最多 5 個，拿掉「每個 1～4 個字」', dt); }
     await page.click('#ce-addTok'); await page.click('#ce-addTok');
     const ins = await page.$$('#ce-tokens input');
     await ins[0].fill('自己'); await ins[1].fill('自己'); await ins[2].fill('zì jǐ');
@@ -813,17 +824,20 @@ server.listen(0, 'localhost', async () => {
     await page.fill('#ce-decoy', '己 已 巳 已經 來 abc');
     await page.click('#ce-addSent'); await page.waitForTimeout(100);
     ok((await text(page, '#ce-addSt')).includes('只能是中文字') && (await text(page, '#ce-addSt')).includes('abc'), '干擾字：非中文字擋下');
+    await page.fill('#ce-decoy', '己 一二三四五');
+    await page.click('#ce-addSent'); await page.waitForTimeout(100);
+    ok((await text(page, '#ce-addSt')).includes('詞彙不得超過 4 個字') && (await text(page, '#ce-addSt')).includes('一二三四五'), '干擾字：詞彙超過 4 個字跳提醒');
     await page.fill('#ce-decoy', '己 已 巳 已經 來 自 他');
     await page.click('#ce-addSent'); await page.waitForTimeout(100);
     ok((await text(page, '#ce-addSt')).includes('最多 5 個'), '干擾字：超過 5 個擋下（句子本身的「來」不算）');
     await page.fill('#ce-decoy', '己 已 巳 來 已');
     await page.click('#ce-addSent'); await page.waitForFunction(() => document.querySelector('#ce-sents .sent'), null, { timeout: 15000 });
     const card = await text(page, '#ce-sents');
-    await page.click('#ce-sents .acts .x'); await page.$eval('#ce-decoyBox', e => e.scrollIntoView({ block: 'center' })); await vshot(page, 'n3_decoy_field');
-    await page.click('#ce-cancelEdit'); await page.$eval('#ce-sents', e => e.scrollIntoView({ block: 'center' })); await vshot(page, 'n4_decoy_card');
+    await etab(page, 'list'); await page.click('#ce-sents .acts .x'); await page.$eval('#ce-decoyBox', e => e.scrollIntoView({ block: 'center' })); await vshot(page, 'n3_decoy_field');
+    await page.click('#ce-cancelEdit'); await etab(page, 'list'); await vshot(page, 'n4_decoy_card');
     ok(card.includes('干擾字：己・已・巳'), '句子卡片顯示干擾字（去掉重複和句子本身的詞）', card);
     // 編輯會帶回干擾字
-    await page.click('#ce-sents .acts .x'); ok(await page.inputValue('#ce-decoy') === '己 已 巳', '修改句子時帶回干擾字');
+    await etab(page, 'list'); await page.click('#ce-sents .acts .x'); ok(await page.inputValue('#ce-decoy') === '己 已 巳', '修改句子時帶回干擾字');
     await page.click('#ce-cancelEdit');
     await page.click('#ce-save'); await page.waitForFunction(() => /已上傳|儲存|Guard|saved/i.test(document.getElementById('ce-saveSt').innerText), null, { timeout: 15000 });
     const d = await db(page), sh = Object.values(d.shared_banks).find(b => b.slot === 1);
@@ -1083,11 +1097,29 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19)\b/.test(ix) && (ix.match(/\?v=7-20/g) || []).length >= 11 && ix.includes('js/help.js?v=7-20') && ix.includes('js/pubbank.js?v=7-20'), 'index.html 的 css／js 都改成 ?v=7-20（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21)\b/.test(ix) && (ix.match(/\?v=7-22/g) || []).length >= 11 && ix.includes('js/help.js?v=7-22') && ix.includes('js/pubbank.js?v=7-22'), 'index.html 的 css／js 都改成 ?v=7-22（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
 
+  { // 句庫編輯頁：手機寬度的分頁列與選項列
+    for (const w of [360, 412]) {
+      const { page, ctx } = await open(browser, { hash: '#/bank/0' });
+      await page.setViewportSize({ width: w, height: 800 });
+      await page.waitForSelector('#ce-tabs');
+      await page.click('[data-etab=set]');
+      const wr = await page.$$eval('.optgrid .field', fs => fs.map(f => { const ps = [...f.querySelectorAll('.pill')].map(p => p.getBoundingClientRect()); return ps.some(p => p.top - ps[0].top > 6); }));
+      ok(wr.every(x => !x), '手機 ' + w + 'px：選項列每行都不換行');
+      const t0 = await page.$eval('#ce-tabs', e => e.getBoundingClientRect().top);
+      await page.evaluate(() => { const d = document.createElement('div'); d.style.height = '2000px'; document.getElementById('ce-tabs').parentNode.appendChild(d); window.scrollTo(0, 400); });
+      const t1 = await page.$eval('#ce-tabs', e => e.getBoundingClientRect().top);
+      ok(t1 <= 60, '手機 ' + w + 'px：分頁列捲動時固定在上方');
+      await etab(page, 'add', 'bulk');
+      ok(await page.$eval('[data-esubp=one]', e => e.hidden) && !(await page.$eval('[data-esubp=bulk]', e => e.hidden)), '切到「批次建立」只顯示批次');
+      ok(await noOverflow(page), '手機 ' + w + 'px：加句子分頁沒有橫向捲動');
+      await ctx.close();
+    }
+  }
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);
 });
