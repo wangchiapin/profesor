@@ -1004,7 +1004,7 @@ server.listen(0, 'localhost', async () => {
     ok(t.includes('🔗 班級遊戲連結') && t.includes('題目來源可選擇自訂句庫，學生成績會自動回傳至成績分頁；⚠️ 注意：如有同暱稱之學生，應告知學生修改暱稱。'), '「班級遊戲連結」標題與說明（含同暱稱提醒）', t.slice(0, 160));
     ok(!(await page.$('#linksCard .notice.alert')) && !(await page.$('#linksCard .link')) && !t.includes('學生遊戲連結'), '紅底提醒框、多包的遊戲名稱小框都拿掉了');
     ok(!(await page.$('.ghead')) && !(await text(page)).includes('開啟遊戲'), '遊戲頁沒有「開啟遊戲」那一欄');
-    { const pt = await text(page, '#pubCard'); ok(pt.includes('🔗 公開句庫連結') && pt.includes('題目來源可選擇公開句庫或主題包，可選擇不同程度；此遊戲連結不回傳學生成績，也不會進入排行榜。') && !pt.includes('要收成績，請到「班級」頁') && !pt.includes('不用建立句庫'), '「公開句庫連結」新標題與說明，複製連結下方的說明拿掉', pt.slice(0, 200)); }
+    { const pt = await text(page, '#pubCard'); ok(pt.includes('🔗 練習連結') && pt.includes('題目來源可選擇公開句庫或主題包，可選擇不同程度；此遊戲連結不回傳學生成績，也不會進入排行榜。') && !pt.includes('要收成績，請到「班級」頁') && !pt.includes('不用建立句庫'), '「公開句庫連結」新標題與說明，複製連結下方的說明拿掉', pt.slice(0, 200)); }
     for(const [g, w] of [['colores', '可選擇自訂設定，學生成績會自動回傳至成績分頁'], ['bbk', '可選擇自訂設定，學生成績會自動回傳至成績分頁'], ['dragon', '可選擇練習範圍，學生成績會自動回傳至成績分頁']]){
       await page.evaluate(g => __profesor.go('game/' + g + '/links'), g); await page.waitForSelector('#linksCard .lk');
       const lt = await text(page, '#linksCard'); ok(lt.includes('🔗 班級遊戲連結') && lt.includes(w) && lt.includes('⚠️ 注意：如有同暱稱之學生') && !(await page.$('#linksCard .link')), g + '：班級遊戲連結說明', lt.slice(0, 120)); }
@@ -1129,7 +1129,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38)\b/.test(ix) && (ix.match(/\?v=7-39/g) || []).length >= 11 && ix.includes('js/help.js?v=7-39') && ix.includes('js/pubbank.js?v=7-39'), 'index.html 的 css／js 都改成 ?v=7-39（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39)\b/.test(ix) && (ix.match(/\?v=7-40/g) || []).length >= 11 && ix.includes('js/help.js?v=7-40') && ix.includes('js/pubbank.js?v=7-40'), 'index.html 的 css／js 都改成 ?v=7-40（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1204,7 +1204,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/dragon/links' });
     await page.waitForSelector('#dragonQuick');
-    ok((await text(page, '#dragonQuick h3')).includes('公開連結'), '龍：快速連結改名「公開連結」');
+    ok((await text(page, '#dragonQuick h3')).includes('練習連結'), '龍：快速連結改名「練習連結」');
     await page.evaluate(() => { sessionStorage.setItem('dragonDev', '1'); __profesor.go('game/dragon/sheet'); }); await page.waitForSelector('#dragonWsCard');
     ok(!(await text(page, '#dragonWsCard')).includes('把主題詞彙印成詞表'), '墨龍學習單：開頭的說明拿掉了');
     ok(await page.$('[data-act=dwssize][data-k="16"]') !== null && await page.$eval('[data-act=dwsprev]', b => b.disabled), '龍學習單：有字大小、預覽鈕（沒選主題時不能按）');
