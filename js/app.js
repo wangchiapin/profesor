@@ -277,7 +277,7 @@ function srcFieldsHtml(key, v, lv, withBanks){
 // 學生連結
 function linkCardHtml(game){
   const c = clsC(), A = S.a;
-  let h = '<div class="link"><h3>' + esc(T(GAME_KEY[game])) + '</h3>';
+  let h = '<div class="lk">';
   let url = '';
   if(game === 'dragon'){
     if(!DR.ready()) return h + maintBox() + '</div>';
@@ -540,13 +540,13 @@ function pubCardHtml(){
   ensurePacks();
   S.pubSrc = srcCur(S.pubSrc || 'L:A1');
   const o = srcObj(S.pubSrc, S.pubLv), url = DATA.linkCorrePublic(o);
-  let h = '<div class="card" id="pubCard"><h3>' + esc(T('pubTitle')) + '</h3><p class="hint">' + esc(T('pubHint')) + '</p>' + srcFieldsHtml('pub', S.pubSrc, S.pubLv, false);
+  let h = '<div class="card" id="pubCard"><h3>🔗 ' + esc(T('pubTitle')) + '</h3><p class="hint">' + esc(T('pubHint')) + '</p>' + srcFieldsHtml('pub', S.pubSrc, S.pubLv, false);
   h += '<div class="url" data-url="pub">' + esc(url) + '</div><div class="row">' +
     '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
     '<button class="pill sm" data-act="pubqr" data-url="' + esc(url) + '">' + esc(T('qr')) + '</button>' +
     '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
   if(!A.plan.active) h += '<div class="notice">' + esc(T('pubFreeNote')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
-  return h + '<p class="hint">' + esc(T('pubPracticeHint')) + '</p></div>';
+  return h + '</div>';
 }
 // ---- 墨龍飛天：快速練習連結、自訂主題、練習範圍 ----
 const lockedNote = () => '<div class="notice">🔒 ' + esc(T('dragonSubOnly')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
@@ -639,8 +639,8 @@ function classPickHtml(){
     ks.map(k => '<button class="pill ' + (S.cls === k ? 'on' : '') + '" data-act="pickcls" data-slot="' + k + '">🏫 ' + esc(A.classes[k].data.name) + '</button>').join('') + '</div></div>';
 }
 function classLinksHtml(g){
-  return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T('linksHint')) + '</p>' + classPickHtml() +
-    (clsC() ? '<div class="notice alert">⚠️ ' + esc(T('linksNick')) + '</div>' + linkCardHtml(g) : '') + '</div>';
+  return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T({ corre: 'linksHintCorre', colores: 'linksHintColores', bbk: 'linksHintBbk', dragon: 'linksHintDragon' }[g])) + '</p>' + classPickHtml() +
+    (clsC() ? linkCardHtml(g) : '') + '</div>';
 }
 function gameLinksHtml(g){
   if(g === 'corre') return pubCardHtml() + classLinksHtml(g);
@@ -654,9 +654,7 @@ function gameScoresHtml(){
 function gameHtml(){
   const g = S.g;
   ensureCls();
-  let h = '<div class="ctabs gsw">' + GAME_IDS.map(x => '<button class="pill ' + (g === x ? 'on' : '') + '" data-act="togame" data-g="' + x + '" data-t="' + S.gt + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>' +
-    '<div class="card ghead"><div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small></div>' +
-    '<div class="row" style="margin:0"><a class="pill fill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">▶ ' + esc(T('openGame')) + '</a></div></div></div>';
+  let h = '<div class="ctabs gsw">' + GAME_IDS.map(x => '<button class="pill ' + (g === x ? 'on' : '') + '" data-act="togame" data-g="' + x + '" data-t="' + S.gt + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>';
   if(g === 'dragon' && !DR.ready()) return h + maintBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]], ['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]].map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
