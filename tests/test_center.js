@@ -896,7 +896,7 @@ server.listen(0, 'localhost', async () => {
   console.log('\n[O] 步驟 5-4：比比看學習單搬到中心');
   { const BBK = [{ id: 'b1', name: '身高和年齡', lv: 2, d: ['height', 'age'], t: ['pick', 'decode'], n: 5 }];
     const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/sheet' });
-    await page.waitForSelector('#bbkWsCard [data-act=bwsmake]');
+    await page.waitForSelector('#bbkWsCard [data-act=bwspreview]');
     const opts = await page.$$eval('#bbkWsCard select[data-sel=bwssel] option', o => o.map(x => x.value + ':' + x.textContent));
     ok(opts.length === 4 && opts[3] === '0:📐 身高和年齡' && opts[0].includes('第 1 關'), '範圍選單：三個關卡＋老師存的範圍', opts);
     ok(await page.evaluate(() => !window.BBK_ENGINE), '還沒按產生前不載入比比看程式');
@@ -904,25 +904,26 @@ server.listen(0, 'localhost', async () => {
     await page.selectOption('#bbkWsCard select[data-sel=bwssel]', '0');
     ok((await text(page, '#bbkWsCard')).includes('身高') && await page.$eval('#bbkWsCard [data-act=bwsn].on', b => b.dataset.k) === '5', '選範圍：顯示摘要、題數跟範圍一樣（5）');
     await page.click('#bbkWsCard [data-act=bwsphon][data-k=both]');
-    await page.click('#bbkWsCard [data-act=bwsmake]');
+    await page.click('#bbkWsCard [data-act=bwspreview]');
     await page.waitForSelector('.ws .bbkws');
     const r = await page.evaluate(() => ({ q: document.querySelectorAll('.bw-q').length, k: document.querySelectorAll('.bw-k').length, zy: document.querySelectorAll('.bbkws .ph.zy').length, py: document.querySelectorAll('.bbkws .ph:not(.zy)').length,
       name: document.querySelector('.bbkws').innerText.includes('身高和年齡'), ws: document.body.classList.contains('wsmode'),
       dims: [...document.querySelectorAll('.bw-range')].map(e => e.innerText).join(' ') }));
-    ok(r.q === 5 && r.k === 5 && r.zy > 0 && r.py > 0 && r.name && r.ws, '產生學習單：5 題＋答案頁、拼音＋注音、範圍名稱', r);
+    ok(r.q === 5 && r.k === 5 && r.zy > 0 && r.py > 0 && r.name, '產生學習單：5 題＋答案頁、拼音＋注音、範圍名稱', r);
     await page.waitForFunction(() => [...document.querySelectorAll('.bbkws img')].every(i => i.complete && i.naturalWidth > 0));
     ok(true, '人物圖從比比看讀得到');
     await shot(page, 'o2_bbk_sheet');
+    ok(await page.$('#bbkWsCard [data-act=bwsexport]') !== null && await page.$('#bbkWsCard .cws-prev .ws .bbkws') !== null, '比比看：預覽出現在下方，旁邊是「輸出PDF」');
     const q1 = await page.evaluate(() => document.querySelector('.bbkws').innerText);
-    await page.click('[data-act=bwsmake]');   // 換一張
+    await page.click('[data-act=bwspreview]');   // 換一張
     await page.waitForSelector('.ws .bbkws');
     ok(await page.evaluate(() => document.querySelectorAll('.bw-q').length) === 5, '「換一張」：還是比比看、照同一個範圍');
-    await page.click('[data-act=wsback]'); await page.waitForSelector('#bbkWsCard');
+    await page.waitForSelector('#bbkWsCard');
     await page.selectOption('#bbkWsCard select[data-sel=bwssel]', 'L3');
     await page.click('#bbkWsCard [data-act=bwssimp][data-k="1"]'); await page.click('#bbkWsCard [data-act=bwslang][data-k=zh]');
     await page.click('#bbkWsCard [data-act=bwsphon][data-k=off]'); await page.click('#bbkWsCard [data-act=bwsans]');
     await page.click('#bbkWsCard [data-act=bwsn][data-k="10"]');
-    await page.click('#bbkWsCard [data-act=bwsmake]'); await page.waitForSelector('.ws .bbkws');
+    await page.click('#bbkWsCard [data-act=bwspreview]'); await page.waitForSelector('.ws .bbkws');
     const r2 = await page.evaluate(() => ({ q: document.querySelectorAll('.bw-q').length, k: document.querySelectorAll('.bw-k').length, ph: document.querySelectorAll('.bbkws .ph').length,
       small: document.querySelectorAll('.bbkws small').length, t: document.querySelector('.bbkws').innerText }));
     ok(r2.q === 10 && r2.k === 0 && r2.ph === 0 && r2.small === 0 && r2.t.includes('第 3 关') && r2.t.includes('学习单'), '第 3 關全部、10 題、不附答案、拼音關、只有中文、簡體', { q: r2.q, k: r2.k, ph: r2.ph, small: r2.small });
@@ -930,13 +931,13 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 比比看程式載入失敗
     const { page, errors, ctx } = await open(browser, { ls: { profesorLang: 'tc' }, hash: '#/game/bbk/sheet' });
-    await page.waitForSelector('#bbkWsCard [data-act=bwsmake]');
+    await page.waitForSelector('#bbkWsCard [data-act=bwspreview]');
     await page.route('**/compara-y-adivina/**', r => r.abort());
-    await page.click('#bbkWsCard [data-act=bwsmake]');
+    await page.click('#bbkWsCard [data-act=bwspreview]');
     await page.waitForSelector('#bbkWsCard .err');
     ok((await text(page, '#bbkWsCard .err')).includes('載入失敗'), '載入失敗：顯示說明，可以再按一次');
     await page.unroute('**/compara-y-adivina/**');
-    await page.click('#bbkWsCard [data-act=bwsmake]'); await page.waitForSelector('.ws .bbkws');
+    await page.click('#bbkWsCard [data-act=bwspreview]'); await page.waitForSelector('.ws .bbkws');
     ok(true, '網路恢復後再按就成功');
     ok(errors.filter(e => !/load|ERR_FAILED/.test(e)).length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 手機自動複製失敗：跳出可以手動複製、分享的小視窗
@@ -1124,7 +1125,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30)\b/.test(ix) && (ix.match(/\?v=7-31/g) || []).length >= 11 && ix.includes('js/help.js?v=7-31') && ix.includes('js/pubbank.js?v=7-31'), 'index.html 的 css／js 都改成 ?v=7-31（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31)\b/.test(ix) && (ix.match(/\?v=7-32/g) || []).length >= 11 && ix.includes('js/help.js?v=7-32') && ix.includes('js/pubbank.js?v=7-32'), 'index.html 的 css／js 都改成 ?v=7-32（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1197,6 +1198,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('#dragonQuick');
     ok((await text(page, '#dragonQuick h3')).includes('公開連結'), '龍：快速連結改名「公開連結」');
     await page.evaluate(() => { sessionStorage.setItem('dragonDev', '1'); __profesor.go('game/dragon/sheet'); }); await page.waitForSelector('#dragonWsCard');
+    ok(!(await text(page, '#dragonWsCard')).includes('把主題詞彙印成詞表'), '墨龍學習單：開頭的說明拿掉了');
     ok(await page.$('[data-act=dwssize][data-k="1.2"]') !== null && await page.$eval('[data-act=dwsprev]', b => b.disabled), '龍學習單：有字大小、預覽鈕（沒選主題時不能按）');
     await page.click('[data-act=dwssize][data-k="1.2"]');
     ok(await page.$eval('[data-act=dwssize][data-k="1.2"]', b => b.classList.contains('on')), '龍學習單：字大小可切換');

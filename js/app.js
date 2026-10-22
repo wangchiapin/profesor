@@ -825,7 +825,7 @@ async function cwsLoadPool(){
 }
 function cwsFormHtml(){
   const A = S.a, W = S.cws || (S.cws = cwsDefaults());
-  let h = '<div class="card" id="cwsCard"><p class="hint">' + esc(T('cwsHint')) + '</p>';
+  let h = '<div class="card" id="cwsCard">';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row"><button class="pill fill" data-act="needsub">📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div></div>';
   ensurePacks();
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
@@ -894,7 +894,7 @@ function loadBbk(){
 }
 function bwsDefaults(){
   const l = I18N.getLang();
-  return { sel: 'L1', n: 10, simp: l === 'sc', lang: l === 'en' ? 'en' : 'es', phon: 'pinyin', answers: true, busy: false, msg: '' };
+  return { sel: 'L1', prev: null, n: 10, simp: l === 'sc', lang: l === 'en' ? 'en' : 'es', phon: 'pinyin', answers: true, busy: false, msg: '' };
 }
 function bwsRange(W){
   if(W.sel[0] === 'L') return { lv: +W.sel[1], dims: [], types: [], n: W.n, name: '' };
@@ -903,7 +903,7 @@ function bwsRange(W){
 }
 function bwsFormHtml(){
   const A = S.a, W = S.bws || (S.bws = bwsDefaults());
-  let h = '<div class="card" id="bbkWsCard"><p class="hint">' + esc(T('printBbk')) + '</p>';
+  let h = '<div class="card" id="bbkWsCard">';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   const mine = A.bbkReady ? A.bbk : [];
@@ -916,23 +916,36 @@ function bwsFormHtml(){
     '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('bwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('bwsphon', W.phon, [['pinyin', T('bwsPinyin')], ['zhuyin', T('bwsZhuyin')], ['both', T('bwsBoth')], ['off', T('bwsOff')]]) + '</div></div>' +
     '<div class="field"><div class="row" style="margin-top:0"><button class="pill sm chip ' + (W.answers ? 'on' : '') + '" data-act="bwsans">' + (W.answers ? '✓ ' : '') + esc(T('wsAnswersOpt')) + '</button></div></div>' +
-    '<div class="row"><button class="pill fill" data-act="bwsmake" ' + (W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? T('loading') : T('wsMake')) + '</button></div>' +
+    '<div class="row"><button class="pill" data-act="bwspreview" ' + (W.busy ? 'disabled' : '') + '>' + esc(W.busy ? T('loading') : T('cwsPreview')) + '</button>' +
+    '<button class="pill fill" data-act="bwsexport" ' + (W.busy ? 'disabled' : '') + '>📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div>' +
     (W.msg ? '<div class="err">' + esc(W.msg) + '</div>' : '');
+  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('wsPrevTitle')) + '</b><button class="pill xs" data-act="bwspreview">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill xs" data-act="bwsprevclose">' + esc(T('cwsPrevClose')) + '</button></div><div class="ws">' + W.prev + '</div></div>';
   return h + '</div>';
 }
-async function bwsMake(){
-  const W = S.bws; if(!W || !S.a.plan.active || W.busy) return;
-  const rg = bwsRange(W); if(!rg) return;
+// 做一張學習單（HTML）。失敗時把原因放進 W.msg，回傳 null
+async function bwsBuild(){
+  const W = S.bws; if(!W || !S.a.plan.active || W.busy) return null;
+  const rg = bwsRange(W); if(!rg) return null;
   W.busy = true; W.msg = ''; render();
   let E;
-  try{ E = await loadBbk(); }catch(e){ W.busy = false; W.msg = T('bwsLoadFail'); render(); return; }
+  try{ E = await loadBbk(); }catch(e){ W.busy = false; W.msg = T('bwsLoadFail'); render(); return null; }
   W.busy = false;
   const range = { lv: rg.lv, dims: rg.dims, types: rg.types, n: rg.n };
   const qs = E.makeRound(rg.lv, range);
-  if(!qs.length){ W.msg = T('bwsNoQ'); render(); return; }
-  S.wsKind = 'bbk';
-  S.wsSheet = window.BBK_WORKSHEET(E, qs, { range, title: rg.name, simp: W.simp, lang: W.lang, phon: W.phon, answers: W.answers, base: BBK_BASE });
+  if(!qs.length){ W.msg = T('bwsNoQ'); render(); return null; }
+  return window.BBK_WORKSHEET(E, qs, { range, title: rg.name, simp: W.simp, lang: W.lang, phon: W.phon, answers: W.answers, base: BBK_BASE });
+}
+async function bwsMake(){
+  const h = await bwsBuild(); if(!h) return;
+  S.wsKind = 'bbk'; S.wsSheet = h; S.bws.prev = h;
   render(); window.scrollTo(0, 0);
+}
+async function bwsPreview(){ const h = await bwsBuild(); if(h){ S.bws.prev = h; render(); } }
+// 輸出PDF：用預覽的同一張，再叫出列印
+async function bwsExport(){
+  const h = S.bws.prev || await bwsBuild(); if(!h) return;
+  S.bws.prev = h; S.wsKind = 'bbk'; S.wsSheet = h; render(); window.scrollTo(0, 0);
+  setTimeout(() => window.print(), 400);
 }
 // ---- 列印：墨龍飛天詞表學習單 PDF ----
 function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, scale: 1, prev: null, busy: false, msg: '', ok: false }; }
@@ -940,7 +953,6 @@ function dwsFormHtml(){
   let h = '<div class="card" id="dragonWsCard">';
   if(!DR.ready()) return h + maintBox() + '</div>';
   const A = S.a, W = S.dws || (S.dws = dwsDefaults());
-  h += '<p class="hint">' + esc(T('dragonWsHint')) + '</p>';
   if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row">' + lockBtn(T('wsMake')) + '</div></div>';
   const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
   const chipB = (on, label, act) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
@@ -1295,12 +1307,15 @@ const actions = {
     render(); window.scrollTo(0, 0);
   },
   wsback(){ S.wsSheet = null; S.wsKind = ''; render(); },
-  bwsn(el){ S.bws.n = +el.dataset.k; render(); },
-  bwssimp(el){ S.bws.simp = el.dataset.k === '1'; render(); },
-  bwslang(el){ S.bws.lang = el.dataset.k; render(); },
-  bwsphon(el){ S.bws.phon = el.dataset.k; render(); },
-  bwsans(){ S.bws.answers = !S.bws.answers; render(); },
+  bwsn(el){ S.bws.n = +el.dataset.k; S.bws.prev = null; render(); },
+  bwssimp(el){ S.bws.simp = el.dataset.k === '1'; S.bws.prev = null; render(); },
+  bwslang(el){ S.bws.lang = el.dataset.k; S.bws.prev = null; render(); },
+  bwsphon(el){ S.bws.phon = el.dataset.k; S.bws.prev = null; render(); },
+  bwsans(){ S.bws.answers = !S.bws.answers; S.bws.prev = null; render(); },
   bwsmake(){ return bwsMake(); },
+  bwspreview(){ return bwsPreview(); },
+  bwsexport(){ return bwsExport(); },
+  bwsprevclose(){ S.bws.prev = null; render(); },
   wsprint(){ window.print(); },
   colmake(){ return run(async () => {
     try{
@@ -1450,7 +1465,7 @@ document.addEventListener('change', e => {
   if(s.dataset.sel === 'setk'){ S.setK = s.value; S.sel = null; }
   if(s.dataset.sel === 'wscfg'){ S.ws.cfg = s.value; S.ws.prev = null; }
   if(s.dataset.sel === 'bwssel'){
-    S.bws.sel = s.value; S.bws.msg = '';
+    S.bws.sel = s.value; S.bws.msg = ''; S.bws.prev = null;
     const it = s.value[0] !== 'L' && S.a.bbk[+s.value]; if(it && it.n) S.bws.n = [5, 10, 15, 20].indexOf(it.n) >= 0 ? it.n : S.bws.n;   // 題數預設跟範圍一樣
   }
   if(s.dataset.sel === 'cwssrc'){ S.cws.src = s.value; S.cws.lv = ''; cwsLoadPool(); return; }
