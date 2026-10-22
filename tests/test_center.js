@@ -542,6 +542,9 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=wspreview]'); await page.waitForSelector('.ws');
     info = await page.evaluate(() => ({ blank: document.querySelectorAll('.ws-cell.blank').length, key: !!document.querySelector('.ws-key'), t: document.querySelector('.ws').innerText }));
     ok(info.blank === 16 && !info.key && info.t.includes('色数消消乐') && info.t.includes('涂上') && !info.t.includes('Respuestas'), '著色版：16 格空白、簡體、無答案頁、無輔助語言', info.t.slice(0, 80));
+    await page.click('[data-act=wsphon][data-k=both]'); await page.click('[data-act=wspreview]'); await page.waitForSelector('#wsCard .pgs ruby', { timeout: 6000 });
+    info = await page.evaluate(() => ({ n: document.querySelectorAll('#wsCard .pgs rt').length, t: [...document.querySelectorAll('#wsCard .pgs rt')].slice(0, 6).map(e => e.textContent).join('|') }));
+    ok(info.n > 0 && /[ˉˊˇˋ˙ㄅ-ㄩ]/.test(info.t) && /[a-zü]/.test(info.t), '色數學習單：選「兩個都顯示」→ 數字旁有拼音＋注音', info);
     await shot(page, 'l3_color');
     if(SHOT) await page.pdf({ path: path.join(SHOT, 'l3_color.pdf'), format: 'A4', printBackground: true });
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
@@ -667,7 +670,7 @@ server.listen(0, 'localhost', async () => {
     // 列印：學習單 PDF
     await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForSelector('#cwsCard');
     await page.selectOption('[data-sel=cwssrc]', { label: '📚 第二課（改）' }); await page.waitForSelector('[data-act=cwsmake]:not([disabled])');
-    ok(await page.$eval('[data-act=cwszy]', b => b.classList.contains('on')) && !(await page.$eval('[data-act=cwspy]', b => b.classList.contains('on'))), '學習單預設跟句庫一樣用注音');
+    ok(await page.$eval('[data-act=cwsphon][data-k=zhuyin]', b => b.classList.contains('on')) && !(await page.$eval('[data-act=cwsphon][data-k=pinyin]', b => b.classList.contains('on'))), '學習單預設跟句庫一樣用注音');
     const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=cwsmake]')]);
     const pdf = fs.readFileSync(await dl.path());
     ok(pdf.slice(0, 5).toString() === '%PDF-' && pdf.length > 20000 && /\/Count [2-9]/.test(pdf.toString('latin1')), '下載學習單 PDF（含排列句子與答案頁）', pdf.length);   // 檔名有中文時測試用瀏覽器會改叫 download，真的瀏覽器不會
@@ -1126,7 +1129,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33)\b/.test(ix) && (ix.match(/\?v=7-34/g) || []).length >= 11 && ix.includes('js/help.js?v=7-34') && ix.includes('js/pubbank.js?v=7-34'), 'index.html 的 css／js 都改成 ?v=7-34（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34)\b/.test(ix) && (ix.match(/\?v=7-35/g) || []).length >= 11 && ix.includes('js/help.js?v=7-35') && ix.includes('js/pubbank.js?v=7-35'), 'index.html 的 css／js 都改成 ?v=7-35（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1207,6 +1210,17 @@ server.listen(0, 'localhost', async () => {
     ok(await page.$('[data-act=dwssize][data-k="16"]') !== null && await page.$eval('[data-act=dwsprev]', b => b.disabled), '龍學習單：有字大小、預覽鈕（沒選主題時不能按）');
     await page.click('[data-act=dwssize][data-k="16"]');
     ok(await page.$eval('[data-act=dwssize][data-k="16"]', b => b.classList.contains('on')), '龍學習單：字大小可切換');
+    await page.evaluate(() => __profesor.go('game/dragon/content')); await page.waitForSelector('#dragonCard');
+    ok((await text(page, '.gtabs')).includes('自訂字庫') && (await text(page, '.gtabs')).includes('練習範圍'), '龍：分頁「自訂字庫」「練習範圍」各自一頁');
+    ok((await text(page, '#dragonCard h3')).includes('自訂字庫') && !(await text(page, '#dragonCard')).includes('練習範圍'), '龍：自訂字庫頁不再疊練習範圍');
+    await page.click('[data-act=dgnew]');
+    ok(await page.$('.etabs [data-act=dgcancel]') !== null && (await text(page, '.etabs')).includes('基本設定') && (await text(page, '.etabs')).includes('字詞表'), '龍：新增字庫＝整頁編輯，上面有 回上一頁｜基本設定｜字詞表');
+    await page.click('.etabs [data-act=dgcancel]'); await page.waitForSelector('[data-act=dgnew]');
+    await page.evaluate(() => __profesor.go('game/dragon/ranges')); await page.waitForSelector('#dragonSets');
+    await page.click('[data-act=dsnew]');
+    ok(await page.$('.etabs [data-act=dscancel]') !== null && (await text(page, '.etabs')).includes('要練的主題'), '龍：練習範圍編輯＝回上一頁｜基本設定｜要練的主題');
+    await page.click('.etabs [data-act=edtab][data-k=more]');
+    ok(await page.$('#dragonSets [data-act=dsb]') !== null, '龍：「要練的主題」分頁可勾主題');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   await browser.close(); server.close();

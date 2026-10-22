@@ -8,7 +8,7 @@ const GAMES = ['corre', 'colores', 'bbk'];
 const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon' };
 const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc' };
 const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon'];
-const GAME_TABS = ['content', 'links', 'scores', 'sheet', 'help'];
+const GAME_TABS = ['content', 'ranges', 'links', 'scores', 'sheet', 'help'];
 const DR = window.DRAGON;
 const bookGames = () => DR.ready() ? GAMES.concat(['dragon']) : GAMES;     // 成績冊的遊戲分頁（墨龍正式開放前不顯示）
 const maintBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>：' + esc(T('maintNote')) + '</div>';
@@ -119,7 +119,8 @@ async function onRoute(){
   if(S.route === 'game'){
     if(prevG !== r.g){ S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
     S.g = r.g; S.gt = r.gt; S.game = r.g;
-    if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = ''; }
+    if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonMsg = ''; }
+    if(S.gt !== 'ranges') S.dragonSetEdit = null;
     if(S.gt !== 'sheet') S.wsSheet = null;
     render(); window.scrollTo(0, 0);
     if(S.gt === 'scores' && S.acct === 'ok' && clsC()) await loadBook();
@@ -558,24 +559,30 @@ function pubCardHtml(){
 // ---- 墨龍飛天：快速練習連結、自訂主題、練習範圍 ----
 const lockedNote = () => '<div class="notice">🔒 ' + esc(T('dragonSubOnly')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
 function dragonThemeEditorHtml(){
-  const E = S.dragonEdit, dr = E.dr;
-  let h = '<div class="editor"><div class="field"><label>' + esc(T('dragonThemeName')) + '</label><input type="text" id="dgName" maxlength="12" placeholder="' + esc(T('dragonThemeNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
-    '<div class="field"><label>' + esc(T('dragonWordsLabel')) + '</label><textarea id="dgText" rows="8" placeholder="' + esc(T('dragonWordsPh')) + '">' + esc(dr.text) + '</textarea><p class="hint">' + esc(T('dragonTextHint', { min: DR.MIN_W, max: DR.MAX_W })) + '</p></div>' +
-    '<div class="row"><button class="pill sm" data-act="dggen">⚙️ ' + esc(T(dr.rows ? 'dragonRegen' : 'dragonGen')) + '</button></div>';
-  if(dr.rows){
+  const E = S.dragonEdit, dr = E.dr, tab = E.tab || 'basic';
+  let h = '<div class="gtabs etabs"><button class="pill sm" data-act="dgcancel">' + esc(CORRE.tr('back')) + '</button>' +
+    [['basic', 'edTabBasic'], ['more', 'edTabWords']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="dg" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
+  if(tab === 'basic'){
+    h += '<div class="field"><label>' + esc(T('dragonThemeName')) + '</label><input type="text" id="dgName" maxlength="12" placeholder="' + esc(T('dragonThemeNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
+      '<div class="field"><label>' + esc(T('dragonWordsLabel')) + '</label><textarea id="dgText" rows="8" placeholder="' + esc(T('dragonWordsPh')) + '">' + esc(dr.text) + '</textarea><p class="hint">' + esc(T('dragonTextHint', { min: DR.MIN_W, max: DR.MAX_W })) + '</p></div>' +
+      '<div class="row"><button class="pill sm" data-act="dggen">⚙️ ' + esc(T(dr.rows ? 'dragonRegen' : 'dragonGen')) + '</button></div>';
+  }else if(dr.rows){
     h += '<p class="hint">' + esc(T('dragonRowsHint')) + '</p><div class="tablewrap"><table class="t nw dgt"><tr><th>' + [T('dragonColTrad'), T('dragonColSimp'), T('dragonColPy'), 'ES', 'EN', ''].map(esc).join('</th><th>') + '</th></tr>' +
       dr.rows.map((r, i) => '<tr><td><b>' + esc(r.t) + '</b></td>' + ['s', 'p', 'es', 'en'].map(f => '<td><input type="text" data-dgr="' + i + '" data-f="' + f + '" maxlength="60" value="' + esc(r[f]) + '"></td>').join('') +
         '<td><button class="x" data-act="dgrowdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></td></tr>').join('') + '</table></div>';
-  }
+  }else h += '<p class="hint">' + esc(T('dragonNoRows')) + '</p>';
   if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
   return h + '<div class="row"><button class="pill fill sm" data-act="dgsave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dgcancel">' + esc(T('cancel')) + '</button></div></div>';
 }
 function dragonSetEditorHtml(){
-  const E = S.dragonSetEdit, dr = E.dr, D = S.a.dragon;
-  let h = '<div class="editor"><div class="field"><label>' + esc(T('dragonSetName')) + '</label><input type="text" id="dsName" maxlength="40" placeholder="' + esc(T('dragonSetNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
-    '<div class="field"><label>' + esc(T('dragonSetPick')) + '</label><div class="row" style="margin-top:0">' +
-    DR.IDS.map(id => chip(dr.builtin.indexOf(id) >= 0, DR.builtinName(id), 'dsb', id)).join('') +
-    D.themes.map(t => chip(dr.custom.indexOf(t.id) >= 0, '★ ' + t.name, 'dsc', t.id)).join('') + '</div></div>';
+  const E = S.dragonSetEdit, dr = E.dr, D = S.a.dragon, tab = E.tab || 'basic';
+  let h = '<div class="gtabs etabs"><button class="pill sm" data-act="dscancel">' + esc(CORRE.tr('back')) + '</button>' +
+    [['basic', 'edTabBasic'], ['more', 'edTabThemes']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="ds" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
+  h += tab === 'basic'
+    ? '<div class="field"><label>' + esc(T('dragonSetName')) + '</label><input type="text" id="dsName" maxlength="40" placeholder="' + esc(T('dragonSetNamePh')) + '" value="' + esc(dr.name) + '"></div>'
+    : '<div class="field"><label>' + esc(T('dragonSetPick')) + '</label><div class="row" style="margin-top:0">' +
+      DR.IDS.map(id => chip(dr.builtin.indexOf(id) >= 0, DR.builtinName(id), 'dsb', id)).join('') +
+      D.themes.map(t => chip(dr.custom.indexOf(t.id) >= 0, '★ ' + t.name, 'dsc', t.id)).join('') + '</div></div>';
   if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
   return h + '<div class="row"><button class="pill fill sm" data-act="dssave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dscancel">' + esc(T('cancel')) + '</button></div></div>';
 }
@@ -594,36 +601,39 @@ function dragonQuickHtml(){
   return h + '</div>';
 }
 function dragonCardHtml(){
-  let h = '<div class="card" id="dragonCard">' + phHead('🐉 ' + T('dragonTitle'));
-  if(!DR.ready()) return h + maintBox() + '</div>';
-  const A = S.a, P = A.plan, D = A.dragon, E = S.dragonEdit, SE = S.dragonSetEdit;
-  if(!A.dragonReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-  // 2. 自訂主題（訂閱）
-  h += '<h4 class="ph"><span>' + esc(T('dragonCustomTitle')) + '</span>' + (P.active ? '<small class="cq">' + esc(T('bbkQuota', { n: D.themes.length, max: DR.MAX_T })) + '</small>' : '') + '</h4>';
-  if(!P.active){ h += lockedNote(); }
-  else{
-    D.themes.forEach((t, i) => {
-      if(E && E.i === i){ h += dragonThemeEditorHtml(); return; }
-      h += '<div class="setrow"><div><b>★ ' + esc(t.name) + '</b><small>' + esc(T('dragonWordCount', { n: t.words.length })) + '</small></div><div class="row">' +
-        '<button class="pill sm" data-act="dgedit" data-k="' + i + '">' + esc(T('edit')) + '</button><button class="pill sm" data-act="dgdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
-    });
-    if(E && E.i < 0) h += dragonThemeEditorHtml();
-    else if(!E && D.themes.length < DR.MAX_T) h += '<div class="row"><button class="pill fill sm" data-act="dgnew">＋ ' + esc(T('dragonThemeNew')) + '</button></div>';
-    else if(!E) h += '<div class="notice">' + esc(T('dragonThemeFull')) + '</div>';
-    // 3. 練習範圍（訂閱）：選好主題，產生固定的連結，也能放進班級連結
-    h += '<h4 class="ph"><span>' + esc(T('dragonSetsTitle')) + '</span><small class="cq">' + esc(T('bbkQuota', { n: D.sets.length, max: DR.MAX_SETS })) + '</small></h4>';
-    D.sets.forEach((it, i) => {
-      if(SE && SE.i === i){ h += dragonSetEditorHtml(); return; }
-      h += '<div class="setrow"><div><b>🐉 ' + esc(it.name) + '</b><small>' + esc(DR.setSummary(it, D.themes)) + '</small></div><div class="row">' +
-        '<button class="pill sm" data-act="dsedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
-        (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkDragonSet(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '<button class="pill sm" data-act="dsplay" data-k="' + i + '">' + esc(T('test')) + '</button>') +
-        '<button class="pill sm" data-act="dsdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
-    });
-    if(SE && SE.i < 0) h += dragonSetEditorHtml();
-    else if(!SE && D.sets.length < DR.MAX_SETS) h += '<div class="row"><button class="pill fill sm" data-act="dsnew">＋ ' + esc(T('dragonSetNew')) + '</button></div>';
-    else if(!SE) h += '<div class="notice">' + esc(T('bbkFullPro')) + '</div>';
-  }
-  if(S.dragonMsg && !E && !SE) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
+  const P = S.a.plan;
+  if(!DR.ready()) return '<div class="card" id="dragonCard">' + phHead('🐉 ' + T('dragonTitle')) + maintBox() + '</div>';
+  if(!S.a.dragonReady) return '<div class="card" id="dragonCard">' + phHead('🐉 ' + T('dragonTitle')) + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  const D = S.a.dragon, E = S.dragonEdit;
+  if(!P.active) return '<div class="card" id="dragonCard">' + phHead('🐉 ' + T('dragonTitle')) + lockedNote() + '</div>';
+  if(E) return '<div class="card" id="dragonCard">' + dragonThemeEditorHtml() + '</div>';
+  let h = '<div class="card" id="dragonCard">' + phHead('🐉 ' + T('dragonTitle'), T('bbkQuota', { n: D.themes.length, max: DR.MAX_T }));
+  D.themes.forEach((t, i) => {
+    h += '<div class="setrow"><div><b>★ ' + esc(t.name) + '</b><small>' + esc(T('dragonWordCount', { n: t.words.length })) + '</small></div><div class="row">' +
+      '<button class="pill sm" data-act="dgedit" data-k="' + i + '">' + esc(T('edit')) + '</button><button class="pill sm" data-act="dgdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+  });
+  if(D.themes.length < DR.MAX_T) h += '<div class="row"><button class="pill fill sm" data-act="dgnew">＋ ' + esc(T('dragonThemeNew')) + '</button></div>';
+  else h += '<div class="notice">' + esc(T('dragonThemeFull')) + '</div>';
+  if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
+  return h + '</div>';
+}
+function dragonRangesHtml(){
+  const P = S.a.plan, T0 = T('dragonSetsTitle');
+  if(!DR.ready()) return '<div class="card" id="dragonSets">' + phHead('🎯 ' + T0) + maintBox() + '</div>';
+  if(!S.a.dragonReady) return '<div class="card" id="dragonSets">' + phHead('🎯 ' + T0) + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  const D = S.a.dragon, SE = S.dragonSetEdit;
+  if(!P.active) return '<div class="card" id="dragonSets">' + phHead('🎯 ' + T0) + lockedNote() + '</div>';
+  if(SE) return '<div class="card" id="dragonSets">' + dragonSetEditorHtml() + '</div>';
+  let h = '<div class="card" id="dragonSets">' + phHead('🎯 ' + T0, T('bbkQuota', { n: D.sets.length, max: DR.MAX_SETS }));
+  D.sets.forEach((it, i) => {
+    h += '<div class="setrow"><div><b>🐉 ' + esc(it.name) + '</b><small>' + esc(DR.setSummary(it, D.themes)) + '</small></div><div class="row">' +
+      '<button class="pill sm" data-act="dsedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
+      (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkDragonSet(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '<button class="pill sm" data-act="dsplay" data-k="' + i + '">' + esc(T('test')) + '</button>') +
+      '<button class="pill sm" data-act="dsdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+  });
+  if(D.sets.length < DR.MAX_SETS) h += '<div class="row"><button class="pill fill sm" data-act="dsnew">＋ ' + esc(T('dragonSetNew')) + '</button></div>';
+  else h += '<div class="notice">' + esc(T('bbkFullPro')) + '</div>';
+  if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
   return h + '<p class="hint">' + esc(T('dragonPracticeHint')) + '</p></div>';
 }
 function bankRouteHtml(){
@@ -705,9 +715,10 @@ function gameHtml(){
   ensureCls();
   let h = '<div class="ctabs gsw">' + GAME_IDS.map(x => '<button class="pill ' + (g === x ? 'on' : '') + '" data-act="togame" data-g="' + x + '" data-t="' + S.gt + '">' + esc(T(GAME_KEY[x])) + '</button>').join('') + '</div>';
   if(g === 'dragon' && !DR.ready()) return h + maintBox();
-  h += '<div class="gtabs">' + [['content', GT_CONTENT[g]], ['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]].map(t =>
+  h += '<div class="gtabs">' + [['content', GT_CONTENT[g]]].concat(g === 'dragon' ? [['ranges', 'gtRangesDragon']] : []).concat([['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]]).map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
   if(S.gt === 'content') return h + (g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
+  if(S.gt === 'ranges') return h + (g === 'dragon' ? dragonRangesHtml() : '');
   if(S.gt === 'links') return h + gameLinksHtml(g);
   if(S.gt === 'scores') return h + gameScoresHtml();
   if(S.gt === 'sheet') return h + (g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
@@ -733,7 +744,7 @@ function helpHtml(game){
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
   const l = I18N.getLang();
-  return { cfg: '', kind: 'listen', size: 14, read: false, count: 10, legend: true, simp: l === 'sc', help: l === 'en' ? 'en' : 'es', answers: true };
+  return { cfg: '', kind: 'listen', size: 14, read: false, count: 10, legend: true, simp: l === 'sc', help: l === 'en' ? 'en' : 'es', phon: 'off', answers: true };
 }
 // 學習單選的設定：預設色（p:…）或自訂設定
 function wsCfgOf(W){
@@ -758,7 +769,8 @@ function wsFormHtml(){
       '<div class="field"><label>' + esc(T('wsCount')) + '</label><div class="row" style="margin-top:0">' + pills('wscount', W.count, [[5, '5'], [10, '10'], [15, '15'], [20, '20']]) + '</div></div>';
   }
   h += '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('wssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
-    '<div class="field"><label>' + esc(T('wsHelp')) + '</label><div class="row" style="margin-top:0">' + pills('wshelp', W.help, [['none', T('wsNone')], ['es', 'Español'], ['en', 'English']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('wshelp', W.help, [['es', '中文＋Español'], ['en', '中文＋English'], ['none', T('bwsOnlyZh')]]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('wsphon', W.phon, PHON_LIST()) + '</div></div>' +
     '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('wssize', W.size, [[14, '14'], [16, '16'], [21, '21']]) + '</div></div>' +
     '<div class="field"><div class="row" style="margin-top:0">' + (W.kind === 'listen' ? '<button class="pill sm chip ' + (W.legend ? 'on' : '') + '" data-act="wslegend">' + (W.legend ? '✓ ' : '') + esc(T('wsLegendOpt')) + '</button>' : '') +
     '<button class="pill sm chip ' + (W.answers ? 'on' : '') + '" data-act="wsans">' + (W.answers ? '✓ ' : '') + esc(T('wsAnswersOpt')) + '</button></div></div>' +
@@ -766,6 +778,14 @@ function wsFormHtml(){
     '<button class="pill fill" data-act="wsexport" ' + (W.cfg === '' ? 'disabled' : '') + '>📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div>';
   if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('wsPrevTitle')) + '</b><button class="pill xs" data-act="wspreview">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill xs" data-act="wsprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' + pagedHtml(W.prev, W.size) + '</div>';
   return h + '</div>';
+}
+// 色數學習單的拼音：數字和顏色只會用到這十幾個字，一個字一個字從跑吧的拼音資料庫（台灣讀音）查
+let COL_RD = null;
+async function colReadings(){
+  if(COL_RD) return COL_RD;
+  const chars = {}; ('零一二兩两三四五六七八九十百千色' + Object.keys(COL.COLORS).map(k => COL.COLORS[k].zh.join('')).join('')).split('').forEach(ch => { chars[ch] = 1; });
+  const m = {}; for(const ch of Object.keys(chars)){ const p = await window.CORRE.pinyinOf(ch); if(p) m[ch] = p; }
+  return (COL_RD = m);
 }
 function wsSheetHtml(){
   return '<div class="ws-bar noprint"><div class="row"><button class="pill sm" data-act="wsback">← ' + esc(T('back')) + '</button>' +
@@ -780,6 +800,9 @@ function cwsDefaults(){
     types: { read: true, order: true, fill: false, trans: false, match: false, dict: false },
     lang: I18N.getLang() === 'en' ? 'en' : 'es', pinyin: true, zhuyin: false, size: 14, busy: false, msg: '', ok: false, prev: null };
 }
+const phonOf = W => W.pinyin && W.zhuyin ? 'both' : W.pinyin ? 'pinyin' : W.zhuyin ? 'zhuyin' : 'off';
+const phonSet = (W, k) => { W.pinyin = k === 'pinyin' || k === 'both'; W.zhuyin = k === 'zhuyin' || k === 'both'; };
+const PHON_LIST = () => [['pinyin', T('bwsPinyin')], ['zhuyin', T('bwsZhuyin')], ['both', T('bwsBoth')], ['off', T('bwsOff')]];
 const cwsTouch = () => { const W = S.cws; W.msg = ''; W.prev = null; };
 const cwsDraw = (len, n) => { const a = []; for(let i = 0; i < len; i++) a.push(i); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a.slice(0, n); };
 // 目前會放進學習單的句子（在句子來源裡的位置）
@@ -868,8 +891,8 @@ function cwsFormHtml(){
     h += '</div>';
   }
   // 翻譯語言、拼音／注音
-  h += '<div class="field"><label>' + esc(CORRE.tr('pdfLang')) + '</label><div class="row" style="margin-top:0">' + pills('cwslang', W.lang, [['es', 'Español'], ['en', 'English']]) + '</div></div>' +
-    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'cwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'cwszy') + '</div></div>' +
+  h += '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('cwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('cwsphon', phonOf(W), PHON_LIST()) + '</div></div>' +
     '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('cwssize', W.size, [[14, '14'], [16, '16'], [21, '21']]) + '</div></div>';
   const can = pool && chosen.length && anyType && !W.busy;
   h += '<div class="row"><button class="pill" data-act="cwsprev" ' + (can ? '' : 'disabled') + '>' + esc(T('cwsPreview')) + '</button>' +
@@ -962,9 +985,9 @@ function dwsFormHtml(){
     DR.IDS.map(id => chip(W.sel.indexOf(id) >= 0, DR.builtinName(id), 'dwst', id)).join('') + A.dragon.themes.map(t => chip(W.sel.indexOf(t.id) >= 0, '★ ' + t.name, 'dwst', t.id)).join('') + '</div></div>' +
     '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('dwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('dwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('dwsphon', phonOf(W), PHON_LIST()) + '</div></div>' +
     '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('dwssize', W.size, [[14, '14'], [16, '16'], [18, '18']]) + '</div></div>' +
-    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'dwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'dwszy') + '</div>' +
-    '<div class="row">' + (W.lang === 'zh' ? '' : chipB(W.match, T('dragonWsMatch'), 'dwsmatch') + (W.match ? chipB(W.answers, T('wsAnswersOpt'), 'dwsans') : '')) + '</div></div>' +
+    '<div class="field"><div class="row" style="margin-top:0">' + (W.lang === 'zh' ? '' : chipB(W.match, T('dragonWsMatch'), 'dwsmatch') + (W.match ? chipB(W.answers, T('wsAnswersOpt'), 'dwsans') : '')) + '</div></div>' +
     '<div class="row"><button class="pill" data-act="dwsprev" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>' + esc(T('cwsPreview')) + '</button>' +
     '<button class="pill fill" data-act="dwsmake" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
     (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
@@ -1207,8 +1230,7 @@ const actions = {
   }); },
   // ---- 跑吧學習單 ----
   cwslang(el){ S.cws.lang = el.dataset.k; cwsTouch(); render(); },
-  cwspy(){ S.cws.pinyin = !S.cws.pinyin; cwsTouch(); render(); },
-  cwszy(){ S.cws.zhuyin = !S.cws.zhuyin; cwsTouch(); render(); },
+  cwsphon(el){ phonSet(S.cws, el.dataset.k); cwsTouch(); render(); },
   cwssize(el){ S.cws.size = +el.dataset.k; cwsTouch(); render(); },
   cwsscript(el){ S.cws.script = el.dataset.k; cwsTouch(); render(); },
   cwstype(el){ const t = S.cws.types; t[el.dataset.k] = !t[el.dataset.k]; cwsTouch(); render(); },
@@ -1279,7 +1301,7 @@ const actions = {
     catch(e){ console.error(e); S.bbkMsg = err(e); }
     render();
   }); },
-  edtab(el){ const E = el.dataset.e === 'col' ? S.colEdit : S.bbkEdit; if(E){ E.tab = el.dataset.k; render(); } },
+  edtab(el){ const E = { col: S.colEdit, dg: S.dragonEdit, ds: S.dragonSetEdit }[el.dataset.e] || S.bbkEdit; if(E){ E.tab = el.dataset.k; render(); } },
   // 試玩：還沒有連結時，先開一個空白分頁（避免被擋），建立連結後再帶過去
   bbkplay(el){ const w = window.open('', '_blank'); return run(async () => {
     const i = +el.dataset.k;
@@ -1360,24 +1382,27 @@ const actions = {
   wscount(el){ S.ws.count = +el.dataset.k; S.ws.prev = null; render(); },
   wslegend(){ S.ws.legend = !S.ws.legend; S.ws.prev = null; render(); },
   wssimp(el){ S.ws.simp = el.dataset.k === '1'; S.ws.prev = null; render(); },
+  wsphon(el){ S.ws.phon = el.dataset.k; S.ws.prev = null; render(); },
   wshelp(el){ S.ws.help = el.dataset.k; S.ws.prev = null; render(); },
   wsans(){ S.ws.answers = !S.ws.answers; S.ws.prev = null; render(); },
-  wsBuild(){
+  async wsBuild(){
     const W = S.ws, raw = wsCfgOf(W); if(!raw || !S.a.plan.active) return null;
     const c = COL.normalizeCfg(raw); if(!c) return null;
-    return COL.worksheet(c, Object.assign({}, W, { title: c.name }), COL.makeBoard(c), k => I18N.D[k]);
+    let rd = null;
+    if(W.phon && W.phon !== 'off'){ try{ rd = await colReadings(); }catch(e){ console.error(e); W.phon = 'off'; } }
+    return COL.worksheet(c, Object.assign({}, W, { title: c.name, rd }), COL.makeBoard(c), k => I18N.D[k]);
   },
-  wspreview(){ const h = actions.wsBuild(); if(h){ S.ws.prev = h; render(); } },
+  async wspreview(){ const h = await actions.wsBuild(); if(h){ S.ws.prev = h; render(); } },
   wsprevclose(){ S.ws.prev = null; render(); },
   wssize(el){ S.ws.size = +el.dataset.k; render(); },
   // 輸出PDF：用預覽的同一張（看到什麼印什麼），沒預覽就現做一張，再叫出列印
-  wsexport(){
-    const h = S.ws.prev || actions.wsBuild(); if(!h) return;
+  async wsexport(){
+    const h = S.ws.prev || await actions.wsBuild(); if(!h) return;
     S.ws.prev = h; S.wsKind = 'colores'; S.wsSheet = h; render(); window.scrollTo(0, 0);
     setTimeout(() => window.print(), 400);
   },
-  wsmake(){
-    const h = actions.wsBuild(); if(!h) return;
+  async wsmake(){
+    const h = await actions.wsBuild(); if(!h) return;
     S.wsKind = 'colores'; S.wsSheet = h; S.ws.prev = h;
     render(); window.scrollTo(0, 0);
   },
@@ -1402,8 +1427,8 @@ const actions = {
   // ---- 墨龍：快速連結、自訂主題、範圍、學習單 ----
   dqk(el){ toggleIn(S.dragonQuick, el.dataset.k); render(); },
   dragonqr(el){ qrModal(qrCanvas(el.dataset.url), T('gameDragon'), 'dragon-qr.png', el.dataset.url); },
-  dgnew(){ if(S.a.dragon.themes.length >= DR.MAX_T) return; S.dragonEdit = { i: -1, dr: DR.draftFrom(null) }; S.dragonMsg = ''; render(); const el = document.getElementById('dgName'); if(el) el.focus(); },
-  dgedit(el){ const t = S.a.dragon.themes[+el.dataset.k]; S.dragonEdit = { i: +el.dataset.k, dr: DR.draftFrom(t) }; S.dragonMsg = ''; render(); },
+  dgnew(){ if(S.a.dragon.themes.length >= DR.MAX_T) return; S.dragonEdit = { i: -1, tab: 'basic', dr: DR.draftFrom(null) }; S.dragonMsg = ''; render(); const el = document.getElementById('dgName'); if(el) el.focus(); },
+  dgedit(el){ const t = S.a.dragon.themes[+el.dataset.k]; S.dragonEdit = { i: +el.dataset.k, tab: 'basic', dr: DR.draftFrom(t) }; S.dragonMsg = ''; render(); },
   dgcancel(){ S.dragonEdit = null; S.dragonMsg = ''; render(); },
   dgrowdel(el){ const dr = S.dragonEdit.dr; dr.rows.splice(+el.dataset.k, 1); dr.text = dr.rows.map(r => [r.t, r.es, r.en].join('，').replace(/[，]+$/, '')).join('\n'); render(); },
   dggen(){ return run(async () => {
@@ -1427,8 +1452,8 @@ const actions = {
     catch(e){ console.error(e); S.dragonMsg = err(e); }
     render();
   }); },
-  dsnew(){ S.dragonSetEdit = { i: -1, dr: { name: '', builtin: [], custom: [] } }; S.dragonMsg = ''; render(); const el = document.getElementById('dsName'); if(el) el.focus(); },
-  dsedit(el){ const it = S.a.dragon.sets[+el.dataset.k]; S.dragonSetEdit = { i: +el.dataset.k, dr: { name: it.name, builtin: it.builtin.slice(), custom: it.custom.slice() } }; S.dragonMsg = ''; render(); },
+  dsnew(){ S.dragonSetEdit = { i: -1, tab: 'basic', dr: { name: '', builtin: [], custom: [] } }; S.dragonMsg = ''; render(); const el = document.getElementById('dsName'); if(el) el.focus(); },
+  dsedit(el){ const it = S.a.dragon.sets[+el.dataset.k]; S.dragonSetEdit = { i: +el.dataset.k, tab: 'basic', dr: { name: it.name, builtin: it.builtin.slice(), custom: it.custom.slice() } }; S.dragonMsg = ''; render(); },
   dscancel(){ S.dragonSetEdit = null; S.dragonMsg = ''; render(); },
   dsb(el){ toggleIn(S.dragonSetEdit.dr.builtin, el.dataset.k); render(); },
   dsc(el){ toggleIn(S.dragonSetEdit.dr.custom, el.dataset.k); render(); },
@@ -1460,8 +1485,7 @@ const actions = {
   dwst(el){ toggleIn(S.dws.sel, el.dataset.k); S.dws.msg = ''; S.dws.prev = null; render(); },
   dwssimp(el){ S.dws.simp = el.dataset.k === '1'; S.dws.prev = null; render(); },
   dwslang(el){ S.dws.lang = el.dataset.k; S.dws.prev = null; render(); },
-  dwspy(){ S.dws.pinyin = !S.dws.pinyin; S.dws.prev = null; render(); },
-  dwszy(){ S.dws.zhuyin = !S.dws.zhuyin; S.dws.prev = null; render(); },
+  dwsphon(el){ phonSet(S.dws, el.dataset.k); S.dws.prev = null; render(); },
   dwsmatch(){ S.dws.match = !S.dws.match; S.dws.prev = null; render(); },
   dwsans(){ S.dws.answers = !S.dws.answers; S.dws.prev = null; render(); },
   dwsprevclose(){ S.dws.prev = null; render(); },

@@ -137,6 +137,11 @@ function helpName(col, help){ return help === 'none' ? '' : (col[help] || ''); }
 // tx(key) 取學習單上的說明文字 [中, es, en]
 function worksheet(c, opts, board, tx){
   const simp = !!opts.simp, help = opts.help || 'none';
+  const rb = txt => {
+    const m = opts.rd, ph = opts.phon; if(!m || !ph || ph === 'off') return esc(txt);
+    const zy = window.CORRE.ZY.conv;
+    return Array.from(txt).map(ch => { const p = m[ch]; if(!p) return esc(ch); return '<ruby>' + esc(ch) + '<rt>' + esc(ph === 'zhuyin' ? zy(p) : ph === 'both' ? p + ' ' + zy(p) : p) + '</rt></ruby>'; }).join('');
+  };
   const zhT = k => { const v = tx(k); return simp ? v[1] : v[0]; };
   const hlT = k => { if(help === 'none') return ''; const v = tx(k); return v[help === 'es' ? 2 : 3]; };
   const bi = k => esc(zhT(k)) + (help === 'none' ? '' : ' <small>' + esc(hlT(k)) + '</small>');
@@ -144,12 +149,12 @@ function worksheet(c, opts, board, tx){
     (opts.title ? '<div class="ws-sub">' + esc(opts.title) + '</div>' : '') +
     '<div class="ws-meta"><span>' + bi('wsName') + '：<i></i></span><span>' + bi('wsDate') + '：<i></i></span><span>' + bi('wsScore') + '：<i class="s"></i></span></div></div>';
   const cellsHtml = (mode) => '<div class="ws-board" style="grid-template-columns:repeat(' + board.cols + ',1fr)">' + board.cells.map(x => {
-    if(mode === 'blank') return '<div class="ws-cell blank"><span>' + esc(cnOf(x.n, simp)) + '</span></div>';
-    if(mode === 'filledcn') return '<div class="ws-cell" style="background:' + x.c.bg + ';color:' + x.c.fg + '"><span>' + esc(cnOf(x.n, simp)) + '</span></div>';
+    if(mode === 'blank') return '<div class="ws-cell blank"><span>' + rb(cnOf(x.n, simp)) + '</span></div>';
+    if(mode === 'filledcn') return '<div class="ws-cell" style="background:' + x.c.bg + ';color:' + x.c.fg + '"><span>' + rb(cnOf(x.n, simp)) + '</span></div>';
     return '<div class="ws-cell" style="background:' + x.c.bg + ';color:' + x.c.fg + '"><span class="d">' + x.n + '</span></div>';
   }).join('') + '</div>';
   const legend = () => { const used = []; board.cells.forEach(x => { if(used.indexOf(x.c) < 0) used.push(x.c); });
-    return '<div class="ws-legend">' + used.map(col => '<span><b class="sw" style="background:' + col.bg + '"></b>' + esc(cName(col, simp)) + (helpName(col, help) ? ' <small>' + esc(helpName(col, help)) + '</small>' : '') + '</span>').join('') + '</div>'; };
+    return '<div class="ws-legend">' + used.map(col => '<span><b class="sw" style="background:' + col.bg + '"></b>' + rb(cName(col, simp)) + (helpName(col, help) ? ' <small>' + esc(helpName(col, help)) + '</small>' : '') + '</span>').join('') + '</div>'; };
   let sheet = head, key = '';
   if(opts.kind === 'listen'){
     // 只問不重複且顏色唯一的數字
@@ -157,19 +162,19 @@ function worksheet(c, opts, board, tx){
     const okNums = Object.keys(seen).map(Number).filter(n => seen[n].every(c2 => c2 === seen[n][0]));
     const qs = shuffle(okNums).slice(0, Math.min(opts.count || 10, okNums.length)).map(n => ({ n, c: seen[n][0] }));
     sheet += '<p class="ws-ins">' + bi(opts.read ? 'wsInsListenRead' : 'wsInsListenSay') + '</p>' + cellsHtml('digits') + (opts.legend ? legend() : '') +
-      '<ol class="ws-qs">' + qs.map((q, i) => '<li><span class="no">' + (i + 1) + '.</span>' + (opts.read ? '<span class="q">' + esc(cnOf(q.n, simp)) + '</span>' : '') + '<span class="line"></span></li>').join('') + '</ol>';
-    key = '<ol class="ws-qs key">' + qs.map(q => '<li><span class="q">' + esc(cnOf(q.n, simp)) + '（' + q.n + '）</span><b>' + esc(cName(q.c, simp)) + '</b>' + (helpName(q.c, help) ? ' <small>' + esc(helpName(q.c, help)) + '</small>' : '') + '</li>').join('') + '</ol>';
+      '<ol class="ws-qs">' + qs.map((q, i) => '<li><span class="no">' + (i + 1) + '.</span>' + (opts.read ? '<span class="q">' + rb(cnOf(q.n, simp)) + '</span>' : '') + '<span class="line"></span></li>').join('') + '</ol>';
+    key = '<ol class="ws-qs key">' + qs.map(q => '<li><span class="q">' + rb(cnOf(q.n, simp)) + '（' + q.n + '）</span><b>' + rb(cName(q.c, simp)) + '</b>' + (helpName(q.c, help) ? ' <small>' + esc(helpName(q.c, help)) + '</small>' : '') + '</li>').join('') + '</ol>';
     opts._max = qs.length;
   }else if(opts.kind === 'write'){
     const groups = []; board.cells.forEach(x => { let g = groups.find(y => y.c === x.c); if(!g) groups.push(g = { c: x.c, ns: [] }); if(g.ns.indexOf(x.n) < 0) g.ns.push(x.n); });
     sheet += '<p class="ws-ins">' + bi('wsInsWrite') + '</p>' + cellsHtml('digits') +
-      '<ol class="ws-qs wide">' + groups.map((g, i) => '<li><span class="no">' + (i + 1) + '.</span><span class="q"><b class="sw" style="background:' + g.c.bg + '"></b>' + esc(cName(g.c, simp)) + (helpName(g.c, help) ? ' <small>' + esc(helpName(g.c, help)) + '</small>' : '') + '</span>' + '<span class="line full"></span>' + '</li>').join('') + '</ol>';
-    key = '<ol class="ws-qs wide key">' + groups.map(g => '<li><span class="q">' + esc(cName(g.c, simp)) + '</span>' + g.ns.map(n => esc(cnOf(n, simp))).join(simp ? '、' : '、') + '</li>').join('') + '</ol>';
+      '<ol class="ws-qs wide">' + groups.map((g, i) => '<li><span class="no">' + (i + 1) + '.</span><span class="q"><b class="sw" style="background:' + g.c.bg + '"></b>' + rb(cName(g.c, simp)) + (helpName(g.c, help) ? ' <small>' + esc(helpName(g.c, help)) + '</small>' : '') + '</span>' + '<span class="line full"></span>' + '</li>').join('') + '</ol>';
+    key = '<ol class="ws-qs wide key">' + groups.map(g => '<li><span class="q">' + rb(cName(g.c, simp)) + '</span>' + g.ns.map(n => rb(cnOf(n, simp))).join(simp ? '、' : '、') + '</li>').join('') + '</ol>';
     opts._max = groups.length;
   }else{
     const groups = []; board.cells.forEach(x => { let g = groups.find(y => y.c === x.c); if(!g) groups.push(g = { c: x.c, ns: [] }); if(g.ns.indexOf(x.n) < 0) g.ns.push(x.n); });
     sheet += '<p class="ws-ins">' + bi('wsInsColor') + '</p>' + cellsHtml('blank') +
-      '<div class="ws-map">' + groups.map(g => '<div><span class="q">' + esc(cName(g.c, simp)) + (helpName(g.c, help) ? ' <small>' + esc(helpName(g.c, help)) + '</small>' : '') + '</span>' + g.ns.map(n => esc(cnOf(n, simp))).join('、') + '</div>').join('') + '</div>';
+      '<div class="ws-map">' + groups.map(g => '<div><span class="q">' + rb(cName(g.c, simp)) + (helpName(g.c, help) ? ' <small>' + esc(helpName(g.c, help)) + '</small>' : '') + '</span>' + g.ns.map(n => rb(cnOf(n, simp))).join('、') + '</div>').join('') + '</div>';
     key = cellsHtml('filledcn');
     opts._max = board.cells.length;
   }

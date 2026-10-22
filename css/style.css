@@ -357,3 +357,6 @@ details.hsec[open]>summary{margin-bottom:8px}
 .pgws .ws-cell{min-height:15mm}
 .pgws .ws-cell.blank{min-height:17mm}
 .pgws .ws-key,.pgws .bw-key{border-top:0;margin-top:0;padding-top:0}
+.ws ruby,.pgws ruby{ruby-align:center}
+.ws rt,.pgws rt{font-size:.5em;font-weight:400;line-height:1.1}
+.ws-cell ruby{white-space:nowrap}
