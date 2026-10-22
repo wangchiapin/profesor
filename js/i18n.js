@@ -100,6 +100,7 @@ const D = {
   dwtChoice: ['選擇', '选择', 'Elección múltiple', 'Multiple choice'],
   dwtDict: ['聽寫', '听写', 'Dictado', 'Dictation'],
   dwtSent: ['造句', '造句', 'Oraciones', 'Sentences'],
+  dwtMix: ['混合出題', '混合出题', 'Mezclar temas', 'Mix themes'],
   dwtList: ['附單字表', '附单字表', 'Con lista de palabras', 'With word list'],
   dragonWsNone: ['請至少選一種題型，或勾「附單字表」。', '请至少选一种题型，或勾“附单字表”。', 'Elige al menos un tipo de ejercicio o la lista de palabras.', 'Pick at least one exercise type or the word list.'],
   detailDragon: ['吃對 {n} · 高度 {a} m', '吃对 {n} · 高度 {a} m', 'Aciertos {n} · altura {a} m', 'Correct {n} · height {a} m'],

@@ -109,15 +109,15 @@ function loadBuiltin(){
 // ---- 學習單 PDF（canvas 畫成 A4 圖片頁，再包成 PDF，不會缺字；做法同跑吧學習單）----
 const PDFW = 1240, PDFH = 1754, PM = 90;
 const WS_TXT = {
-  es: { name: 'Nombre:', date: 'Fecha:', list: 'Lista de palabras', ans: 'Respuestas', title: 'El dragón de tinta',
+  es: { name: 'Nombre:', date: 'Fecha:', list: 'Lista de palabras', ans: 'Respuestas', title: 'El dragón de tinta', mix: 'Mezcla',
     match: 'Une cada palabra con su significado (escribe la letra).', t1: 'Traduce al español.', t2: 'Escribe en chino.', sent: 'Escribe una oración con cada palabra.',
     dict: 'Dictado: escucha y escribe la palabra en chino.', choice: 'Elige el significado correcto (escribe la letra).',
     n_match: 'Unir', n_t1: 'Chino → español', n_t2: 'Español → chino', n_sent: 'Oración', n_dict: 'Dictado', n_choice: 'Elección múltiple' },
-  en: { name: 'Name:', date: 'Date:', list: 'Word list', ans: 'Answer key', title: 'Ink Dragon',
+  en: { name: 'Name:', date: 'Date:', list: 'Word list', ans: 'Answer key', title: 'Ink Dragon', mix: 'Mixed',
     match: 'Match each word with its meaning (write the letter).', t1: 'Translate into English.', t2: 'Write in Chinese.', sent: 'Write a sentence with each word.',
     dict: 'Dictation: listen and write the word in Chinese.', choice: 'Choose the correct meaning (write the letter).',
     n_match: 'Matching', n_t1: 'Chinese → English', n_t2: 'English → Chinese', n_sent: 'Sentences', n_dict: 'Dictation', n_choice: 'Multiple choice' },
-  zh: { name: '姓名：', date: '日期：', list: '詞語表', ans: '答案', title: '墨龍飛天',
+  zh: { name: '姓名：', date: '日期：', list: '詞語表', ans: '答案', title: '墨龍飛天', mix: '混合出題',
     match: '', t1: '', t2: '', sent: '用每個詞造一個句子。', dict: '聽寫：聽老師唸，寫出詞語。', choice: '',
     n_match: '配對', n_t1: '', n_t2: '', n_sent: '造句', n_dict: '聽寫', n_choice: '' }
 };
@@ -240,7 +240,14 @@ async function makeWorksheet(themes, opt){
   };
   // 1. 各主題的題目（一個主題一組頁面，題型照 WS_TYPES 的順序）
   const chosen = WS_TYPES.filter(x => TY[x[0]] && !(x[1] && zhOnly)).map(x => x[0]);
-  if(chosen.length) themes.forEach(t => {
+  // 混合出題：把勾選的主題合成一份，隨機挑題；題數一樣
+  let qThemes = themes;
+  if(opt.mix && themes.length > 1){
+    const seenW = new Set(), words = [];
+    allWords.forEach(w => { if(!seenW.has(w[0])){ seenW.add(w[0]); words.push(w); } });
+    qThemes = [{ name: L.mix, words }];
+  }
+  if(chosen.length) qThemes.forEach(t => {
     curTitle = (opt.title ? opt.title + ' · ' : '') + t.name + ' · ' + L.title;
     newPage(); head(curTitle);
     chosen.forEach(k => sections[k](t));

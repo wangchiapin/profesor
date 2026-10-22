@@ -971,7 +971,7 @@ async function bwsExport(){
   setTimeout(() => window.print(), 400);
 }
 // ---- 列印：墨龍飛天詞表學習單 PDF ----
-function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, types: { match: true, t1: false, t2: false, choice: false, dict: false, sent: false }, list: true, answers: true, size: 14, prev: null, busy: false, msg: '', ok: false }; }
+function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, types: { match: true, t1: false, t2: false, choice: false, dict: false, sent: false }, list: true, mix: false, answers: true, size: 14, prev: null, busy: false, msg: '', ok: false }; }
 const dwsHas = W => W.sel.length && (W.list || Object.keys(W.types).some(k => W.types[k] && !(W.lang === 'zh' && ['match', 't1', 't2', 'choice'].indexOf(k) >= 0)));
 function dwsFormHtml(){
   let h = '<div class="card" id="dragonWsCard">';
@@ -984,7 +984,7 @@ function dwsFormHtml(){
     DR.IDS.map(id => chip(W.sel.indexOf(id) >= 0, DR.builtinName(id), 'dwst', id)).join('') + A.dragon.themes.map(t => chip(W.sel.indexOf(t.id) >= 0, '★ ' + t.name, 'dwst', t.id)).join('') + '</div></div>' +
     '<div class="field"><label>' + esc(T('dragonWsTypes')) + '</label><div class="row" style="margin-top:0">' +
     [['match', 'dwtMatch', 1], ['t1', 'dwtT1', 1], ['t2', 'dwtT2', 1], ['choice', 'dwtChoice', 1], ['dict', 'dwtDict', 0], ['sent', 'dwtSent', 0]].filter(x => !(x[2] && W.lang === 'zh')).map(x => chipB(W.types[x[0]], T(x[1]), 'dwstype" data-k="' + x[0])).join('') + '</div></div>' +
-    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.list, T('dwtList'), 'dwslist') + chipB(W.answers, T('wsAnswersOpt'), 'dwsans') + '</div></div>' +
+    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.mix, T('dwtMix'), 'dwsmix') + chipB(W.list, T('dwtList'), 'dwslist') + chipB(W.answers, T('wsAnswersOpt'), 'dwsans') + '</div></div>' +
     '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('dwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('dwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('dwsphon', phonOf(W), PHON_LIST()) + '</div></div>' +
@@ -1489,6 +1489,7 @@ const actions = {
   dwslang(el){ S.dws.lang = el.dataset.k; S.dws.prev = null; render(); },
   dwsphon(el){ phonSet(S.dws, el.dataset.k); S.dws.prev = null; render(); },
   dwstype(el){ const W = S.dws; W.types[el.dataset.k] = !W.types[el.dataset.k]; W.prev = null; render(); },
+  dwsmix(){ S.dws.mix = !S.dws.mix; S.dws.prev = null; render(); },
   dwslist(){ S.dws.list = !S.dws.list; S.dws.prev = null; render(); },
   dwsans(){ S.dws.answers = !S.dws.answers; S.dws.prev = null; render(); },
   dwsprevclose(){ S.dws.prev = null; render(); },
@@ -1507,7 +1508,7 @@ const actions = {
         const t = S.a.dragon.themes.find(x => x.id === id); return t ? { name: t.name, words: t.words } : null;
       }).filter(Boolean);
       if(!themes.length) throw new Error(T('dragonLibFail'));
-      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, list: W.list, answers: W.answers, count: 10, scale: sizeK(W.size), preview: !!preview });
+      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, mix: W.mix, list: W.list, answers: W.answers, count: 10, scale: sizeK(W.size), preview: !!preview });
       if(r.err) throw new Error(T('dragonWsNone'));
       if(preview){ W.prev = r.previews; W.busy = false; render(); return; }
       saveBlob(r.blob, 'dragon-worksheet.pdf');
