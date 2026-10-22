@@ -561,11 +561,11 @@ const lockedNote = () => '<div class="notice">🔒 ' + esc(T('dragonSubOnly')) +
 function dragonThemeEditorHtml(){
   const E = S.dragonEdit, dr = E.dr, tab = E.tab || 'basic';
   let h = '<div class="gtabs etabs"><button class="pill sm" data-act="dgcancel">' + esc(CORRE.tr('back')) + '</button>' +
-    [['basic', 'edTabBasic'], ['more', 'edTabWords']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="dg" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
+    [['basic', 'edTabBuild'], ['more', 'edTabWords']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="dg" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
   if(tab === 'basic'){
     h += '<div class="field"><label>' + esc(T('dragonThemeName')) + '</label><input type="text" id="dgName" maxlength="12" placeholder="' + esc(T('dragonThemeNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
       '<div class="field"><label>' + esc(T('dragonWordsLabel')) + '</label><textarea id="dgText" rows="8" placeholder="' + esc(T('dragonWordsPh')) + '">' + esc(dr.text) + '</textarea><p class="hint">' + esc(T('dragonTextHint', { min: DR.MIN_W, max: DR.MAX_W })) + '</p></div>' +
-      '<div class="row"><button class="pill sm" data-act="dggen">⚙️ ' + esc(T(dr.rows ? 'dragonRegen' : 'dragonGen')) + '</button></div>';
+      '<div class="row"><button class="pill sm" data-act="dggen">⚙️ ' + esc(T(dr.rows ? 'dragonRegen' : 'dragonGen')) + '</button></div>' + (dr.rows ? '<p class="hint">' + esc(T('dragonRegenHint')) + '</p>' : '');
   }else if(dr.rows){
     h += '<p class="hint">' + esc(T('dragonRowsHint')) + '</p><div class="tablewrap"><table class="t nw dgt"><tr><th>' + [T('dragonColTrad'), T('dragonColSimp'), T('dragonColPy'), 'ES', 'EN', ''].map(esc).join('</th><th>') + '</th></tr>' +
       dr.rows.map((r, i) => '<tr><td><b>' + esc(r.t) + '</b></td>' + ['s', 'p', 'es', 'en'].map(f => '<td><input type="text" data-dgr="' + i + '" data-f="' + f + '" maxlength="60" value="' + esc(r[f]) + '"></td>').join('') +
@@ -575,14 +575,11 @@ function dragonThemeEditorHtml(){
   return h + '<div class="row"><button class="pill fill sm" data-act="dgsave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dgcancel">' + esc(T('cancel')) + '</button></div></div>';
 }
 function dragonSetEditorHtml(){
-  const E = S.dragonSetEdit, dr = E.dr, D = S.a.dragon, tab = E.tab || 'basic';
-  let h = '<div class="gtabs etabs"><button class="pill sm" data-act="dscancel">' + esc(CORRE.tr('back')) + '</button>' +
-    [['basic', 'edTabBasic'], ['more', 'edTabThemes']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="ds" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
-  h += tab === 'basic'
-    ? '<div class="field"><label>' + esc(T('dragonSetName')) + '</label><input type="text" id="dsName" maxlength="40" placeholder="' + esc(T('dragonSetNamePh')) + '" value="' + esc(dr.name) + '"></div>'
-    : '<div class="field"><label>' + esc(T('dragonSetPick')) + '</label><div class="row" style="margin-top:0">' +
-      DR.IDS.map(id => chip(dr.builtin.indexOf(id) >= 0, DR.builtinName(id), 'dsb', id)).join('') +
-      D.themes.map(t => chip(dr.custom.indexOf(t.id) >= 0, '★ ' + t.name, 'dsc', t.id)).join('') + '</div></div>';
+  const E = S.dragonSetEdit, dr = E.dr, D = S.a.dragon;
+  let h = '<div class="editor"><div class="field"><label>' + esc(T('dragonSetName')) + '</label><input type="text" id="dsName" maxlength="40" placeholder="' + esc(T('dragonSetNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
+    '<div class="field"><label>' + esc(T('dragonSetPick')) + '</label><div class="row" style="margin-top:0">' +
+    DR.IDS.map(id => chip(dr.builtin.indexOf(id) >= 0, DR.builtinName(id), 'dsb', id)).join('') +
+    D.themes.map(t => chip(dr.custom.indexOf(t.id) >= 0, '★ ' + t.name, 'dsc', t.id)).join('') + '</div></div>';
   if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
   return h + '<div class="row"><button class="pill fill sm" data-act="dssave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dscancel">' + esc(T('cancel')) + '</button></div></div>';
 }
@@ -623,17 +620,18 @@ function dragonRangesHtml(){
   if(!S.a.dragonReady) return '<div class="card" id="dragonSets">' + phHead('🎯 ' + T0) + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
   const D = S.a.dragon, SE = S.dragonSetEdit;
   if(!P.active) return '<div class="card" id="dragonSets">' + phHead('🎯 ' + T0) + lockedNote() + '</div>';
-  if(SE) return '<div class="card" id="dragonSets">' + dragonSetEditorHtml() + '</div>';
   let h = '<div class="card" id="dragonSets">' + phHead('🎯 ' + T0, T('bbkQuota', { n: D.sets.length, max: DR.MAX_SETS }));
   D.sets.forEach((it, i) => {
     h += '<div class="setrow"><div><b>🐉 ' + esc(it.name) + '</b><small>' + esc(DR.setSummary(it, D.themes)) + '</small></div><div class="row">' +
       '<button class="pill sm" data-act="dsedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
       (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkDragonSet(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '<button class="pill sm" data-act="dsplay" data-k="' + i + '">' + esc(T('test')) + '</button>') +
       '<button class="pill sm" data-act="dsdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+    if(SE && SE.i === i) h += dragonSetEditorHtml();
   });
-  if(D.sets.length < DR.MAX_SETS) h += '<div class="row"><button class="pill fill sm" data-act="dsnew">＋ ' + esc(T('dragonSetNew')) + '</button></div>';
+  if(SE && SE.i < 0) h += dragonSetEditorHtml();
+  else if(D.sets.length < DR.MAX_SETS) h += '<div class="row"><button class="pill fill sm" data-act="dsnew">＋ ' + esc(T('dragonSetNew')) + '</button></div>';
   else h += '<div class="notice">' + esc(T('bbkFullPro')) + '</div>';
-  if(S.dragonMsg) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
+  if(S.dragonMsg && !SE) h += '<div class="err">' + esc(S.dragonMsg) + '</div>';
   return h + '<p class="hint">' + esc(T('dragonPracticeHint')) + '</p></div>';
 }
 function bankRouteHtml(){
@@ -1430,7 +1428,7 @@ const actions = {
   dgnew(){ if(S.a.dragon.themes.length >= DR.MAX_T) return; S.dragonEdit = { i: -1, tab: 'basic', dr: DR.draftFrom(null) }; S.dragonMsg = ''; render(); const el = document.getElementById('dgName'); if(el) el.focus(); },
   dgedit(el){ const t = S.a.dragon.themes[+el.dataset.k]; S.dragonEdit = { i: +el.dataset.k, tab: 'basic', dr: DR.draftFrom(t) }; S.dragonMsg = ''; render(); },
   dgcancel(){ S.dragonEdit = null; S.dragonMsg = ''; render(); },
-  dgrowdel(el){ const dr = S.dragonEdit.dr; dr.rows.splice(+el.dataset.k, 1); dr.text = dr.rows.map(r => [r.t, r.es, r.en].join('，').replace(/[，]+$/, '')).join('\n'); render(); },
+  dgrowdel(el){ const dr = S.dragonEdit.dr; dr.rows.splice(+el.dataset.k, 1); dr.text = DR.rowsToText(dr.rows); render(); },
   dggen(){ return run(async () => {
     const dr = S.dragonEdit && S.dragonEdit.dr; if(!dr) return;
     S.dragonMsg = T('dragonGenerating'); render();
@@ -1441,6 +1439,7 @@ const actions = {
   }); },
   dgsave(){ return run(async () => {
     const E = S.dragonEdit; if(!E) return;
+    if(E.dr.text && E.dr.text.trim()){ const r = await DR.generate(E.dr); if(r.err){ S.dragonMsg = r.err; render(); return; } E.dr.rows = r.rows; }
     const bad = DR.draftValid(E.dr); if(bad){ S.dragonMsg = bad; render(); return; }
     if(E.i < 0 && S.a.dragon.themes.length >= DR.MAX_T){ S.dragonMsg = T('dragonThemeFull'); render(); return; }
     try{ S.a.dragon = await DATA.saveDragonTheme(S.a.dragon, E.i, DR.toTheme(E.dr)); S.dragonEdit = null; S.dragonMsg = ''; render(); toast(T('saved')); }
@@ -1578,7 +1577,7 @@ document.addEventListener('input', e => {
     const dr = S.dragonEdit.dr;
     if(e.target.id === 'dgName') dr.name = e.target.value;
     if(e.target.id === 'dgText') dr.text = e.target.value;
-    if(e.target.dataset && e.target.dataset.dgr != null && dr.rows && dr.rows[+e.target.dataset.dgr]) dr.rows[+e.target.dataset.dgr][e.target.dataset.f] = e.target.value;
+    if(e.target.dataset && e.target.dataset.dgr != null && dr.rows && dr.rows[+e.target.dataset.dgr]) { dr.rows[+e.target.dataset.dgr][e.target.dataset.f] = e.target.value; dr.text = DR.rowsToText(dr.rows); }
   }
   if(e.target.id === 'dsName' && S.dragonSetEdit) S.dragonSetEdit.dr.name = e.target.value;
   if(S.colEdit){

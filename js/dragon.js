@@ -57,6 +57,7 @@ function parseText(text){
   return { items, bad };
 }
 const wordsToText = words => (words || []).map(w => [w[0], w[3] || '', w[4] || ''].join('，').replace(/[，]+$/, '')).join('\n');
+const rowsToText = rows => (rows || []).map(r => [r.t, r.es || '', r.en || ''].join('，').replace(/[，]+$/, '')).join('\n');
 function draftFrom(theme){
   if(!theme) return { name: '', text: '', rows: null, msg: '' };
   return { name: theme.name, text: wordsToText(theme.words), rows: theme.words.map(w => ({ t: w[0], s: w[1], p: w[2], es: w[3] || '', en: w[4] || '' })), msg: '' };
@@ -203,6 +204,6 @@ async function makeWorksheet(themes, opt){
   return { blob: window.CORRE.buildPdf(jpegs, PDFW, PDFH), pages: pages.length };
 }
 
-window.DRAGON = { ready, BUILTIN, IDS, FREE_TEACHER, PUBLIC_FREE, builtinName, isFreeId, setSummary, themeLabel, parseText, draftFrom, generate, draftValid, toTheme,
+window.DRAGON = { ready, BUILTIN, IDS, FREE_TEACHER, PUBLIC_FREE, builtinName, isFreeId, setSummary, themeLabel, parseText, rowsToText, draftFrom, generate, draftValid, toTheme,
   loadBuiltin, makeWorksheet, MAX_T, MAX_W, MIN_W, MAX_SETS };
 })();
