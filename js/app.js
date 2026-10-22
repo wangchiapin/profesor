@@ -403,22 +403,24 @@ function chip(on, label, act, k){
 }
 function bbkEditorHtml(){
   const E = S.bbkEdit, dr = E.dr;
-  let h = '<div class="editor">' +
-    '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="bbkName" maxlength="40" placeholder="' + esc(T('bbkNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
-    '<div class="field"><label>' + esc(T('bbkTheme')) + '</label><div class="row" style="margin-top:0">' +
+  const tab = E.tab || 'basic';
+  const fName = '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="bbkName" maxlength="40" placeholder="' + esc(T('bbkNamePh')) + '" value="' + esc(dr.name) + '"></div>';
+  const fTheme = '<div class="field"><label>' + esc(T('bbkTheme')) + '</label><div class="row" style="margin-top:0">' +
     BBK.THEMES.map(x => x[2] ? '<button class="pill sm ' + (dr.th === x[0] ? 'on' : '') + '" data-act="bbkth" data-k="' + x[0] + '">' + x[1] + ' ' + esc(T('th_' + x[0])) + '</button>'
       : '<button class="pill sm thlock" data-act="bbkthsoon" data-k="' + x[0] + '">' + x[1] + ' ' + esc(T('th_' + x[0])) + ' · 🔒 ' + esc(T('thSoon')) + '</button>').join('') + '</div>' +
-    (S.bbkThNote ? '<p class="hint">🔒 ' + esc(T('thSoonNote')) + '</p>' : '') + '<div class="notice">' + esc(T('bbkSubjNote')) + '</div></div>' +
-    '<div class="field"><label>' + esc(T('bbkLevel')) + '</label><div class="row" style="margin-top:0">' +
-    [1, 2, 3].map(n => '<button class="pill sm ' + (dr.lv === n ? 'on' : '') + '" data-act="bbklv" data-k="' + n + '">' + n + '</button>').join('') + '</div></div>' +
-    '<div class="field"><label>' + esc(T('bbkDims')) + '</label><div class="row" style="margin-top:0">' +
+    (S.bbkThNote ? '<p class="hint">🔒 ' + esc(T('thSoonNote')) + '</p>' : '') + '<div class="notice">' + esc(T('bbkSubjNote')) + '</div></div>';
+  const fLevel = '<div class="field"><label>' + esc(T('bbkLevel')) + '</label><div class="row" style="margin-top:0">' +
+    [1, 2, 3].map(n => '<button class="pill sm ' + (dr.lv === n ? 'on' : '') + '" data-act="bbklv" data-k="' + n + '">' + n + '</button>').join('') + '</div></div>';
+  const fDims = '<div class="field"><label>' + esc(T('bbkDims')) + '</label><div class="row" style="margin-top:0">' +
     BBK.dimsOf(dr.lv).map(k => chip(dr.d.indexOf(k) >= 0, T('d_' + k), 'bbkd', k)).join('') + '</div>' +
-    '<div class="row" style="margin-top:0"><button class="link-btn" data-act="bbkall" data-k="d1">' + esc(T('selectAll')) + '</button><button class="link-btn" data-act="bbkall" data-k="d0">' + esc(T('clearAll')) + '</button></div></div>' +
-    '<div class="field"><label>' + esc(T('bbkTypes')) + '</label><div class="row" style="margin-top:0">' +
+    '<div class="row" style="margin-top:0"><button class="link-btn" data-act="bbkall" data-k="d1">' + esc(T('selectAll')) + '</button><button class="link-btn" data-act="bbkall" data-k="d0">' + esc(T('clearAll')) + '</button></div></div>';
+  const fTypes = '<div class="field"><label>' + esc(T('bbkTypes')) + '</label><div class="row" style="margin-top:0">' +
     BBK.typesOf(dr.lv).map(k => chip(dr.t.indexOf(k) >= 0, T('t_' + k), 'bbkt', k)).join('') + '</div>' +
-    '<div class="row" style="margin-top:0"><button class="link-btn" data-act="bbkall" data-k="t1">' + esc(T('selectAll')) + '</button><button class="link-btn" data-act="bbkall" data-k="t0">' + esc(T('clearAll')) + '</button></div></div>' +
-    '<div class="field"><label>' + esc(T('bbkCount')) + '</label><div class="row" style="margin-top:0">' +
+    '<div class="row" style="margin-top:0"><button class="link-btn" data-act="bbkall" data-k="t1">' + esc(T('selectAll')) + '</button><button class="link-btn" data-act="bbkall" data-k="t0">' + esc(T('clearAll')) + '</button></div></div>';
+  const fCount = '<div class="field"><label>' + esc(T('bbkCount')) + '</label><div class="row" style="margin-top:0">' +
     BBK.NS.map(n => '<button class="pill sm ' + (dr.n === n ? 'on' : '') + '" data-act="bbkn" data-k="' + n + '">' + n + '</button>').join('') + '</div></div>';
+  let h = '<div class="editor">' + edTabsHtml('bbk', tab, [['basic', 'edTabBasic'], ['more', 'edTabContent']]) +
+    (tab === 'basic' ? fName + fTheme + '<div class="optgrid">' + fLevel + fCount + '</div>' : fDims + fTypes);
   h += BBK.valid(dr) ? '<p class="hint">' + esc(T('bbkFeasNote')) + '</p>' : '<div class="err">' + esc(T('bbkNeedPick')) + '</div>';
   if(S.bbkMsg) h += '<div class="err">' + esc(S.bbkMsg) + '</div>';
   h += '<div class="row"><button class="pill fill sm" data-act="bbksave" ' + (BBK.valid(dr) ? '' : 'disabled') + '>' + esc(T('save')) + '</button><button class="pill sm" data-act="bbkcancel">' + esc(T('cancel')) + '</button></div></div>';
@@ -426,16 +428,14 @@ function bbkEditorHtml(){
 }
 function bbkCardHtml(){
   const A = S.a, max = DATA.bbkMax(A.plan), E = S.bbkEdit;
-  let h = '<div class="card" id="bbkCard"><h3>' + esc(T('bbkSetsTitle')) + '</h3><p class="hint">' + esc(T('bbkSetsHint')) + '</p>';
+  let h = '<div class="card" id="bbkCard">' + phHead(T('bbkSetsTitle'), A.bbkReady ? T('bbkQuota', { n: A.bbk.length, max }) : '');
   if(!A.bbkReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-  h += '<p class="hint"><b>' + esc(T('bbkQuota', { n: A.bbk.length, max })) + '</b></p>';
   if(!A.bbk.length && !(E && E.i < 0)) h += '<p class="hint">' + esc(T('bbkEmpty')) + '</p>';
   A.bbk.forEach((it, i) => {
     if(E && E.i === i){ h += bbkEditorHtml(); return; }
     h += '<div class="setrow"><div><b>📐 ' + esc(it.name) + '</b><small>' + esc(bbkSummary(it)) + '</small></div><div class="row">' +
       '<button class="pill sm" data-act="bbkedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
-      '<button class="pill sm" data-act="bbkpractice" data-k="' + i + '">🔗 ' + esc(T('bbkPractice')) + '</button>' +
-      (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkBbkPractice(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '') +
+      (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkBbkPractice(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '<button class="pill sm" data-act="bbkplay" data-k="' + i + '">' + esc(T('test')) + '</button>') +
       '<button class="pill sm" data-act="bbkdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
   });
   if(E && E.i < 0) h += bbkEditorHtml();
@@ -447,6 +447,10 @@ function bbkCardHtml(){
   h += '<p class="hint">' + esc(T('bbkPracticeHint')) + '</p>';
   return h + '</div>';
 }
+// 卡片標題：標題用分頁名稱，額度小字放旁邊
+const phHead = (title, quota) => '<h3 class="ph"><span>' + esc(title) + '</span>' + (quota ? '<small class="cq">' + esc(quota) + '</small>' : '') + '</h3>';
+// 編輯畫面上方的小分頁（色數、比比看）
+const edTabsHtml = (e, cur, list) => '<div class="ctabs esubs">' + list.map(x => '<button class="pill sm ' + (cur === x[0] ? 'on' : '') + '" data-act="edtab" data-e="' + e + '" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div>';
 // ---- 色數：設定組 ----
 function colSummary(c){
   const nums = c.nums ? T('colListTag') + '（' + c.nums.length + '）' : '0–' + (c.range || 999);
@@ -462,40 +466,41 @@ function colEditorHtml(){
     '<input type="text" maxlength="12" placeholder="' + esc(T('colColorSay')) + '" value="' + esc(c.s) + '" data-cc="' + i + '" data-f="s">' +
     '<button class="x" data-act="colsay" data-k="' + i + '" title="' + esc(T('colListen')) + '">🔊</button><button class="x" data-act="colcdel" data-k="' + i + '">✕</button>' +
     '<input type="text" class="cpy" maxlength="40" placeholder="' + esc(T('colColorPy')) + '" value="' + esc(c.p || '') + '" data-cc="' + i + '" data-f="p"></div>').join('');
-  let h = '<div class="editor">' +
-    '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="colName" maxlength="20" placeholder="' + esc(T('colNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
-    '<div class="field"><label>' + esc(T('colMode')) + '</label><div class="row" style="margin-top:0">' + pills('colmode', dr.mode, [['A', T('colModeA')], ['B', T('colModeB')]]) + '</div></div>' +
-    '<div class="field"><label>' + esc(T('colGrid')) + '（' + dr.rows * dr.cols + '）</label><div class="row" style="margin-top:0">' +
+  const tab = E.tab || 'basic', cur = E.i >= 0 && S.a.configs[E.i];
+  const fName = '<div class="field"><label>' + esc(T('bbkName')) + '</label><input type="text" id="colName" maxlength="20" placeholder="' + esc(T('colNamePh')) + '" value="' + esc(dr.name) + '"></div>';
+  const fMode = '<div class="field"><label>' + esc(T('colMode')) + '</label><div class="row" style="margin-top:0">' + pills('colmode', dr.mode, [['A', T('colModeA')], ['B', T('colModeB')]]) + '</div></div>';
+  const fGrid = '<div class="field"><label>' + esc(T('colGrid')) + '（' + dr.rows * dr.cols + '）</label><div class="row" style="margin-top:0">' +
       '<span class="stp">' + esc(T('colRows')) + ' <button class="pill sm" data-act="colstep" data-k="rows,-1">−</button><b>' + dr.rows + '</b><button class="pill sm" data-act="colstep" data-k="rows,1">＋</button></span>' +
-      '<span class="stp">' + esc(T('colCols')) + ' <button class="pill sm" data-act="colstep" data-k="cols,-1">−</button><b>' + dr.cols + '</b><button class="pill sm" data-act="colstep" data-k="cols,1">＋</button></span></div></div>' +
-    '<div class="field"><label>' + esc(T('colHearts')) + '</label><div class="row" style="margin-top:0">' + pills('colhearts', String(dr.hearts), [['3', '3'], ['5', '5'], ['0', T('colUnlimited')]]) + '</div></div>' +
-    '<div class="field"><label>' + esc(T('colPreset')) + '</label><div class="row" style="margin-top:0">' +
+      '<span class="stp">' + esc(T('colCols')) + ' <button class="pill sm" data-act="colstep" data-k="cols,-1">−</button><b>' + dr.cols + '</b><button class="pill sm" data-act="colstep" data-k="cols,1">＋</button></span></div></div>';
+  const fHearts = '<div class="field"><label>' + esc(T('colHearts')) + '</label><div class="row" style="margin-top:0">' + pills('colhearts', String(dr.hearts), [['3', '3'], ['5', '5'], ['0', T('colUnlimited')]]) + '</div></div>';
+  const fPreset = '<div class="field"><label>' + esc(T('colPreset')) + '</label><div class="row" style="margin-top:0">' +
       '<button class="link-btn" data-act="colquick" data-k="basic">' + esc(T('colBasic')) + '</button><button class="link-btn" data-act="colquick" data-k="adv">' + esc(T('colAdv')) + '</button>' +
       '<button class="link-btn" data-act="colquick" data-k="all">' + esc(T('selectAll')) + '</button><button class="link-btn" data-act="colquick" data-k="none">' + esc(T('clearAll')) + '</button></div>' +
-      '<div class="cchips">' + chips + '</div></div>' +
-    '<div class="field' + (pro ? '' : ' locked') + '"><label>' + esc(T('colCustom')) + (pro ? '' : ' 🔒') + '</label>' + crows +
-      '<button class="pill sm" data-act="colcadd" ' + (dr.custom.length >= 12 ? 'disabled' : '') + '>＋ ' + esc(T('colAddColor')) + '</button></div>' +
-    '<div class="field"><label>' + esc(T('colNums')) + '</label><div class="row" style="margin-top:0">' +
+      '<div class="cchips">' + chips + '</div></div>';
+  const fCustom = '<div class="field' + (pro ? '' : ' locked') + '"><label>' + esc(T('colCustom')) + (pro ? '' : ' 🔒') + '</label>' + crows +
+      '<button class="pill sm" data-act="colcadd" ' + (dr.custom.length >= 12 ? 'disabled' : '') + '>＋ ' + esc(T('colAddColor')) + '</button></div>';
+  const fNums = '<div class="field"><label>' + esc(T('colNums')) + '</label><div class="row" style="margin-top:0">' +
       pills('colnmode', dr.nmode, [['999', '0 – 999'], ['9999', '0 – 9999'], ['list', T('colList') + (pro ? '' : ' 🔒')]]) + '</div>' +
       (dr.nmode === 'list' ? '<textarea id="colList" rows="3" placeholder="1, 2, 3, 10-20, 100">' + esc(dr.list) + '</textarea><p class="hint">' + esc(T('colListHint')) + '</p>' : '') + '</div>';
-  if(!pro) h += '<p class="hint">🔒 ' + esc(T('colProOnly')) + '</p>';
+  const linkRow = cur && cur.sid ? '<div class="field"><div class="row" style="margin-top:0"><span class="hint">' + esc(T('colLinkActive')) + '</span><button class="pill sm" data-act="coloff" data-k="' + E.i + '">' + esc(T('colLinkOffBtn')) + '</button></div></div>' : '';
+  let h = '<div class="editor">' + edTabsHtml('col', tab, [['basic', 'edTabBasic'], ['more', 'edTabColors']]) +
+    (tab === 'basic' ? fName + '<div class="optgrid">' + fMode + fGrid + fHearts + '</div>' + linkRow : fPreset + fCustom + fNums);
+  if(!pro && tab === 'more') h += '<p class="hint">🔒 ' + esc(T('colProOnly')) + '</p>';
   if(S.colMsg) h += '<div class="err">' + esc(S.colMsg) + '</div>';
   h += '<div class="row"><button class="pill fill sm" data-act="colsave">' + esc(T('save')) + '</button><button class="pill sm" data-act="colcancel">' + esc(T('cancel')) + '</button></div></div>';
   return h;
 }
 function colCardHtml(){
   const A = S.a, max = DATA.coloresMax(A.plan), E = S.colEdit;
-  let h = '<div class="card" id="colCard"><h3>' + esc(T('colSetsTitle')) + '</h3><p class="hint">' + esc(T('colSetsHint')) + '</p>';
+  let h = '<div class="card" id="colCard">' + phHead(T('colSetsTitle'), A.extrasReady ? T('bbkQuota', { n: A.configs.length, max }) : '');
   if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-  h += '<p class="hint"><b>' + esc(T('bbkQuota', { n: A.configs.length, max })) + '</b></p>';
   if(!A.configs.length && !(E && E.i < 0)) h += '<p class="hint">' + esc(T('colEmpty')) + '</p>';
   A.configs.forEach((it, i) => {
     if(E && E.i === i){ h += colEditorHtml(); return; }
     const c = it.cfg || {};
     h += '<div class="setrow"><div><b>🎨 ' + esc(c.name || ('#' + (i + 1))) + '</b><small>' + esc(colSummary(c)) + '</small></div><div class="row">' +
       '<button class="pill sm" data-act="coledit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
-      '<button class="pill sm" data-act="colpractice" data-k="' + i + '">🔗 ' + esc(T('bbkPractice')) + '</button>' +
-      (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkColoresPractice(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a><button class="pill sm" data-act="coloff" data-k="' + i + '">🚫 ' + esc(T('colLinkOff')) + '</button>' : '') +
+      (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkColoresPractice(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '<button class="pill sm" data-act="colplay" data-k="' + i + '">' + esc(T('test')) + '</button>') +
       '<button class="pill sm" data-act="coldel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
   });
   if(E && E.i < 0) h += colEditorHtml();
@@ -571,12 +576,12 @@ function dragonSetEditorHtml(){
   return h + '<div class="row"><button class="pill fill sm" data-act="dssave">' + esc(T('save')) + '</button><button class="pill sm" data-act="dscancel">' + esc(T('cancel')) + '</button></div></div>';
 }
 function dragonQuickHtml(){
-  let h = '<div class="card" id="dragonQuick"><h3>🐉 ' + esc(T('dragonQuickTitle')) + '</h3>';
+  let h = '<div class="card" id="dragonQuick"><h3>🔗 ' + esc(T('dragonQuickTitle')) + '</h3>';
   if(!DR.ready()) return h + maintBox() + '</div>';
   const A = S.a, P = A.plan;
   if(!A.dragonReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
   const sel = S.dragonQuick.filter(id => P.active || DR.isFreeId(id)), url = sel.length ? DATA.linkDragonQuick(sel) : '';
-  h += '<p class="hint">' + esc(T(P.active ? 'dragonQuickHintPro' : 'dragonQuickHintFree')) + '</p><div class="row" style="margin-top:0">' +
+  h += '<p class="hint">' + esc(T(P.active ? 'dragonPubHint' : 'dragonPubHintFree')) + '</p><div class="row" style="margin-top:0">' +
     DR.IDS.map(id => (P.active || DR.isFreeId(id)) ? chip(sel.indexOf(id) >= 0, DR.builtinName(id), 'dqk', id)
       : '<button class="pill sm chip lockbtn" data-act="needsub">🔒 ' + esc(DR.builtinName(id)) + '</button>').join('') + '</div>';
   h += url ? '<div class="url" data-url="dragon">' + esc(url) + '</div><div class="row"><button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
@@ -585,16 +590,14 @@ function dragonQuickHtml(){
   return h + '</div>';
 }
 function dragonCardHtml(){
-  let h = '<div class="card" id="dragonCard"><h3>🐉 ' + esc(T('dragonTitle')) + '</h3>';
+  let h = '<div class="card" id="dragonCard">' + phHead('🐉 ' + T('dragonTitle'));
   if(!DR.ready()) return h + maintBox() + '</div>';
   const A = S.a, P = A.plan, D = A.dragon, E = S.dragonEdit, SE = S.dragonSetEdit;
-  h += '<p class="hint">' + esc(T('dragonHint')) + '</p>';
   if(!A.dragonReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
   // 2. 自訂主題（訂閱）
-  h += '<h4>' + esc(T('dragonCustomTitle')) + '</h4>';
+  h += '<h4 class="ph"><span>' + esc(T('dragonCustomTitle')) + '</span>' + (P.active ? '<small class="cq">' + esc(T('bbkQuota', { n: D.themes.length, max: DR.MAX_T })) + '</small>' : '') + '</h4>';
   if(!P.active){ h += lockedNote(); }
   else{
-    h += '<p class="hint">' + esc(T('dragonCustomHint', { max: DR.MAX_W })) + ' <b>' + esc(T('bbkQuota', { n: D.themes.length, max: DR.MAX_T })) + '</b></p>';
     D.themes.forEach((t, i) => {
       if(E && E.i === i){ h += dragonThemeEditorHtml(); return; }
       h += '<div class="setrow"><div><b>★ ' + esc(t.name) + '</b><small>' + esc(T('dragonWordCount', { n: t.words.length })) + '</small></div><div class="row">' +
@@ -604,13 +607,12 @@ function dragonCardHtml(){
     else if(!E && D.themes.length < DR.MAX_T) h += '<div class="row"><button class="pill fill sm" data-act="dgnew">＋ ' + esc(T('dragonThemeNew')) + '</button></div>';
     else if(!E) h += '<div class="notice">' + esc(T('dragonThemeFull')) + '</div>';
     // 3. 練習範圍（訂閱）：選好主題，產生固定的連結，也能放進班級連結
-    h += '<h4>' + esc(T('dragonSetsTitle')) + '</h4><p class="hint">' + esc(T('dragonSetsHint')) + ' <b>' + esc(T('bbkQuota', { n: D.sets.length, max: DR.MAX_SETS })) + '</b></p>';
+    h += '<h4 class="ph"><span>' + esc(T('dragonSetsTitle')) + '</span><small class="cq">' + esc(T('bbkQuota', { n: D.sets.length, max: DR.MAX_SETS })) + '</small></h4>';
     D.sets.forEach((it, i) => {
       if(SE && SE.i === i){ h += dragonSetEditorHtml(); return; }
       h += '<div class="setrow"><div><b>🐉 ' + esc(it.name) + '</b><small>' + esc(DR.setSummary(it, D.themes)) + '</small></div><div class="row">' +
         '<button class="pill sm" data-act="dsedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
-        '<button class="pill sm" data-act="dspractice" data-k="' + i + '">🔗 ' + esc(T('bbkPractice')) + '</button>' +
-        (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkDragonSet(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '') +
+        (it.sid ? '<a class="pill sm" href="' + esc(DATA.linkDragonSet(it.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' : '<button class="pill sm" data-act="dsplay" data-k="' + i + '">' + esc(T('test')) + '</button>') +
         '<button class="pill sm" data-act="dsdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
     });
     if(SE && SE.i < 0) h += dragonSetEditorHtml();
@@ -640,10 +642,40 @@ function classLinksHtml(g){
   return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T({ corre: 'linksHintCorre', colores: 'linksHintColores', bbk: 'linksHintBbk', dragon: 'linksHintDragon' }[g])) + '</p>' + classPickHtml() +
     (clsC() ? linkCardHtml(g) : '') + '</div>';
 }
+// 色數、比比看：不屬於班級的練習連結（不回傳成績）
+function practiceCardHtml(g){
+  const A = S.a;
+  let h = '<div class="card" id="pracCard"><h3>🔗 ' + esc(T('pracTitle')) + '</h3><p class="hint">' + esc(T(g === 'colores' ? 'pracHintCol' : 'pracHintBbk')) + '</p>';
+  let url = '';
+  if(g === 'colores'){
+    if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+    if(!A.configs.length) return h + '<p class="hint">' + esc(T('configNone')) + '</p></div>';
+    const k = S.colPrac || '';
+    h += '<div class="field"><label>' + esc(T('configLabel')) + '</label><select data-sel="colprac"><option value="">' + esc(T('configPick')) + '</option>' +
+      A.configs.map((it, i) => '<option value="' + i + '" ' + (k === String(i) ? 'selected' : '') + '>' + esc((it.cfg && it.cfg.name) || ('#' + (i + 1))) + '</option>').join('') + '</select></div>';
+    const it = k !== '' ? A.configs[+k] : null;
+    if(!it) return h + '</div>';
+    if(!it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="colprmake">🔗 ' + esc(T('makeLink')) + '</button></div></div>';
+    url = DATA.linkColoresPractice(it.sid);
+  }else{
+    if(!A.bbkReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+    const k = S.bbkPrac || '';
+    h += '<div class="field"><label>' + esc(T('bbkRangeLabel')) + '</label><select data-sel="bbkprac"><option value="">' + esc(T('bbkRangeNormal')) + '</option>' +
+      A.bbk.map((it, i) => '<option value="' + i + '" ' + (k === String(i) ? 'selected' : '') + '>📐 ' + esc(it.name) + '</option>').join('') + '</select></div>';
+    const it = k !== '' ? A.bbk[+k] : null;
+    if(it && !it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="bbkprmake">🔗 ' + esc(T('makeLink')) + '</button></div></div>';
+    url = it ? DATA.linkBbkPractice(it.sid) : DATA.GAME_URL.bbk;
+  }
+  h += '<div class="url" data-url="' + g + 'prac">' + esc(url) + '</div><div class="row">' +
+    '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
+    '<button class="pill sm" data-act="qr" data-url="' + esc(url) + '" data-game="' + g + '">' + esc(T('qr')) + '</button>' +
+    '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
+  return h + '</div>';
+}
 function gameLinksHtml(g){
   if(g === 'corre') return pubCardHtml() + classLinksHtml(g);
   if(g === 'dragon') return dragonQuickHtml() + classLinksHtml(g);
-  return '<p class="hint">' + esc(T('linksPracticeHint')) + '</p>' + classLinksHtml(g);
+  return practiceCardHtml(g) + classLinksHtml(g);
 }
 function gameScoresHtml(){
   if(S.g === 'corre') ensurePacks();   // 成績冊的題包名稱要用
@@ -875,7 +907,7 @@ async function bwsMake(){
   render(); window.scrollTo(0, 0);
 }
 // ---- 列印：墨龍飛天詞表學習單 PDF ----
-function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, busy: false, msg: '', ok: false }; }
+function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, scale: 1, prev: null, busy: false, msg: '', ok: false }; }
 function dwsFormHtml(){
   let h = '<div class="card" id="dragonWsCard">';
   if(!DR.ready()) return h + maintBox() + '</div>';
@@ -888,10 +920,14 @@ function dwsFormHtml(){
     DR.IDS.map(id => chip(W.sel.indexOf(id) >= 0, DR.builtinName(id), 'dwst', id)).join('') + A.dragon.themes.map(t => chip(W.sel.indexOf(t.id) >= 0, '★ ' + t.name, 'dwst', t.id)).join('') + '</div></div>' +
     '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('dwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('dwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
+    '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('dwssize', W.scale, [[0.85, '85%'], [1, '100%'], [1.2, '120%']]) + '</div></div>' +
     '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'dwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'dwszy') + '</div>' +
     '<div class="row">' + (W.lang === 'zh' ? '' : chipB(W.match, T('dragonWsMatch'), 'dwsmatch') + (W.match ? chipB(W.answers, T('wsAnswersOpt'), 'dwsans') : '')) + '</div></div>' +
-    '<div class="row"><button class="pill fill" data-act="dwsmake" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
+    '<div class="row"><button class="pill" data-act="dwsprev" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>' + esc(T('cwsPreview')) + '</button>' +
+    '<button class="pill fill" data-act="dwsmake" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
     (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
+  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('cwsPrevTitle', { n: W.prev.length })) + '</b><button class="pill xs" data-act="dwsprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' +
+    W.prev.map(u => '<img src="' + u + '" alt="">').join('') + '</div>';
   return h + '</div>';
 }
 function bodyHtml(){
@@ -1129,6 +1165,33 @@ const actions = {
     catch(e){ console.error(e); S.bbkMsg = err(e); }
     render();
   }); },
+  edtab(el){ const E = el.dataset.e === 'col' ? S.colEdit : S.bbkEdit; if(E){ E.tab = el.dataset.k; render(); } },
+  // 試玩：還沒有連結時，先開一個空白分頁（避免被擋），建立連結後再帶過去
+  bbkplay(el){ const w = window.open('', '_blank'); return run(async () => {
+    const i = +el.dataset.k;
+    try{ S.a.bbk = await DATA.ensureBbkSid(S.a.bbk, i); S.bbkMsg = ''; render(); if(w) w.location.href = DATA.linkBbkPractice(S.a.bbk[i].sid); }
+    catch(e){ console.error(e); if(w) w.close(); S.bbkMsg = T('configFail', { m: err(e) }); render(); }
+  }); },
+  colplay(el){ const w = window.open('', '_blank'); return run(async () => {
+    const i = +el.dataset.k;
+    try{ const r = await DATA.ensureColoresSid(S.a.configs, i); S.a.configs = r.items; S.colMsg = ''; render(); if(w) w.location.href = DATA.linkColoresPractice(r.sid); }
+    catch(e){ console.error(e); if(w) w.close(); S.colMsg = T('configFail', { m: err(e) }); render(); }
+  }); },
+  dsplay(el){ const w = window.open('', '_blank'); return run(async () => {
+    const i = +el.dataset.k;
+    try{ S.a.dragon = await DATA.ensureDragonSid(S.a.dragon, i); S.dragonMsg = ''; render(); if(w) w.location.href = DATA.linkDragonSet(S.a.dragon.sets[i].sid); }
+    catch(e){ console.error(e); if(w) w.close(); S.dragonMsg = T('configFail', { m: err(e) }); render(); }
+  }); },
+  colprmake(){ return run(async () => {
+    try{ const r = await DATA.ensureColoresSid(S.a.configs, +S.colPrac); S.a.configs = r.items; S.msg = ''; }
+    catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
+    render();
+  }); },
+  bbkprmake(){ return run(async () => {
+    try{ S.a.bbk = await DATA.ensureBbkSid(S.a.bbk, +S.bbkPrac); S.msg = ''; }
+    catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
+    render();
+  }); },
   bbkpractice(el){ return run(async () => {
     const i = +el.dataset.k;
     try{
@@ -1270,14 +1333,17 @@ const actions = {
     catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
     render();
   }); },
-  dwst(el){ toggleIn(S.dws.sel, el.dataset.k); S.dws.msg = ''; render(); },
-  dwssimp(el){ S.dws.simp = el.dataset.k === '1'; render(); },
-  dwslang(el){ S.dws.lang = el.dataset.k; render(); },
-  dwspy(){ S.dws.pinyin = !S.dws.pinyin; render(); },
-  dwszy(){ S.dws.zhuyin = !S.dws.zhuyin; render(); },
-  dwsmatch(){ S.dws.match = !S.dws.match; render(); },
-  dwsans(){ S.dws.answers = !S.dws.answers; render(); },
-  async dwsmake(){
+  dwst(el){ toggleIn(S.dws.sel, el.dataset.k); S.dws.msg = ''; S.dws.prev = null; render(); },
+  dwssimp(el){ S.dws.simp = el.dataset.k === '1'; S.dws.prev = null; render(); },
+  dwslang(el){ S.dws.lang = el.dataset.k; S.dws.prev = null; render(); },
+  dwspy(){ S.dws.pinyin = !S.dws.pinyin; S.dws.prev = null; render(); },
+  dwszy(){ S.dws.zhuyin = !S.dws.zhuyin; S.dws.prev = null; render(); },
+  dwsmatch(){ S.dws.match = !S.dws.match; S.dws.prev = null; render(); },
+  dwsans(){ S.dws.answers = !S.dws.answers; S.dws.prev = null; render(); },
+  dwsprevclose(){ S.dws.prev = null; render(); },
+  dwssize(el){ S.dws.scale = +el.dataset.k; S.dws.prev = null; render(); },
+  async dwsprev(){ return actions.dwsmake(null, true); },
+  async dwsmake(_el, preview){
     const W = S.dws; if(!W || W.busy || !W.sel.length || !S.a.plan.active || !DR.ready()) return;
     W.busy = true; W.msg = ''; render();
     try{
@@ -1290,7 +1356,8 @@ const actions = {
         const t = S.a.dragon.themes.find(x => x.id === id); return t ? { name: t.name, words: t.words } : null;
       }).filter(Boolean);
       if(!themes.length) throw new Error(T('dragonLibFail'));
-      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, match: W.match, answers: W.answers, count: 10 });
+      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, match: W.match, answers: W.answers, count: 10, scale: W.scale, preview: !!preview });
+      if(preview){ W.prev = r.previews; W.busy = false; render(); return; }
       saveBlob(r.blob, 'dragon-worksheet.pdf');
       W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;
     }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
@@ -1343,6 +1410,8 @@ document.addEventListener('change', e => {
       }
     } }
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
+  if(s.dataset.sel === 'colprac') S.colPrac = s.value;
+  if(s.dataset.sel === 'bbkprac') S.bbkPrac = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'dragonsel'){ S.dragonSel = s.value; S.msg = ''; }
   if(s.dataset.sel === 'setk'){ S.setK = s.value; S.sel = null; }

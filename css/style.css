@@ -35,7 +35,8 @@ small,.mut{color:var(--mut)}
 .pill.xs{height:34px;box-sizing:border-box;min-height:0;padding:0 12px;font-size:.8rem;min-width:0}
 .ph{display:flex;align-items:center;gap:10px}
 .ph .badge{font-size:.8rem}
-#correCard .ph{flex-wrap:wrap}
+.card .ph{flex-wrap:wrap}
+h4.ph{display:flex;align-items:baseline;gap:8px}
 .ph .cq{font-size:.9rem;font-weight:700;color:var(--mut);margin-top:0}
 .ph .pexp{margin-left:auto;font-size:.85rem;font-weight:400;color:var(--mut)}
 .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.9rem;color:var(--mut);margin:0 0 8px;word-break:break-all}
@@ -88,7 +89,7 @@ input[type=text]:focus,select:focus{outline:2px solid var(--brown-l);border-colo
 .slot b{font-size:1.05rem;word-break:break-all}
 
 /* 連結卡 */
-.url{word-break:break-all;margin:8px 0}
+.url{margin:8px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* 表格 */
 .tablewrap{overflow-x:auto;margin:8px 0}

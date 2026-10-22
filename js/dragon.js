@@ -122,10 +122,11 @@ async function makeWorksheet(themes, opt){
   const FF = '"Noto Sans TC","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",sans-serif';
   const txt = themes.map(t => t.name + t.words.map(w => w[0] + w[1] + w[2] + ZY.conv(w[2]) + tr(w)).join('')).join('') + L.name + L.date + L.list + L.match + L.ans + L.title + (opt.title || '') + 'ABCDEFGHIJKLMNOPQRST0123456789.:_-/ ';
   try{ await Promise.all([document.fonts.load('900 44px "Noto Sans TC"', txt), document.fonts.load('500 26px "Noto Sans TC"', txt)]); }catch(e){}
+  const K = opt.scale || 1, LW = PDFW / K, LH = PDFH / K;   // 字大小：用畫布縮放，版面照比例重排
   const pages = [];
   let cv, c, y;
-  const newPage = () => { cv = document.createElement('canvas'); cv.width = PDFW; cv.height = PDFH; c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, PDFW, PDFH); c.textBaseline = 'alphabetic'; pages.push(cv); y = PM; };
-  const ensure = h => { if(y + h > PDFH - PM - 40) newPage(); };
+  const newPage = () => { cv = document.createElement('canvas'); cv.width = PDFW; cv.height = PDFH; c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, PDFW, PDFH); c.setTransform(K, 0, 0, K, 0, 0); c.textBaseline = 'alphabetic'; pages.push(cv); y = PM; };
+  const ensure = h => { if(y + h > LH - PM - 40) newPage(); };
   const font = (w, px) => { c.font = w + ' ' + px + 'px ' + FF; };
   const wText = w => opt.simp ? (w[1] || w[0]) : w[0];
   const rowH = (opt.pinyin && opt.zhuyin) ? 78 : 62;
@@ -140,8 +141,8 @@ async function makeWorksheet(themes, opt){
   };
   const head = title => {
     font(900, 46); c.fillStyle = '#0a6b73'; c.fillText(title, PM, y + 44); y += 70;
-    font(500, 26); c.fillStyle = '#333'; c.fillText(L.name + ' ____________________', PM, y + 26); c.fillText(L.date + ' ______________', PDFW / 2 + 40, y + 26); y += 58;
-    c.strokeStyle = '#0a6b73'; c.lineWidth = 3; c.beginPath(); c.moveTo(PM, y); c.lineTo(PDFW - PM, y); c.stroke(); y += 30;
+    font(500, 26); c.fillStyle = '#333'; c.fillText(L.name + ' ____________________', PM, y + 26); c.fillText(L.date + ' ______________', LW / 2 + 40, y + 26); y += 58;
+    c.strokeStyle = '#0a6b73'; c.lineWidth = 3; c.beginPath(); c.moveTo(PM, y); c.lineTo(LW - PM, y); c.stroke(); y += 30;
   };
   const sectionTitle = name => { ensure(60 + rowH * 2); font(700, 32); c.fillStyle = '#0a6b73'; c.textAlign = 'left'; c.fillText(name, PM, y + 32); y += 56; };
   const trX = PM + (opt.pinyin || opt.zhuyin ? 640 : 330);
@@ -154,7 +155,7 @@ async function makeWorksheet(themes, opt){
       word(w, PM, y); if(opt.pinyin || opt.zhuyin) reading(w, PM + 300, y + 4);
       if(!zhOnly){ font(500, 26); c.fillStyle = '#333'; c.textAlign = 'left'; c.fillText(tr(w), trX, y + 40); }
       y += rowH;
-      c.strokeStyle = '#e3e3e3'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(PM, y - 8); c.lineTo(PDFW - PM, y - 8); c.stroke();
+      c.strokeStyle = '#e3e3e3'; c.lineWidth = 1.2; c.beginPath(); c.moveTo(PM, y - 8); c.lineTo(LW - PM, y - 8); c.stroke();
     });
     y += 24;
   });
@@ -194,9 +195,10 @@ async function makeWorksheet(themes, opt){
     });
   }
   pages.forEach((p, i) => {
-    const g = p.getContext('2d'); g.fillStyle = '#999'; g.font = '500 22px ' + FF; g.textAlign = 'center';
+    const g = p.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#999'; g.font = '500 22px ' + FF; g.textAlign = 'center';
     g.fillText('每天一分鐘 · 墨龍飛天 · ' + (i + 1) + ' / ' + pages.length, PDFW / 2, PDFH - 50);
   });
+  if(opt.preview) return { previews: pages.map(p => p.toDataURL('image/jpeg', 0.6)), pages: pages.length };
   const jpegs = pages.map(p => { const bin = atob(p.toDataURL('image/jpeg', 0.85).split(',')[1]), u = new Uint8Array(bin.length); for(let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k); return u; });
   return { blob: window.CORRE.buildPdf(jpegs, PDFW, PDFH), pages: pages.length };
 }

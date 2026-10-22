@@ -5,7 +5,7 @@ window.HELP = {
   "btn": "📘 遊戲設定說明",
   "title": "📘 遊戲設定說明",
   "intro": "在遊戲頁，你可以替每款遊戲準備自己的題目，然後用連結傳給學生玩。",
-  "back": "← 返回遊戲設定",
+  "back": "← 回上一頁",
   "free": "免費",
   "pro": "訂閱",
   "jump": [
@@ -27,7 +27,7 @@ window.HELP = {
      ],
      [
       "產生連結",
-      "連結有兩種：<ul><li><b>練習連結</b>：在遊戲頁的「設定組／練習範圍／主題」分頁（跑吧、墨龍在「連結」分頁）就能產生，不用開班級。學生打開就能玩，但成績不會回傳給你。</li><li><b>班級連結</b>（訂閱功能）：到遊戲頁的「連結」分頁，上面選班級，再選好句庫、設定組或範圍，產生連結。學生輸入暱稱後，每一回合的成績會自動回傳到成績冊。</li></ul>"
+      "連結有兩種：<ul><li><b>練習連結</b>：在遊戲頁「連結」分頁最上面的卡片就能產生，也可以複製各項目旁的「試玩」連結，不用開班級。學生打開就能玩，但成績不會回傳給你。</li><li><b>班級連結</b>（訂閱功能）：到遊戲頁的「連結」分頁，上面選班級，再選好句庫、設定組或範圍，產生連結。學生輸入暱稱後，每一回合的成績會自動回傳到成績冊。</li></ul>"
      ],
      [
       "傳給學生",
@@ -42,7 +42,7 @@ window.HELP = {
    },
    {
     "id": "hCorre",
-    "h": "📚 跑吧！漢字：句庫",
+    "h": "📚 跑吧！漢字：自訂句庫",
     "intro": "<b>句庫</b>就是一組你自己出的句子。",
     "items": [
      "<b>句子</b>：詞和詞之間用空格分開，例如「我 喜歡 吃 蘋果」。空格決定遊戲裡每塊詞語怎麼切。",
@@ -68,7 +68,7 @@ window.HELP = {
      "<b>顏色</b>：<ul><li>基本色（9 種）：紅、黃、藍、綠、黑、白、灰、橘、紫</li><li>進階色（14 種）：再加上粉紅、咖啡、深淺灰、深淺藍、深淺綠</li><li>自訂顏色（訂閱功能）</li></ul>",
      "<b>數字</b>：<ul><li>0–999</li><li>0–9999</li><li>自訂數字（訂閱功能）：用逗號分開，可以寫範圍，例如「1, 2, 10-20, 100」，最多 200 個</li></ul>"
     ],
-    "note": "不想再讓學生用某組設定時，可以「停用連結」，設定組會留著。",
+    "note": "不想再讓學生用某組設定時，可以在編輯畫面按「停用練習連結」，設定組會留著。",
     "plan": [
      "3 組",
      "15 組，可以自訂顏色和數字"
@@ -149,7 +149,7 @@ window.HELP = {
   "btn": "📘 游戏设置说明",
   "title": "📘 游戏设置说明",
   "intro": "在游戏页，你可以替每款游戏准备自己的题目，然后用链接传给学生玩。",
-  "back": "← 返回游戏设置",
+  "back": "← 回上一页",
   "free": "免费",
   "pro": "订阅",
   "jump": [
@@ -171,7 +171,7 @@ window.HELP = {
      ],
      [
       "生成链接",
-      "链接有两种：<ul><li><b>练习链接</b>：在游戏页的“设置组／练习范围／主题”分页（跑吧、墨龙在“链接”分页）就能生成，不用开班级。学生打开就能玩，但成绩不会回传给你。</li><li><b>班级链接</b>（订阅功能）：到游戏页的“链接”分页，上面选班级，再选好句库、设置组或范围，生成链接。学生输入昵称后，每一回合的成绩会自动回传到成绩册。</li></ul>"
+      "链接有两种：<ul><li><b>练习链接</b>：在游戏页“链接”分页最上面的卡片就能生成，也可以复制各项目旁的“试玩”链接，不用开班级。学生打开就能玩，但成绩不会回传给你。</li><li><b>班级链接</b>（订阅功能）：到游戏页的“链接”分页，上面选班级，再选好句库、设置组或范围，生成链接。学生输入昵称后，每一回合的成绩会自动回传到成绩册。</li></ul>"
      ],
      [
       "传给学生",
@@ -186,7 +186,7 @@ window.HELP = {
    },
    {
     "id": "hCorre",
-    "h": "📚 跑吧！汉字：句库",
+    "h": "📚 跑吧！汉字：自订句库",
     "intro": "<b>句库</b>就是一组你自己出的句子。",
     "items": [
      "<b>句子</b>：词和词之间用空格分开，例如“我 喜欢 吃 苹果”。空格决定游戏里每块词语怎么切。",
@@ -212,7 +212,7 @@ window.HELP = {
      "<b>颜色</b>：<ul><li>基本色（9 种）：红、黄、蓝、绿、黑、白、灰、橘、紫</li><li>进阶色（14 种）：再加上粉红、咖啡、深浅灰、深浅蓝、深浅绿</li><li>自定颜色（订阅功能）</li></ul>",
      "<b>数字</b>：<ul><li>0–999</li><li>0–9999</li><li>自定数字（订阅功能）：用逗号分开，可以写范围，例如“1, 2, 10-20, 100”，最多 200 个</li></ul>"
     ],
-    "note": "不想再让学生用某组设置时，可以“停用链接”，设置组会留着。",
+    "note": "不想再让学生用某组设置时，可以在编辑画面按“停用练习链接”，设置组会留着。",
     "plan": [
      "3 组",
      "15 组，可以自定颜色和数字"
@@ -293,7 +293,7 @@ window.HELP = {
   "btn": "📘 Guía de ajustes",
   "title": "📘 Guía de ajustes de juegos",
   "intro": "En la página de cada juego puedes preparar tus propios ejercicios y enviárselos a tus alumnos con un enlace.",
-  "back": "← Volver a Ajustes de juegos",
+  "back": "← Volver",
   "free": "Gratis",
   "pro": "Suscripción",
   "jump": [
@@ -315,7 +315,7 @@ window.HELP = {
      ],
      [
       "Generar el enlace",
-      "Hay dos tipos de enlace:<ul><li><b>Enlace de práctica</b>: se genera en la página del juego (en la pestaña de configuraciones, rangos o temas; en Corre y Dragón, en «Enlaces»), sin crear una clase. El alumno lo abre y juega, pero sus notas no te llegan.</li><li><b>Enlace de clase</b> (suscripción): en la pestaña «Enlaces» del juego, elige la clase arriba, luego el banco, la configuración o el rango, y genera el enlace. El alumno escribe un apodo y la nota de cada ronda llega sola al libro de notas.</li></ul>"
+      "Hay dos tipos de enlace:<ul><li><b>Enlace de práctica</b>: se genera en la página del juego (en la primera tarjeta de la pestaña «Enlaces»; también puedes copiar el enlace «Probar» de cada elemento), sin crear una clase. El alumno lo abre y juega, pero sus notas no te llegan.</li><li><b>Enlace de clase</b> (suscripción): en la pestaña «Enlaces» del juego, elige la clase arriba, luego el banco, la configuración o el rango, y genera el enlace. El alumno escribe un apodo y la nota de cada ronda llega sola al libro de notas.</li></ul>"
      ],
      [
       "Enviarlo a tus alumnos",
@@ -356,7 +356,7 @@ window.HELP = {
      "<b>Colores</b>:<ul><li>Básicos (9): rojo, amarillo, azul, verde, negro, blanco, gris, naranja, morado</li><li>Avanzados (14): además rosa, marrón, gris oscuro y claro, azul oscuro y claro, verde oscuro y claro</li><li>Colores propios (suscripción)</li></ul>",
      "<b>Números</b>:<ul><li>0–999</li><li>0–9999</li><li>Números propios (suscripción): sepáralos con comas; puedes escribir rangos, por ejemplo «1, 2, 10-20, 100». Máximo 200.</li></ul>"
     ],
-    "note": "Si ya no quieres que tus alumnos usen una configuración, pulsa «Desactivar enlace»; la configuración se guarda.",
+    "note": "Si ya no quieres que tus alumnos usen una configuración, abre su edición y pulsa «Desactivar enlace de práctica»; la configuración se guarda.",
     "plan": [
      "3",
      "15, con colores y números propios"
@@ -437,7 +437,7 @@ window.HELP = {
   "btn": "📘 Settings guide",
   "title": "📘 Game settings guide",
   "intro": "On each game’s page you can prepare your own exercises and send them to your students with a link.",
-  "back": "← Back to Game settings",
+  "back": "← Back",
   "free": "Free",
   "pro": "Subscription",
   "jump": [
@@ -459,7 +459,7 @@ window.HELP = {
      ],
      [
       "Make a link",
-      "There are two kinds of link:<ul><li><b>Practice link</b>: made on the game page (in the setups, ranges or themes tab; for Run Hanzi and Ink Dragon, in the “Links” tab), no class needed. Students open it and play, but their scores are not sent to you.</li><li><b>Class link</b> (subscription): in the game’s “Links” tab, choose the class at the top, then the bank, setup or range, and create the link. Students enter a nickname and every round’s score goes straight to the gradebook.</li></ul>"
+      "There are two kinds of link:<ul><li><b>Practice link</b>: made on the game page (in the first card of the “Links” tab; you can also copy the “Try it” link of each item), no class needed. Students open it and play, but their scores are not sent to you.</li><li><b>Class link</b> (subscription): in the game’s “Links” tab, choose the class at the top, then the bank, setup or range, and create the link. Students enter a nickname and every round’s score goes straight to the gradebook.</li></ul>"
      ],
      [
       "Send it to students",
@@ -500,7 +500,7 @@ window.HELP = {
      "<b>Colors</b>:<ul><li>Basic (9): red, yellow, blue, green, black, white, gray, orange, purple</li><li>Advanced (14): adds pink, brown, dark and light gray, dark and light blue, dark and light green</li><li>Custom colors (subscription)</li></ul>",
      "<b>Numbers</b>:<ul><li>0–999</li><li>0–9999</li><li>Custom numbers (subscription): separate with commas, ranges allowed, e.g. “1, 2, 10-20, 100”. Up to 200.</li></ul>"
     ],
-    "note": "If you no longer want students to use a setup, press “Turn off link”; the setup is kept.",
+    "note": "If you no longer want students to use a setup, open its editor and press “Turn off practice link”; the setup is kept.",
     "plan": [
      "3",
      "15, with custom colors and numbers"

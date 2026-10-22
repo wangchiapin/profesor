@@ -342,15 +342,16 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('#bbkCard');
     ok((await text(page, '#bbkCard')).includes('已存 0 / 15 組'), '訂閱老師：0 / 15');
     await page.click('[data-act=bbknew]'); await page.waitForSelector('#bbkCard .editor');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=more]'); 
     let chips = await page.$$eval('#bbkCard .editor [data-act=bbkd]', e => e.map(x => x.dataset.k));
     ok(chips.join() === 'height,age,build,hair,eyes,nose', '第 1 關只列第 1 關的特徵', chips);
     ok((await page.$$eval('#bbkCard .editor [data-act=bbkt]', e => e.map(x => x.dataset.k))).join() === 'decode,tf,pick,more,fill,adj', '第 1 關的題型');
-    await page.fill('#bbkName', '身高和年齡');
-    await page.click('[data-act=bbkall][data-k=d0]');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=basic]'); await page.fill('#bbkName', '身高和年齡');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=more]'); await page.click('[data-act=bbkall][data-k=d0]');
     ok(await page.$eval('[data-act=bbksave]', b => b.disabled), '特徵全清：不能儲存');
     await page.click('[data-act=bbkd][data-k=height]'); await page.click('[data-act=bbkd][data-k=age]');
     await page.click('[data-act=bbkt][data-k=tf]');   // 取消對錯題
-    await page.click('[data-act=bbkn][data-k="15"]');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=basic]'); await page.click('[data-act=bbkn][data-k="15"]');
     ok((await page.$eval('#bbkName', i => i.value)) === '身高和年齡', '點選其他東西時名稱不會消失');
     await shot(page, 'i1_editor');
     await page.click('[data-act=bbksave]'); await page.waitForSelector('#bbkCard .setrow');
@@ -358,22 +359,22 @@ server.listen(0, 'localhost', async () => {
     ok(it.name === '身高和年齡' && it.lv === 1 && it.d.join() === 'height,age' && it.t.join() === 'decode,pick,more,fill,adj' && it.n === 15 && !it.sid, '存進 bbk_sets（還沒有連結碼）', it);
     ok((await text(page, '#bbkCard')).includes('第 1 關 · 15 題 · 身高、年齡 · 看句子找人、看圖選句子、選人：誰比較＿？'), '列表摘要', await text(page, '#bbkCard'));
     // 第二組：全選＋第 3 關
-    await page.click('[data-act=bbknew]'); await page.click('[data-act=bbklv][data-k="3"]');
+    await page.click('[data-act=bbknew]'); await page.click('[data-act=bbklv][data-k="3"]'); await page.click('[data-act=edtab][data-e=bbk][data-k=more]'); 
     ok((await page.$$eval('#bbkCard .editor [data-act=bbkd].on', e => e.length)) === 9, '換到第 3 關：全選時跟著變成 9 個特徵');
     await page.click('[data-act=bbksave]'); await page.waitForFunction(() => document.querySelectorAll('#bbkCard .setrow').length === 2);
     d = await db(page); it = d.bbk_sets.u1.items[1];
     ok(it.name === '範圍 2' && it.lv === 3 && it.d.length === 0 && it.t.length === 0 && it.n === 10, '沒取名用預設名稱；全選存成空陣列（＝全部）', it);
     // 練習連結：產生連結碼並複製
-    await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async t => { window.__copied = t; }; });
-    await page.click('[data-act=bbkpractice][data-k="0"]'); await page.waitForFunction(() => window.__copied);
+    await page.evaluate(() => { window.__w = { location: {}, close(){} }; window.open = () => window.__w; }); 
+    await page.click('[data-act=bbkplay][data-k="0"]'); await page.waitForFunction(() => window.__w.location.href);
     d = await db(page); it = d.bbk_sets.u1.items[0];
     const sid = it.sid, sh = d.shared_bbk && d.shared_bbk[sid];
     ok(/^[a-z0-9]{12}$/.test(sid) && sh && sh.owner === 'u1' && sh.name === '身高和年齡' && sh.th === 'people' && sh.d.join() === 'height,age' && sh.n === 15, '產生連結碼：寫入 shared_bbk', sh);
-    ok((await page.evaluate(() => window.__copied)) === 'https://wangchiapin.github.io/compara-y-adivina/?r=' + sid, '複製練習連結 ?r=代碼');
+    ok((await page.evaluate(() => window.__w.location.href)) === 'https://wangchiapin.github.io/compara-y-adivina/?r=' + sid, '試玩：產生連結碼並開啟 ?r=代碼');
     ok(await page.$('#bbkCard .setrow a[href*="?r=' + sid + '"]') !== null, '出現「試玩」');
     // 編輯＋改名：shared_bbk 跟著改，連結碼不變
     await page.click('[data-act=bbkedit][data-k="0"]'); await page.fill('#bbkName', '身高年齡（改）'); await page.click('[data-act=bbklv][data-k="2"]');
-    await page.click('[data-act=bbkd][data-k=muscle]');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=more]'); await page.click('[data-act=bbkd][data-k=muscle]');
     await page.click('[data-act=bbksave]'); await page.waitForFunction(() => !document.querySelector('#bbkCard .editor'));
     d = await db(page); it = d.bbk_sets.u1.items[0];
     ok(it.sid === sid && it.name === '身高年齡（改）' && it.lv === 2 && it.d.join() === 'height,age,muscle', '編輯後連結碼不變', it);
@@ -384,7 +385,7 @@ server.listen(0, 'localhost', async () => {
     ok((await db(page)).bbk_sets.u1.items[1].name === '範圍 2', '取消：不存');
     await shot(page, 'i2_list');
     // 首頁用量
-    await page.click('[data-act=nav][data-r=home]'); await page.waitForSelector('.ph');
+    await page.click('[data-act=nav][data-r=home]'); await page.waitForFunction(() => /比比看：設定存檔\s*2 \/ 15/.test(document.body.innerText), null, { timeout: 8000 }).catch(() => {});
     ok((await text(page)).includes('比比看：設定存檔\n2 / 15') || (await text(page)).replace(/\s+/g, ' ').includes('比比看：設定存檔 2 / 15'), '首頁用量 2 / 15');
     // 班級頁：選範圍 → 連結 ?r=&class=
     await page.evaluate(() => __profesor.go('game/bbk/links')); await page.waitForSelector('[data-sel=bbksel]');
@@ -445,11 +446,12 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('#colCard .setrow');
     ok((await text(page, '#colCard')).includes('已存 2 / 15 組') && (await text(page, '#colCard')).includes('百位數'), '列出原本的 2 組設定');
     await page.click('#colCard [data-act=colnew]'); await page.waitForSelector('#colCard .editor');
+    await page.click('[data-act=edtab][data-e=col][data-k=more]'); 
     ok((await page.$$eval('.cchip.on', e => e.length)) === 9, '新設定預設基本色 9 色');
-    await page.fill('#colName', '三年級');
+    await page.click('[data-act=edtab][data-e=col][data-k=basic]'); await page.fill('#colName', '三年級');
     await page.click('[data-act=colmode][data-k=B]'); await page.click('[data-act=colstep][data-k="rows,1"]'); await page.click('[data-act=colstep][data-k="cols,-1"]');
     await page.click('[data-act=colhearts][data-k="0"]');
-    await page.click('[data-act=colquick][data-k=none]'); await page.click('[data-act=colid][data-k=red]');
+    await page.click('[data-act=edtab][data-e=col][data-k=more]'); await page.click('[data-act=colquick][data-k=none]'); await page.click('[data-act=colid][data-k=red]');
     await page.click('[data-act=colsave]'); await page.waitForSelector('#colCard .editor .err');
     ok((await text(page, '#colCard .editor .err')).includes('至少要選 2 種顏色'), '只選 1 色不能存');
     await page.click('[data-act=colid][data-k=blue]');
@@ -464,24 +466,27 @@ server.listen(0, 'localhost', async () => {
       await page.fill('[data-cc="0"][data-f=p]', 'tiān kōng lán');
     }
     await page.click('[data-act=colnmode][data-k=list]'); await page.fill('#colList', '1, 2, 10-12, 100');
-    ok((await page.$eval('#colName', i => i.value)) === '三年級', '名稱沒被重畫洗掉');
+    await page.click('[data-act=edtab][data-e=col][data-k=basic]'); ok((await page.$eval('#colName', i => i.value)) === '三年級', '名稱沒被重畫洗掉');
     await shot(page, 'k1_col_editor');
     await page.click('[data-act=colsave]'); await page.waitForFunction(() => !document.querySelector('#colCard .editor'));
     let d = await db(page), it = d.teacher_configs.u1.items[2];
     ok(it && it.cfg.name === '三年級' && it.cfg.mode === 'B' && it.cfg.rows === 6 && it.cfg.cols === 3 && it.cfg.hearts === 0 && it.cfg.ids.join() === 'red,blue' &&
       it.cfg.custom[0].n === '天空藍' && it.cfg.custom[0].s === '天空藍色' && (!LIBS || it.cfg.custom[0].p === 'tiān kōng lán') && !('_autoP' in it.cfg.custom[0]) && it.cfg.nums.join() === '1,2,10,11,12,100' && !it.cfg.range && typeof it.id === 'string', '存成遊戲同樣的格式', it);
     // 編輯有連結碼的那組：shared_configs 跟著改
-    await page.click('#colCard [data-act=coledit][data-k="0"]'); await page.click('[data-act=colnmode][data-k="9999"]'); await page.click('[data-act=colsave]');
+    await page.click('#colCard [data-act=coledit][data-k="0"]'); await page.click('[data-act=edtab][data-e=col][data-k=more]'); await page.click('[data-act=colnmode][data-k="9999"]'); await page.click('[data-act=colsave]');
     await page.waitForFunction(() => !document.querySelector('#colCard .editor'));
     d = await db(page);
     ok(d.teacher_configs.u1.items[0].cfg.range === 9999 && d.teacher_configs.u1.items[0].sid === 'cfg000011112' && d.shared_configs && d.shared_configs.cfg000011112.cfg.range === 9999, '編輯後已發出的連結跟著改');
     // 練習連結
-    await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = async t => { window.__copied = t; }; });
-    await page.click('#colCard [data-act=colpractice][data-k="2"]'); await page.waitForFunction(() => window.__copied);
+    await page.evaluate(() => { window.__w = { location: {}, close(){} }; window.open = () => window.__w; }); 
+    await page.click('#colCard [data-act=colplay][data-k="2"]'); await page.waitForFunction(() => window.__w.location.href);
     d = await db(page); const sid = d.teacher_configs.u1.items[2].sid;
-    ok(/^[a-z0-9]{12}$/.test(sid) && d.shared_configs[sid].pro === true && (await page.evaluate(() => window.__copied)) === 'https://wangchiapin.github.io/pop-colores-numeros/?c=' + sid, '練習連結 ?c=代碼（用到訂閱功能 pro=true）');
+    ok(/^[a-z0-9]{12}$/.test(sid) && d.shared_configs[sid].pro === true && (await page.evaluate(() => window.__w.location.href)) === 'https://wangchiapin.github.io/pop-colores-numeros/?c=' + sid, '試玩連結 ?c=代碼（用到訂閱功能 pro=true）');
     // 停用連結
-    await page.click('#colCard [data-act=coloff][data-k="2"]'); await page.waitForFunction(s => !document.querySelector('#colCard [data-act=coloff][data-k="2"]'), sid);
+    ok(await page.$('#colCard [data-act=coloff]') === null, '停用鈕不在列上，只在編輯畫面');
+    await page.click('#colCard [data-act=coledit][data-k="2"]');
+    await page.click('#colCard .editor [data-act=coloff][data-k="2"]'); await page.waitForFunction(() => !document.querySelector('#colCard [data-act=coloff]'));
+    await page.click('[data-act=colcancel]');
     d = await db(page);
     ok(!d.teacher_configs.u1.items[2].sid && !d.shared_configs[sid], '停用連結：刪 shared_configs，設定組留著');
     // 刪除
@@ -494,7 +499,7 @@ server.listen(0, 'localhost', async () => {
   { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'es' }, hash: '#/game/colores/content' });
     await page.waitForSelector('#colCard .setrow');
     await page.click('#colCard [data-act=colnew]'); await page.waitForSelector('#colCard .editor');
-    await page.click('[data-act=colcadd]');
+    await page.click('[data-act=edtab][data-e=col][data-k=more]'); await page.click('[data-act=colcadd]');
     ok(await page.$('[data-cc="0"]') === null && await page.$('.modal.sub') !== null, '免費：不能加自訂顏色（跳出建議訂閱）');
     await page.click('.modal.sub [data-m=close]');
     await page.click('[data-act=colnmode][data-k=list]');
@@ -941,12 +946,12 @@ server.listen(0, 'localhost', async () => {
     ok(errors.filter(e => !/load|ERR_FAILED/.test(e)).length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 手機自動複製失敗：跳出可以手動複製、分享的小視窗
     const BBK = [{ id: 'b1', name: '身高', lv: 1, d: ['height'], t: [], n: 5, sid: 'rng000011112' }];
-    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
-    await page.waitForSelector('#bbkCard [data-act=bbkpractice]');
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/links' });
+    await page.waitForSelector('#pracCard [data-sel=bbkprac]'); await page.selectOption('[data-sel=bbkprac]', '0');
     await page.evaluate(() => { let n = 0; window.__copies = [];
       navigator.clipboard.writeText = t => { n++; if(n === 1) return Promise.reject(new Error('NotAllowed')); window.__copies.push(t); return Promise.resolve(); };
       document.execCommand = () => false; });
-    await page.click('#bbkCard [data-act=bbkpractice]');
+    await page.click('#pracCard [data-act=copy]');
     await page.waitForSelector('.modal.cp');
     const v = await page.$eval('.modal.cp .cpbox', t => t.value);
     ok(v.includes('compara-y-adivina') && v.includes('r=rng000011112'), '自動複製失敗：跳出小視窗，裡面是練習連結', v);
@@ -1097,31 +1102,34 @@ server.listen(0, 'localhost', async () => {
     let d = await db(page); const it = d.bbk_sets.u1.items.find(x => x.name === '主題測試');
     ok(it && it.th === 'people', '存檔：範圍記下主題 people', it);
     const i = d.bbk_sets.u1.items.indexOf(it);
-    await page.click('[data-act=bbkpractice][data-k="' + i + '"]'); await page.waitForTimeout(200);
+    await page.evaluate(() => { window.__w = { location: {}, close(){} }; window.open = () => window.__w; }); await page.click('[data-act=bbkplay][data-k="' + i + '"]'); await page.waitForTimeout(200);
     d = await db(page); const sid = d.bbk_sets.u1.items[i].sid;
     ok(sid && d.shared_bbk[sid].th === 'people', '學生連結的範圍（shared_bbk）也記下主題', sid && d.shared_bbk[sid]);
     await page.click('[data-act=lang][data-l=es]'); await page.click('[data-act=bbkedit][data-k="' + i + '"]');
+    const both = async () => { await page.click('[data-act=edtab][data-e=bbk][data-k=basic]'); const a = await text(page, '#bbkCard'); await page.click('[data-act=edtab][data-e=bbk][data-k=more]'); return a + await text(page, '#bbkCard'); };
     ok((await text(page, '#bbkCard')).includes('Tema') && (await text(page, '#bbkCard')).includes('Próximamente'), '西文：Tema／Próximamente');
     ok(await noOverflow(page), '手機寬度不會左右滑');
     // 6-4 討論第 1 批：題型名稱空格寫法、主觀提醒
-    ok((await text(page, '#bbkCard')).includes('Elige: ¿quién es más ＿?') && (await text(page, '#bbkCard')).includes('subjetivas'), '西文：題型名稱空格寫法、主觀提醒');
+    const eb = await both();
+    ok(eb.includes('Elige: ¿quién es más ＿?') && eb.includes('subjetivas'), '西文：題型名稱空格寫法、主觀提醒');
     await page.click('[data-act=lang][data-l=tc]');
-    const tt = await text(page, '#bbkCard');
+    const tt = await both();
     ok(tt.includes('選人：誰比較＿？') && !tt.includes('誰比較…'), '題型名稱改成「選人：誰比較＿？」');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=basic]');
     ok((await text(page, '#bbkCard .editor .notice')).includes('有些題目比較主觀'), '主題下面有主觀提醒（淡黃色提醒框）');
-    await page.click('[data-act=bbklv][data-k="2"]');
-    const t2 = await text(page, '#bbkCard');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=basic]'); await page.click('[data-act=bbklv][data-k="2"]');
+    const t2 = await both();
     ok(t2.includes('選人：誰比 A ＿？') && t2.includes('選人：A 比誰＿？') && t2.includes('選比較詞'), '第 2 關題型名稱：選人：誰比 A ＿？／選人：A 比誰＿？／選比較詞');
     await shot(page, 's2_bbk_labels');
-    await page.click('[data-act=bbklv][data-k="1"]');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=basic]'); await page.click('[data-act=bbklv][data-k="1"]'); await page.click('[data-act=edtab][data-e=bbk][data-k=more]');
     ok(JSON.stringify(await page.$$eval('[data-act=bbkt]', b => b.map(x => x.dataset.k))) === JSON.stringify(['decode', 'tf', 'pick', 'more', 'fill', 'adj']), '第 1 關題型多了「選比較詞」「選形容詞」');
     ok((await text(page, '#bbkCard')).includes('選形容詞'), '題型名稱：選形容詞');
-    await page.click('[data-act=bbklv][data-k="3"]');
+    await page.click('[data-act=edtab][data-e=bbk][data-k=basic]'); await page.click('[data-act=bbklv][data-k="3"]'); await page.click('[data-act=edtab][data-e=bbk][data-k=more]');
     ok((await page.$$eval('[data-act=bbkt]', b => b.map(x => x.dataset.k))).includes('fill'), '第 3 關題型多了「選比較詞」');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25)\b/.test(ix) && (ix.match(/\?v=7-26/g) || []).length >= 11 && ix.includes('js/help.js?v=7-26') && ix.includes('js/pubbank.js?v=7-26'), 'index.html 的 css／js 都改成 ?v=7-26（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26)\b/.test(ix) && (ix.match(/\?v=7-27/g) || []).length >= 11 && ix.includes('js/help.js?v=7-27') && ix.includes('js/pubbank.js?v=7-27'), 'index.html 的 css／js 都改成 ?v=7-27（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1150,6 +1158,39 @@ server.listen(0, 'localhost', async () => {
       await ctx.close();
     }
   }
+
+  console.log('\n[Z] 三款遊戲對齊跑吧：標題、練習連結卡、編輯分頁、龍學習單預覽');
+  { const BBK = [{ id: 'b1', name: '身高', lv: 1, d: ['height'], t: [], n: 5 }];
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK, pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
+    await page.waitForSelector('#bbkCard');
+    ok((await text(page, '#bbkCard .ph span')) === '練習範圍' && (await text(page, '#bbkCard .ph .cq')).includes('1 / 15'), '比比看：標題＝分頁名，額度在旁邊');
+    ok((await page.$$eval('#bbkCard .setrow button, #bbkCard .setrow a', e => e.map(x => x.textContent.trim()))).join() === '編輯,試玩,🗑 刪除', '比比看：列上只有 編輯／試玩／刪除', await page.$$eval('#bbkCard .setrow button, #bbkCard .setrow a', e => e.map(x => x.textContent.trim())));
+    await page.click('[data-act=bbkedit][data-k="0"]');
+    ok((await page.$$eval('#bbkCard .esubs [data-act=edtab]', e => e.map(x => x.textContent))).join() === '基本設定,要考的內容', '比比看編輯器有兩個分頁');
+    await page.click('[data-act=bbkcancel]');
+    await page.evaluate(() => __profesor.go('game/bbk/links')); await page.waitForSelector('#pracCard');
+    ok(await page.$eval('#pracCard .url', e => e.textContent.includes('compara-y-adivina')), '連結頁有「練習連結」卡（預設一般模式）');
+    await page.selectOption('[data-sel=bbkprac]', '0'); await page.waitForSelector('[data-act=bbkprmake]'); await page.click('[data-act=bbkprmake]');
+    await page.waitForSelector('#pracCard .url'); ok(await page.$eval('#pracCard .url', e => /\?r=[a-z0-9]{12}/.test(e.textContent)), '選範圍後產生練習連結 ?r=');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/colores/content' });
+    await page.waitForSelector('#colCard');
+    ok((await text(page, '#colCard .ph span')) === '設定組', '色數：標題＝分頁名');
+    await page.click('#colCard [data-act=coledit][data-k="0"]');
+    ok((await page.$$eval('#colCard .esubs [data-act=edtab]', e => e.map(x => x.textContent))).join() === '基本設定,顏色與數字', '色數編輯器有兩個分頁');
+    await page.click('[data-act=colcancel]');
+    await page.evaluate(() => __profesor.go('game/colores/links')); await page.waitForSelector('#pracCard');
+    ok(await page.$('#pracCard [data-sel=colprac]') !== null, '色數連結頁有「練習連結」卡');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/dragon/links' });
+    await page.waitForSelector('#dragonQuick');
+    ok((await text(page, '#dragonQuick h3')).includes('公開連結'), '龍：快速連結改名「公開連結」');
+    await page.evaluate(() => { sessionStorage.setItem('dragonDev', '1'); __profesor.go('game/dragon/sheet'); }); await page.waitForSelector('#dragonWsCard');
+    ok(await page.$('[data-act=dwssize][data-k="1.2"]') !== null && await page.$eval('[data-act=dwsprev]', b => b.disabled), '龍學習單：有字大小、預覽鈕（沒選主題時不能按）');
+    await page.click('[data-act=dwssize][data-k="1.2"]');
+    ok(await page.$eval('[data-act=dwssize][data-k="1.2"]', b => b.classList.contains('on')), '龍學習單：字大小可切換');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);
 });
