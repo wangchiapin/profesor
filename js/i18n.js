@@ -100,7 +100,7 @@ const D = {
   jumpBbkWs: ['📐 比比看', '📐 比比看', '📐 Compara', '📐 Compare'],
   subTitle: ['🔒 這是訂閱功能', '🔒 这是订阅功能', '🔒 Función de suscripción', '🔒 Subscriber feature'],
   subWhy: ['訂閱後可以使用：', '订阅后可以使用：', 'Con la suscripción puedes usar:', 'With a subscription you get:'],
-  subList: ['建立班級和成績簿（最多 3 班）\n跑吧句庫 5 個、每庫 80 句、自訂干擾字\n色數設定 15 組、自訂顏色與數字\n比比看範圍 15 組\n各遊戲的學習單', '建立班级和成绩簿（最多 3 班）\n跑吧句库 5 个、每库 80 句、自定干扰字\n色数设置 15 组、自定颜色与数字\n比比看范围 15 组\n各游戏的学习单', 'Clases y libro de notas (hasta 3)\n5 bancos de Corre, 80 frases cada uno, distractores propios\n15 ajustes de Pop Colores, colores y números propios\n15 rangos de Compara\nHojas de trabajo de cada juego', 'Classes and gradebooks (up to 3)\n5 Run Hanzi banks, 80 sentences each, custom decoys\n15 Pop Colors sets, custom colors and numbers\n15 Compare ranges\nWorksheets for each game'],
+  subList: ['建立班級和成績簿（最多 3 班）\n跑吧句庫 5 個、每庫 80 句、自訂干擾字\n色數設定 15 組、自訂顏色與數字\n比比看範圍 15 組\n墨龍飛天自訂主題 3 個、練習範圍 15 組\n各遊戲的學習單', '建立班级和成绩簿（最多 3 班）\n跑吧句库 5 个、每库 80 句、自定干扰字\n色数设置 15 组、自定颜色与数字\n比比看范围 15 组\n墨龙飞天自定主题 3 个、练习范围 15 组\n各游戏的学习单', 'Clases y libro de notas (hasta 3)\n5 bancos de Corre, 80 frases cada uno, distractores propios\n15 ajustes de Pop Colores, colores y números propios\n15 rangos de Compara\nEl dragón de tinta: 3 temas propios y 15 rangos\nHojas de trabajo de cada juego', 'Classes and gradebooks (up to 3)\n5 Run Hanzi banks, 80 sentences each, custom decoys\n15 Pop Colors sets, custom colors and numbers\n15 Compare ranges\nInk Dragon: 3 custom themes and 15 ranges\nWorksheets for each game'],
   subGo: ['了解訂閱 →', '了解订阅 →', 'Ver la suscripción →', 'See the subscription →'],
   subLater: ['之後再說', '之后再说', 'Ahora no', 'Not now'],
   fbBtn: ['💬 意見回饋', '💬 意见反馈', '💬 Comentarios', '💬 Feedback'],
