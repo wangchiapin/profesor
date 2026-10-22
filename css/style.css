@@ -318,9 +318,9 @@ details.hsec[open]>summary{margin-bottom:8px}
 }
 
 /* 句庫編輯頁：上方分頁（設定／加句子／句庫內的句子）、「加句子」裡的小切換 */
-.etabs .pill,.etabs .pill:first-child{flex:1 1 auto;white-space:nowrap}
+.etabs .pill,.etabs .pill:first-child{flex:1 1 0;min-width:0;white-space:nowrap}
 .esubs{margin:4px 0 6px}
-.esubs .pill{flex:1 1 auto;white-space:nowrap}
+.esubs .pill,.esubs .pill:first-child{flex:1 1 0;min-width:0;white-space:nowrap}
 
 /* 手機：選項那幾行縮小字體與按鈕，盡量一行放得下 */
 @media (max-width:600px){
@@ -328,5 +328,6 @@ details.hsec[open]>summary{margin-bottom:8px}
   .optgrid .field label{font-size:.84rem;margin-left:2px}
   .optgrid .field .row{gap:5px}
   .optgrid .pill,.optgrid .pill.sm{font-size:.82rem;padding:3px 9px;min-height:34px}
-  .etabs .pill,.esubs .pill{font-size:.84rem;padding:4px 6px}
+  .etabs .pill,.esubs .pill{font-size:.78rem;padding:4px 2px;white-space:normal;line-height:1.2;text-align:center}
 }
+@media (max-width:380px){ .esubs .pill{font-size:.72rem} }

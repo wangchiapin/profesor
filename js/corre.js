@@ -166,9 +166,9 @@ function shellHtml(){
     phonetic: groupHtml('phonetic', cur, [['pinyin', tr('phPinyin')], ['zhuyin', tr('phZhuyin')], ['both', tr('phBoth')]]),
     boss: groupHtml('boss', cur, [['1', tr('on')], ['0', tr('off')]])
   })[g];
-  return '<div class="row"><button class="pill sm" id="ce-back">' + esc(tr('back')) + '</button></div>' +
-    '<div id="ce-notice"></div>' +
+  return '<div id="ce-notice"></div>' +
     '<div class="gtabs etabs" id="ce-tabs">' +
+      '<button class="pill sm" id="ce-back">' + esc(tr('back')) + '</button>' +
       '<button class="pill sm" data-etab="set">' + esc(tr('tabSet')) + '</button>' +
       '<button class="pill sm" data-etab="add">' + esc(tr('tabAdd')) + '</button>' +
       '<button class="pill sm" data-etab="list" id="ce-tabList">' + esc(tr('tabList')) + '</button></div>' +
@@ -213,7 +213,7 @@ function shellHtml(){
         '<div class="st" id="ce-pickSt"></div><div id="ce-pickList"></div>' +
       '</div></div></div></div>' +
     '<div data-epanel="list"><div class="card"><h3>' + esc(tr('inBank')) + ' <span class="mut" id="ce-counter"></span></h3><div id="ce-sents"></div></div></div>' +
-    '<div class="savebar"><button class="pill fill" id="ce-save">' + esc(tr('saveBank')) + '</button>' +
+    '<div class="savebar" id="ce-savebar"><button class="pill fill" id="ce-save">' + esc(tr('saveBank')) + '</button>' +
       '<span class="dirty" id="ce-dirty" hidden>' + esc(tr('unsaved')) + '</span><span class="st" id="ce-saveSt"></span></div>';
 }
 // 分頁：設定｜加句子（一句一句／批次／公開句庫）｜句庫內的句子。只是把沒選到的區塊藏起來，裡面的輸入框都還在
@@ -223,6 +223,7 @@ function applyTabs(){
   document.querySelectorAll('[data-epanel]').forEach(p => { p.hidden = p.dataset.epanel !== ED.tab; });
   document.querySelectorAll('#ce-subs [data-esub]').forEach(b => b.classList.toggle('on', b.dataset.esub === ED.sub));
   document.querySelectorAll('[data-esubp]').forEach(p => { p.hidden = p.dataset.esubp !== ED.sub; });
+  const sb = $('savebar'); if(sb) sb.hidden = ED.tab !== 'add';  // 儲存列只在「建立句庫」分頁出現
 }
 function setTab(t, sub){ if(!ED) return; if(t) ED.tab = t; if(sub) ED.sub = sub; applyTabs(); }
 function renderGroups(){
