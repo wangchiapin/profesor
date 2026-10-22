@@ -218,6 +218,7 @@ const D = {
   colPresetAdv: ['進階色', '进阶色', 'Colores avanzados', 'Advanced colors'],
   colPresetBoth: ['基本色＋進階色', '基本色＋进阶色', 'Básicos + avanzados', 'Basic + advanced'],
   colPresetOwn: ['自訂設定', '自定设置', 'Configuraciones propias', 'Your setups'],
+  pgNo: ['第 {i} / {n} 頁', '第 {i} / {n} 页', 'Página {i} / {n}', 'Page {i} / {n}'],
   wsPrevTitle: ['預覽', '预览', 'Vista previa', 'Preview'],
   colBasic: ['基本色（9）', '基本色（9）', 'Básicos (9)', 'Basic (9)'],
   colAdv: ['進階色（14）', '进阶色（14）', 'Avanzados (14)', 'Advanced (14)'],

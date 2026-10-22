@@ -344,3 +344,16 @@ details.hsec[open]>summary{margin-bottom:8px}
 .cws-prev img{display:block;width:100%;max-width:520px;margin:10px 0;border:1px solid var(--line);border-radius:6px}
 .cws-row.on small{color:#fff;opacity:.9}
 .cws-row{padding:6px 14px}
+
+/* 學習單預覽：一頁一頁（A4 比例） */
+.pgs{display:block}
+.pg{position:relative;width:100%;aspect-ratio:210/297;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.pgin{position:absolute;left:0;top:0;width:794px;padding:48px;box-sizing:border-box;transform-origin:0 0}
+.pgk{transform-origin:0 0}
+.pgno{font-size:.8rem;color:var(--mut);text-align:center;margin:4px 0 12px}
+.pgws{padding:0!important;box-shadow:none!important;border-radius:0!important;background:#fff}
+.pgws .ws-cell span{font-size:13pt}
+.pgws .ws-cell span.d{font-size:16pt}
+.pgws .ws-cell{min-height:15mm}
+.pgws .ws-cell.blank{min-height:17mm}
+.pgws .ws-key,.pgws .bw-key{border-top:0;margin-top:0;padding-top:0}

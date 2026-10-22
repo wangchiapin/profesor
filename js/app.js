@@ -733,7 +733,7 @@ function helpHtml(game){
 // ---- 列印：色數學習單 ----
 function wsDefaults(){
   const l = I18N.getLang();
-  return { cfg: '', kind: 'listen', read: false, count: 10, legend: true, simp: l === 'sc', help: l === 'en' ? 'en' : 'es', answers: true };
+  return { cfg: '', kind: 'listen', size: 14, read: false, count: 10, legend: true, simp: l === 'sc', help: l === 'en' ? 'en' : 'es', answers: true };
 }
 // 學習單選的設定：預設色（p:…）或自訂設定
 function wsCfgOf(W){
@@ -759,17 +759,18 @@ function wsFormHtml(){
   }
   h += '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('wssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('wsHelp')) + '</label><div class="row" style="margin-top:0">' + pills('wshelp', W.help, [['none', T('wsNone')], ['es', 'Español'], ['en', 'English']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('wssize', W.size, [[14, '14'], [16, '16'], [21, '21']]) + '</div></div>' +
     '<div class="field"><div class="row" style="margin-top:0">' + (W.kind === 'listen' ? '<button class="pill sm chip ' + (W.legend ? 'on' : '') + '" data-act="wslegend">' + (W.legend ? '✓ ' : '') + esc(T('wsLegendOpt')) + '</button>' : '') +
     '<button class="pill sm chip ' + (W.answers ? 'on' : '') + '" data-act="wsans">' + (W.answers ? '✓ ' : '') + esc(T('wsAnswersOpt')) + '</button></div></div>' +
     '<div class="row"><button class="pill" data-act="wspreview" ' + (W.cfg === '' ? 'disabled' : '') + '>' + esc(T('cwsPreview')) + '</button>' +
     '<button class="pill fill" data-act="wsexport" ' + (W.cfg === '' ? 'disabled' : '') + '>📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div>';
-  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('wsPrevTitle')) + '</b><button class="pill xs" data-act="wspreview">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill xs" data-act="wsprevclose">' + esc(T('cwsPrevClose')) + '</button></div><div class="ws">' + W.prev + '</div></div>';
+  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('wsPrevTitle')) + '</b><button class="pill xs" data-act="wspreview">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill xs" data-act="wsprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' + pagedHtml(W.prev, W.size) + '</div>';
   return h + '</div>';
 }
 function wsSheetHtml(){
   return '<div class="ws-bar noprint"><div class="row"><button class="pill sm" data-act="wsback">← ' + esc(T('back')) + '</button>' +
     '<button class="pill sm" data-act="' + (S.wsKind === 'bbk' ? 'bwsmake' : 'wsmake') + '">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill fill sm" data-act="wsprint">🖨 ' + esc(T('wsPrint')) + '</button></div>' +
-    '<p class="hint">' + esc(T('wsPrintTip')) + '</p></div><div class="ws">' + S.wsSheet + '</div>';
+    '<p class="hint">' + esc(T('wsPrintTip')) + '</p></div><div class="ws" style="zoom:' + sizeK(S.wsKind === 'bbk' ? S.bws.size : S.ws.size) + '">' + S.wsSheet + '</div>';
 }
 // ---- 列印：跑吧學習單 PDF ----
 const CWS_MAX = 50;
@@ -894,7 +895,7 @@ function loadBbk(){
 }
 function bwsDefaults(){
   const l = I18N.getLang();
-  return { sel: 'L1', prev: null, n: 10, simp: l === 'sc', lang: l === 'en' ? 'en' : 'es', phon: 'pinyin', answers: true, busy: false, msg: '' };
+  return { sel: 'L1', prev: null, size: 14, n: 10, simp: l === 'sc', lang: l === 'en' ? 'en' : 'es', phon: 'pinyin', answers: true, busy: false, msg: '' };
 }
 function bwsRange(W){
   if(W.sel[0] === 'L') return { lv: +W.sel[1], dims: [], types: [], n: W.n, name: '' };
@@ -915,11 +916,12 @@ function bwsFormHtml(){
     '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('bwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('bwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('bwsphon', W.phon, [['pinyin', T('bwsPinyin')], ['zhuyin', T('bwsZhuyin')], ['both', T('bwsBoth')], ['off', T('bwsOff')]]) + '</div></div>' +
+    '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('bwssize', W.size, [[14, '14'], [16, '16'], [21, '21']]) + '</div></div>' +
     '<div class="field"><div class="row" style="margin-top:0"><button class="pill sm chip ' + (W.answers ? 'on' : '') + '" data-act="bwsans">' + (W.answers ? '✓ ' : '') + esc(T('wsAnswersOpt')) + '</button></div></div>' +
     '<div class="row"><button class="pill" data-act="bwspreview" ' + (W.busy ? 'disabled' : '') + '>' + esc(W.busy ? T('loading') : T('cwsPreview')) + '</button>' +
     '<button class="pill fill" data-act="bwsexport" ' + (W.busy ? 'disabled' : '') + '>📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div>' +
     (W.msg ? '<div class="err">' + esc(W.msg) + '</div>' : '');
-  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('wsPrevTitle')) + '</b><button class="pill xs" data-act="bwspreview">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill xs" data-act="bwsprevclose">' + esc(T('cwsPrevClose')) + '</button></div><div class="ws">' + W.prev + '</div></div>';
+  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('wsPrevTitle')) + '</b><button class="pill xs" data-act="bwspreview">🔄 ' + esc(T('wsRemake')) + '</button><button class="pill xs" data-act="bwsprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' + pagedHtml(W.prev, W.size) + '</div>';
   return h + '</div>';
 }
 // 做一張學習單（HTML）。失敗時把原因放進 W.msg，回傳 null
@@ -948,7 +950,7 @@ async function bwsExport(){
   setTimeout(() => window.print(), 400);
 }
 // ---- 列印：墨龍飛天詞表學習單 PDF ----
-function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, scale: 1, prev: null, busy: false, msg: '', ok: false }; }
+function dwsDefaults(){ const l = I18N.getLang(); return { sel: [], lang: l === 'en' ? 'en' : 'es', simp: l === 'sc', pinyin: true, zhuyin: false, match: true, answers: true, size: 14, prev: null, busy: false, msg: '', ok: false }; }
 function dwsFormHtml(){
   let h = '<div class="card" id="dragonWsCard">';
   if(!DR.ready()) return h + maintBox() + '</div>';
@@ -960,7 +962,7 @@ function dwsFormHtml(){
     DR.IDS.map(id => chip(W.sel.indexOf(id) >= 0, DR.builtinName(id), 'dwst', id)).join('') + A.dragon.themes.map(t => chip(W.sel.indexOf(t.id) >= 0, '★ ' + t.name, 'dwst', t.id)).join('') + '</div></div>' +
     '<div class="field"><label>' + esc(T('wsScript')) + '</label><div class="row" style="margin-top:0">' + pills('dwssimp', W.simp ? 1 : 0, [[0, '繁體'], [1, '简体']]) + '</div></div>' +
     '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('dwslang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English'], ['zh', T('bwsOnlyZh')]]) + '</div></div>' +
-    '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('dwssize', W.scale, [[0.85, '85%'], [1, '100%'], [1.2, '120%']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('dwssize', W.size, [[14, '14'], [16, '16'], [18, '18']]) + '</div></div>' +
     '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'dwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'dwszy') + '</div>' +
     '<div class="row">' + (W.lang === 'zh' ? '' : chipB(W.match, T('dragonWsMatch'), 'dwsmatch') + (W.match ? chipB(W.answers, T('wsAnswersOpt'), 'dwsans') : '')) + '</div></div>' +
     '<div class="row"><button class="pill" data-act="dwsprev" ' + (!W.sel.length || W.busy ? 'disabled' : '') + '>' + esc(T('cwsPreview')) + '</button>' +
@@ -981,6 +983,77 @@ function bodyHtml(){
     default: return homeHtml();
   }
 }
+
+// ---- 學習單預覽：像跑吧一樣「一頁一頁」（色數、比比看是 HTML，要自己量高度分頁）----
+// size＝字體大小（跟跑吧一樣 14／16／21，14 是現在的大小）；版面用縮放：先排在 (718/k)×(1030/k) 的邏輯頁，再整頁放大
+const PG_CACHE = new Map();
+const sizeK = size => (+size || 14) / 14;
+async function paginateHtml(src, k){
+  const W = 718 / k, H = 1030 / k;
+  const mz = document.createElement('div');
+  mz.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;width:' + W + 'px';
+  document.body.appendChild(mz);
+  try{
+    const tpl = document.createElement('template'); tpl.innerHTML = src;
+    // 殼：沿著「只有一個子元素」的鏈往下（比比看外面還包著 .bbkws）
+    const chain = []; let cur = tpl.content;
+    while(cur.children.length === 1){ cur = cur.firstElementChild; chain.push(cur); }
+    const nodes = [...cur.children];
+    const pages = [];
+    const newPage = () => {
+      const outer = document.createElement('div'); outer.className = 'ws pgws';
+      let inner = outer; chain.forEach(c => { const e = c.cloneNode(false); inner.appendChild(e); inner = e; });
+      mz.appendChild(outer); const pg = { outer, inner }; pages.push(pg); return pg;
+    };
+    // 先全部放進去等圖片載入，再量高度
+    const warm = newPage(); nodes.forEach(n => warm.inner.appendChild(n));
+    await Promise.all([...warm.inner.querySelectorAll('img')].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; setTimeout(r, 4000); })));
+    pages.length = 0; mz.innerHTML = '';
+    let pg = newPage();
+    const over = () => pg.outer.offsetHeight > H;
+    const isKey = n => /(^|[\s-])key($|\s)|bw-key|ws-key/.test(n.className || '');
+    const put = n => {
+      if(isKey(n) && pg.inner.children.length) pg = newPage();
+      pg.inner.appendChild(n);
+      if(!over() || pg.inner.children.length === 1 && !n.children.length) return;
+      if(pg.inner.children.length > 1){ pg.inner.removeChild(n); pg = newPage(); pg.inner.appendChild(n); if(!over()) return; }
+      // 一塊就超過一頁：照它的子元素拆開
+      if(n.children.length > 1){
+        const kids = [...n.children]; pg.inner.removeChild(n);
+        let piece = n.cloneNode(false); pg.inner.appendChild(piece);
+        kids.forEach(kid => {
+          piece.appendChild(kid);
+          if(over() && piece.children.length > 1){ piece.removeChild(kid); pg = newPage(); piece = n.cloneNode(false); piece.classList.remove('ws-key', 'bw-key'); pg.inner.appendChild(piece); piece.appendChild(kid); }
+        });
+      }
+    };
+    nodes.forEach(put);
+    return pages.filter(x => x.inner.children.length).map(x => x.outer.outerHTML);
+  }finally{ mz.remove(); }
+}
+function pagedHtml(src, size){
+  const k = sizeK(size), key = size + '|' + src;
+  const pages = PG_CACHE.get(key);
+  return '<div class="pgprev" data-k="' + k + '" data-key="' + esc(String(size)) + '"><template class="pgsrc">' + src.replace(/<\/template/gi, '<\\/template') + '</template>' +
+    (pages ? pagesHtml(pages, k) : '<p class="hint center">' + esc(T('loading')) + '</p>') + '</div>';
+}
+function pagesHtml(pages, k){
+  return '<div class="pgs">' + pages.map((h, i) => '<div class="pg"><div class="pgin"><div class="pgk" style="width:' + (718 / k) + 'px;transform:scale(' + k + ')">' + h + '</div></div></div>' +
+    '<div class="pgno">' + esc(T('pgNo', { i: i + 1, n: pages.length })) + '</div>').join('') + '</div>';
+}
+// 每次重畫後：沒分頁過的就量一次；已經有的，照目前寬度縮放
+function layoutPreviews(){
+  document.querySelectorAll('.pgprev').forEach(async box => {
+    const tpl = box.querySelector('template.pgsrc'); if(!tpl) return;
+    const size = box.dataset.key, k = +box.dataset.k, src = tpl.innerHTML.replace(/<\\\/template/gi, '</template'), key = size + '|' + src;
+    if(!PG_CACHE.has(key)){
+      const pages = await paginateHtml(src, k); PG_CACHE.set(key, pages);
+      if(!box.isConnected) return;
+      box.querySelector('.pgs, .hint').outerHTML = pagesHtml(pages, k);
+    }
+    box.querySelectorAll('.pg').forEach(pg => { const sc = pg.clientWidth / 794; const inn = pg.querySelector('.pgin'); inn.style.transform = 'scale(' + sc + ')'; });
+  });
+}
 function render(){
   document.title = T('appTitle');
   let h = headerHtml();
@@ -994,6 +1067,7 @@ function render(){
   const ce = document.getElementById('correEd');
   if(ce) CORRE.mount(ce, () => goGame('corre', 'content'));
   document.body.classList.toggle('wsmode', !!S.wsSheet);
+  layoutPreviews();
   Object.keys(vals).forEach(id => { const el = document.getElementById(id); if(el && /^newCls/.test(id)) el.value = vals[id]; });   // 重畫時保留還沒送出的新班級名稱
   if(keep){ const el = document.getElementById(keep); if(el && el.focus) el.focus(); }
 }
@@ -1295,6 +1369,7 @@ const actions = {
   },
   wspreview(){ const h = actions.wsBuild(); if(h){ S.ws.prev = h; render(); } },
   wsprevclose(){ S.ws.prev = null; render(); },
+  wssize(el){ S.ws.size = +el.dataset.k; render(); },
   // 輸出PDF：用預覽的同一張（看到什麼印什麼），沒預覽就現做一張，再叫出列印
   wsexport(){
     const h = S.ws.prev || actions.wsBuild(); if(!h) return;
@@ -1316,6 +1391,7 @@ const actions = {
   bwspreview(){ return bwsPreview(); },
   bwsexport(){ return bwsExport(); },
   bwsprevclose(){ S.bws.prev = null; render(); },
+  bwssize(el){ S.bws.size = +el.dataset.k; render(); },
   wsprint(){ window.print(); },
   colmake(){ return run(async () => {
     try{
@@ -1389,7 +1465,7 @@ const actions = {
   dwsmatch(){ S.dws.match = !S.dws.match; S.dws.prev = null; render(); },
   dwsans(){ S.dws.answers = !S.dws.answers; S.dws.prev = null; render(); },
   dwsprevclose(){ S.dws.prev = null; render(); },
-  dwssize(el){ S.dws.scale = +el.dataset.k; S.dws.prev = null; render(); },
+  dwssize(el){ S.dws.size = +el.dataset.k; S.dws.prev = null; render(); },
   async dwsprev(){ return actions.dwsmake(null, true); },
   async dwsmake(_el, preview){
     const W = S.dws; if(!W || W.busy || !W.sel.length || !S.a.plan.active || !DR.ready()) return;
@@ -1404,7 +1480,7 @@ const actions = {
         const t = S.a.dragon.themes.find(x => x.id === id); return t ? { name: t.name, words: t.words } : null;
       }).filter(Boolean);
       if(!themes.length) throw new Error(T('dragonLibFail'));
-      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, match: W.match, answers: W.answers, count: 10, scale: W.scale, preview: !!preview });
+      const r = await DR.makeWorksheet(themes, { lang: W.lang, simp: W.simp, pinyin: W.pinyin, zhuyin: W.zhuyin, match: W.match, answers: W.answers, count: 10, scale: sizeK(W.size), preview: !!preview });
       if(preview){ W.prev = r.previews; W.busy = false; render(); return; }
       saveBlob(r.blob, 'dragon-worksheet.pdf');
       W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;

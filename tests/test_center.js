@@ -520,7 +520,7 @@ server.listen(0, 'localhost', async () => {
     ok(info.cells === 16 && info.qs === 10 && info.key === 10, '聽讀找色：4×4 色塊板、10 題、答案 10 題', info);
     ok(new Set(info.nums).size === 16 && info.nums.every(n => n >= 0 && n <= 999), '數字不重複、在 0–999', info.nums);
     ok(info.legend && info.qtext.every(t => /^[零一二三四五六七八九十百千兩]+$/.test(t)), '題目是國字數字、附顏色名稱表', info.qtext);
-    ok((await text(page, '.ws')).includes('Respuestas'), '輔助語言西文');
+    ok((await text(page, '#wsCard .pgs')).includes('Respuestas'), '輔助語言西文');
     await shot(page, 'l1_listen');
     if(SHOT) await page.pdf({ path: path.join(SHOT, 'l1_listen.pdf'), format: 'A4', printBackground: true });
     const before = info.nums.join();
@@ -1125,7 +1125,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31)\b/.test(ix) && (ix.match(/\?v=7-32/g) || []).length >= 11 && ix.includes('js/help.js?v=7-32') && ix.includes('js/pubbank.js?v=7-32'), 'index.html 的 css／js 都改成 ?v=7-32（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32)\b/.test(ix) && (ix.match(/\?v=7-33/g) || []).length >= 11 && ix.includes('js/help.js?v=7-33') && ix.includes('js/pubbank.js?v=7-33'), 'index.html 的 css／js 都改成 ?v=7-33（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1193,15 +1193,19 @@ server.listen(0, 'localhost', async () => {
     ok(await page.evaluate(() => [...document.styleSheets].some(ss => [...ss.cssRules].some(r => r.type === 4 && [...r.cssRules].some(x => x.selectorText === '.ws-key' && x.style.breakBefore === 'page'))) ), '答案頁：列印時另起一頁');
     await page.selectOption('[data-sel=wscfg]', '0'); await page.click('[data-act=wspreview]'); await page.waitForSelector('#wsCard .cws-prev .ws');
     ok(await page.$('#wsCard [data-act=wsexport]') !== null, '預覽旁邊是「輸出PDF」，預覽出現在下方');
+    ok((await page.$$('#wsCard .pgs .pg')).length >= 2 && (await text(page, '#wsCard .pgno')).includes('第 1 / '), '色數預覽：一頁一頁（題目頁、答案頁），標頁碼');
+    const n14 = (await page.$$('#wsCard .pgs .pg')).length;
+    await page.click('[data-act=wssize][data-k="21"]'); await page.waitForFunction(() => document.querySelectorAll('#wsCard .pgs .pg').length > 0);
+    ok(await page.$eval('#wsCard .pgk', e => e.style.transform.includes('1.5')), '字體大小 21：整頁放大 1.5 倍', n14);
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/dragon/links' });
     await page.waitForSelector('#dragonQuick');
     ok((await text(page, '#dragonQuick h3')).includes('公開連結'), '龍：快速連結改名「公開連結」');
     await page.evaluate(() => { sessionStorage.setItem('dragonDev', '1'); __profesor.go('game/dragon/sheet'); }); await page.waitForSelector('#dragonWsCard');
     ok(!(await text(page, '#dragonWsCard')).includes('把主題詞彙印成詞表'), '墨龍學習單：開頭的說明拿掉了');
-    ok(await page.$('[data-act=dwssize][data-k="1.2"]') !== null && await page.$eval('[data-act=dwsprev]', b => b.disabled), '龍學習單：有字大小、預覽鈕（沒選主題時不能按）');
-    await page.click('[data-act=dwssize][data-k="1.2"]');
-    ok(await page.$eval('[data-act=dwssize][data-k="1.2"]', b => b.classList.contains('on')), '龍學習單：字大小可切換');
+    ok(await page.$('[data-act=dwssize][data-k="16"]') !== null && await page.$eval('[data-act=dwsprev]', b => b.disabled), '龍學習單：有字大小、預覽鈕（沒選主題時不能按）');
+    await page.click('[data-act=dwssize][data-k="16"]');
+    ok(await page.$eval('[data-act=dwssize][data-k="16"]', b => b.classList.contains('on')), '龍學習單：字大小可切換');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   await browser.close(); server.close();
