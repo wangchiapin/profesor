@@ -717,7 +717,7 @@ function cwsDefaults(){
   return { src: '', lv: '', pool: null, poolKey: '', loading: false, name: '', script: I18N.getLang() === 'sc' ? 'simp' : 'trad',
     mode: 'all', n: 10, picked: [], blanks: {}, fillMode: 'random',
     types: { read: true, order: true, fill: false, trans: false, match: false, dict: false },
-    lang: I18N.getLang() === 'en' ? 'en' : 'es', pinyin: true, zhuyin: false, busy: false, msg: '', ok: false, prev: null };
+    lang: I18N.getLang() === 'en' ? 'en' : 'es', pinyin: true, zhuyin: false, size: 14, busy: false, msg: '', ok: false, prev: null };
 }
 const cwsTouch = () => { const W = S.cws; W.msg = ''; W.prev = null; };
 const cwsDraw = (len, n) => { const a = []; for(let i = 0; i < len; i++) a.push(i); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); const t = a[i]; a[i] = a[j]; a[j] = t; } return a.slice(0, n); };
@@ -808,7 +808,8 @@ function cwsFormHtml(){
   }
   // 翻譯語言、拼音／注音
   h += '<div class="field"><label>' + esc(CORRE.tr('pdfLang')) + '</label><div class="row" style="margin-top:0">' + pills('cwslang', W.lang, [['es', 'Español'], ['en', 'English']]) + '</div></div>' +
-    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'cwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'cwszy') + '</div></div>';
+    '<div class="field"><div class="row" style="margin-top:0">' + chipB(W.pinyin, CORRE.tr('pdfPinyin'), 'cwspy') + chipB(W.zhuyin, CORRE.tr('pdfZhuyin'), 'cwszy') + '</div></div>' +
+    '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('cwssize', W.size, [[14, '14'], [16, '16'], [21, '21']]) + '</div></div>';
   const can = pool && chosen.length && anyType && !W.busy;
   h += '<div class="row"><button class="pill" data-act="cwsprev" ' + (can ? '' : 'disabled') + '>' + esc(T('cwsPreview')) + '</button>' +
     '<button class="pill fill" data-act="cwsmake" ' + (can ? '' : 'disabled') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
@@ -1058,6 +1059,7 @@ const actions = {
   cwslang(el){ S.cws.lang = el.dataset.k; cwsTouch(); render(); },
   cwspy(){ S.cws.pinyin = !S.cws.pinyin; cwsTouch(); render(); },
   cwszy(){ S.cws.zhuyin = !S.cws.zhuyin; cwsTouch(); render(); },
+  cwssize(el){ S.cws.size = +el.dataset.k; cwsTouch(); render(); },
   cwsscript(el){ S.cws.script = el.dataset.k; cwsTouch(); render(); },
   cwstype(el){ const t = S.cws.types; t[el.dataset.k] = !t[el.dataset.k]; cwsTouch(); render(); },
   cwsfm(el){ S.cws.fillMode = el.dataset.k; cwsTouch(); render(); },
@@ -1084,7 +1086,7 @@ const actions = {
     const W = S.cws; if(!W.pool || W.busy || !S.a.plan.active) return;
     W.busy = true; W.msg = ''; render();
     try{
-      const r = await CORRE.makeWorksheet(cwsData(), { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, preview: true });
+      const r = await CORRE.makeWorksheet(cwsData(), { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, size: W.size, preview: true });
       W.prev = r.previews;
     }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
     W.busy = false; render();
@@ -1093,7 +1095,7 @@ const actions = {
     const W = S.cws; if(!W || !W.pool || W.busy || !S.a.plan.active) return;
     W.busy = true; W.msg = ''; render();
     try{
-      const r = await CORRE.makeWorksheet(cwsData(), { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types });
+      const r = await CORRE.makeWorksheet(cwsData(), { lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, size: W.size });
       saveBlob(r.blob, 'worksheet-' + safeName(W.name || 'corre') + '.pdf');
       W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;
     }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }

@@ -726,6 +726,8 @@ async function makeWorksheet(data, opt){
   const script = data.script === 'simp' ? 'simp' : 'trad';
   const L = WS_TXT[opt.lang] || WS_TXT.es;
   const T = opt.types || { read: true, order: !!opt.order };
+  // 字體大小（中文字的點數，預設 14；原本是 21）：整頁照比例縮放，內容就排得更密
+  const k = Math.min(1, Math.max(0.5, (opt.size || 14) / 21)), W = PDFW / k, H = PDFH / k, M = PM / k, PY = k < 1 ? 27 : 22, sx = W / 1240;
   const sents = (data.sentences || []).filter(s => s && Array.isArray(s.trad)).map(s => ({
     words: (s[script] || s.trad || []).slice(), py: (s.pinyin || []).slice(), tr: (opt.lang === 'en' ? (s.en || s.es) : s.es) || '',
     blank: Array.isArray(s.blank) ? s.blank : null
@@ -735,26 +737,26 @@ async function makeWorksheet(data, opt){
   try{ await Promise.all([document.fonts.load('900 44px "Noto Sans TC"', all), document.fonts.load('500 26px "Noto Sans TC"', all)]); }catch(e){}
   const pages = [];
   let cv, c, y;
-  const newPage = () => { cv = document.createElement('canvas'); cv.width = PDFW; cv.height = PDFH; c = cv.getContext('2d'); c.fillStyle = '#fff'; c.fillRect(0, 0, PDFW, PDFH); c.textBaseline = 'alphabetic'; c.textAlign = 'left'; pages.push(cv); y = PM; };
-  const ensure = h => { if(y + h > PDFH - PM - 40) newPage(); };
+  const newPage = () => { cv = document.createElement('canvas'); cv.width = PDFW; cv.height = PDFH; c = cv.getContext('2d'); c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = '#fff'; c.fillRect(0, 0, PDFW, PDFH); c.setTransform(k, 0, 0, k, 0, 0); c.textBaseline = 'alphabetic'; c.textAlign = 'left'; pages.push(cv); y = M; };
+  const ensure = h => { if(y + h > H - M - 40) newPage(); };
   const font = (w, px) => { c.font = w + ' ' + px + 'px ' + FF; };
   const cellInfo = (word, py) => {
     font(900, 44); const wh = c.measureText(word).width;
     let pw = 0, zw = 0, pt = '', zt = '';
-    if(opt.pinyin){ pt = py; font(500, 22); pw = c.measureText(pt).width; }
-    if(opt.zhuyin){ zt = ZY.conv(py); font(500, 22); zw = c.measureText(zt).width; }
+    if(opt.pinyin){ pt = py; font(500, PY); pw = c.measureText(pt).width; }
+    if(opt.zhuyin){ zt = ZY.conv(py); font(500, PY); zw = c.measureText(zt).width; }
     return { word, pt, zt, w: Math.max(wh, pw, zw, 44) };
   };
-  const lineH = (opt.pinyin ? 28 : 0) + 52 + (opt.zhuyin ? 30 : 0);
+  const lineH = (opt.pinyin ? PY + 6 : 0) + 52 + (opt.zhuyin ? PY + 8 : 0);
   // rev：答案頁。填空的空格在答案頁用紅字寫出來
   const drawCell = (ci, x, top, rev) => {
     c.textAlign = 'center'; const cx = x + ci.w / 2; let yy = top;
-    if(opt.pinyin){ font(500, 22); c.fillStyle = '#555'; c.fillText(ci.pt, cx, yy + 22); yy += 28; }
+    if(opt.pinyin){ font(500, PY); c.fillStyle = '#555'; c.fillText(ci.pt, cx, yy + PY); yy += PY + 6; }
     font(900, 44);
     if(ci.blank && !rev){ c.strokeStyle = '#111'; c.lineWidth = 3; c.beginPath(); c.moveTo(x, yy + 48); c.lineTo(x + ci.w, yy + 48); c.stroke(); }
     else { c.fillStyle = ci.blank ? '#c0392b' : '#111'; c.fillText(ci.word, cx, yy + 42); }
     yy += 52;
-    if(opt.zhuyin){ font(500, 22); c.fillStyle = '#555'; c.fillText(ci.zt, cx, yy + 22); }
+    if(opt.zhuyin){ font(500, PY); c.fillStyle = '#555'; c.fillText(ci.zt, cx, yy + PY); }
     c.textAlign = 'left';
   };
   const layout = (words, py, x0, maxW, gap, pad, blank) => {
@@ -780,9 +782,9 @@ async function makeWorksheet(data, opt){
   const hr = (x1, x2, yy, col, w) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1, yy); c.lineTo(x2, yy); c.stroke(); };
   // 句子編號＋逐詞（拼音／注音＋字）
   const sentCells = (s, idx, blank, rev, extra) => {
-    const lines = layout(s.words, s.py, PM + 70, PDFW - PM * 2 - 70, 26, 0, blank);
+    const lines = layout(s.words, s.py, M + 70, W - M * 2 - 70, 26, 0, blank);
     ensure(lines.length * (lineH + 10) + (extra || 40));
-    font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + (opt.pinyin ? 28 : 0) + 40);
+    font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', M, y + (opt.pinyin ? PY + 6 : 0) + 40);
     lines.forEach(line => { line.forEach(o => drawCell(o.ci, o.x, y, rev)); y += lineH + 10; });
   };
   const blankOf = (s, idx) => {
@@ -794,21 +796,21 @@ async function makeWorksheet(data, opt){
   let first = true;
   const section = title => {
     if(!first) newPage(); first = false;
-    font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(title, PM, y + 28); y += 52;
+    font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(title, M, y + 28); y += 52;
   };
   newPage();
-  font(900, 46); c.fillStyle = '#0a6b73'; c.fillText(data.name || '', PM, y + 44); y += 70;
+  font(900, 46); c.fillStyle = '#0a6b73'; c.fillText(data.name || '', M, y + 44); y += 70;
   font(500, 26); c.fillStyle = '#333';
-  c.fillText(L.name + ' ____________________', PM, y + 26);
-  c.fillText(L.date + ' ______________', PDFW / 2 + 40, y + 26); y += 58;
-  hr(PM, PDFW - PM, y, '#0a6b73', 3); y += 30;
+  c.fillText(L.name + ' ____________________', M, y + 26);
+  c.fillText(L.date + ' ______________', W / 2 + 40, y + 26); y += 58;
+  hr(M, W - M, y, '#0a6b73', 3); y += 30;
   // 1. 句子總表（讀一讀）
   if(T.read){
     section(L.s1);
     sents.forEach((s, idx) => {
       sentCells(s, idx, null, false, 44 + 24);
-      font(500, 26); c.fillStyle = '#333'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
-      hr(PM, PDFW - PM, y, '#ddd', 1.5); y += 24;
+      font(500, 26); c.fillStyle = '#333'; c.fillText(s.tr, M + 70, y + 26); y += 44;
+      hr(M, W - M, y, '#ddd', 1.5); y += 24;
     });
   }
   // 2. 排列句子
@@ -817,10 +819,10 @@ async function makeWorksheet(data, opt){
     section(L.s2);
     ex.forEach((s, idx) => {
       const sh = seededShuffle(s.words.map((w, i) => i), idx + 1);
-      const lines = layout(sh.map(i => s.words[i]), sh.map(i => s.py[i] || ''), PM + 70, PDFW - PM * 2 - 70, 18, 14);
+      const lines = layout(sh.map(i => s.words[i]), sh.map(i => s.py[i] || ''), M + 70, W - M * 2 - 70, 18, 14);
       ensure(44 + lines.length * (lineH + 34) + 80);
-      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + 40);
-      font(500, 24); c.fillStyle = '#666'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
+      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', M, y + 40);
+      font(500, 24); c.fillStyle = '#666'; c.fillText(s.tr, M + 70, y + 26); y += 44;
       lines.forEach(line => {
         line.forEach(o => {
           c.strokeStyle = '#0a6b73'; c.lineWidth = 2.5;
@@ -830,7 +832,7 @@ async function makeWorksheet(data, opt){
         });
         y += lineH + 34;
       });
-      hr(PM + 70, PDFW - PM, y + 40, '#999', 1.5);
+      hr(M + 70, W - M, y + 40, '#999', 1.5);
       y += 80;
     });
     ans.push({ t: L.n2, fn: () => ex.forEach((s, idx) => { sentCells(s, idx, null, true); y += 20; }) });
@@ -841,8 +843,8 @@ async function makeWorksheet(data, opt){
     const bl = sents.map((s, i) => blankOf(s, i));
     sents.forEach((s, idx) => {
       sentCells(s, idx, bl[idx], false, 44 + 24);
-      font(500, 26); c.fillStyle = '#333'; c.fillText(s.tr, PM + 70, y + 26); y += 44;
-      hr(PM, PDFW - PM, y, '#ddd', 1.5); y += 24;
+      font(500, 26); c.fillStyle = '#333'; c.fillText(s.tr, M + 70, y + 26); y += 44;
+      hr(M, W - M, y, '#ddd', 1.5); y += 24;
     });
     ans.push({ t: L.n3, fn: () => sents.forEach((s, idx) => { sentCells(s, idx, bl[idx], true); y += 20; }) });
   }
@@ -851,12 +853,12 @@ async function makeWorksheet(data, opt){
     section(L.s4);
     sents.forEach((s, idx) => {
       font(500, 30);
-      const tl = wrapText(s.tr || '', PDFW - PM * 2 - 70);
+      const tl = wrapText(s.tr || '', W - M * 2 - 70);
       ensure(tl.length * 40 + 2 * 78 + 40);
-      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + 30);
-      font(500, 30); c.fillStyle = '#222'; tl.forEach(t => { c.fillText(t, PM + 70, y + 30); y += 40; });
+      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', M, y + 30);
+      font(500, 30); c.fillStyle = '#222'; tl.forEach(t => { c.fillText(t, M + 70, y + 30); y += 40; });
       y += 20;
-      for(let k = 0; k < 2; k++){ hr(PM + 70, PDFW - PM, y + 56, '#999', 1.5); y += 78; }
+      for(let k = 0; k < 2; k++){ hr(M + 70, W - M, y + 56, '#999', 1.5); y += 78; }
       y += 12;
     });
     ans.push({ t: L.n4, fn: () => sents.forEach((s, idx) => { sentCells(s, idx, null, true); y += 20; }) });
@@ -869,45 +871,45 @@ async function makeWorksheet(data, opt){
       const ch = sents.slice(st, st + per).map((s, k) => ({ s, no: st + k + 1 }));
       const order = seededShuffle(ch.map((o, i) => i), st + 5);
       const rows = ch.map((o, i) => {
-        font(700, 32); const lw = wrapChars(o.s.words.join(''), 480);
-        font(500, 24); const rw = wrapText(ch[order[i]].s.tr || '', 405);
+        font(700, 32); const lw = wrapChars(o.s.words.join(''), 480 * sx);
+        font(500, 24); const rw = wrapText(ch[order[i]].s.tr || '', 405 * sx);
         return { lw, rw, h: Math.max(lw.length * 42, rw.length * 32) + 36 };
       });
       ensure(rows.reduce((a, r) => a + r.h, 0) + 20);
       rows.forEach((r, i) => {
         const y0 = y;
-        font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(ch[i].no + '.', PM, y0 + 34);
-        font(700, 32); c.fillStyle = '#111'; r.lw.forEach((t, k) => c.fillText(t, PM + 56, y0 + 34 + k * 42));
+        font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(ch[i].no + '.', M, y0 + 34);
+        font(700, 32); c.fillStyle = '#111'; r.lw.forEach((t, k) => c.fillText(t, M + 56, y0 + 34 + k * 42));
         c.strokeStyle = '#0a6b73'; c.lineWidth = 2.5;
-        c.beginPath(); c.arc(650, y0 + 22, 8, 0, Math.PI * 2); c.stroke();
-        c.beginPath(); c.arc(680, y0 + 22, 8, 0, Math.PI * 2); c.stroke();
-        font(700, 26); c.fillStyle = '#0a6b73'; c.fillText(String.fromCharCode(65 + i), 705, y0 + 32);
-        font(500, 24); c.fillStyle = '#333'; r.rw.forEach((t, k) => c.fillText(t, 745, y0 + 32 + k * 32));
+        c.beginPath(); c.arc(650 * sx, y0 + 22, 8, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.arc(680 * sx, y0 + 22, 8, 0, Math.PI * 2); c.stroke();
+        font(700, 26); c.fillStyle = '#0a6b73'; c.fillText(String.fromCharCode(65 + i), 705 * sx, y0 + 32);
+        font(500, 24); c.fillStyle = '#333'; r.rw.forEach((t, k) => c.fillText(t, 745 * sx, y0 + 32 + k * 32));
         y += r.h;
       });
       y += 20;
       const pos = []; order.forEach((li, j) => { pos[li] = j; });
       matchAns.push(ch.map((o, i) => o.no + ' – ' + String.fromCharCode(65 + pos[i])).join('     '));
     }
-    ans.push({ t: L.n5, fn: () => matchAns.forEach(t => { ensure(50); font(700, 28); c.fillStyle = '#333'; c.fillText(t, PM + 70, y + 30); y += 50; }) });
+    ans.push({ t: L.n5, fn: () => matchAns.forEach(t => { ensure(50); font(700, 28); c.fillStyle = '#333'; c.fillText(t, M + 70, y + 30); y += 50; }) });
   }
   // 6. 聽寫
   if(T.dict && sents.length){
     section(L.s6);
     sents.forEach((s, idx) => {
       ensure(110);
-      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', PM, y + 60);
-      hr(PM + 70, PDFW - PM, y + 70, '#999', 1.5); y += 110;
+      font(700, 30); c.fillStyle = '#0a6b73'; c.fillText((idx + 1) + '.', M, y + 60);
+      hr(M + 70, W - M, y + 70, '#999', 1.5); y += 110;
     });
     ans.push({ t: L.n6, fn: () => sents.forEach((s, idx) => { sentCells(s, idx, null, true); y += 20; }) });
   }
   if(ans.length){
     newPage();
-    font(900, 40); c.fillStyle = '#0a6b73'; c.fillText(L.ans, PM, y + 38); y += 70;
-    ans.forEach(a => { ensure(140); font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(a.t, PM, y + 28); y += 50; a.fn(); y += 20; });
+    font(900, 40); c.fillStyle = '#0a6b73'; c.fillText(L.ans, M, y + 38); y += 70;
+    ans.forEach(a => { ensure(140); font(700, 28); c.fillStyle = '#0a6b73'; c.fillText(a.t, M, y + 28); y += 50; a.fn(); y += 20; });
   }
   pages.forEach((p, i) => {
-    const g = p.getContext('2d'); g.fillStyle = '#999'; g.font = '500 22px ' + FF; g.textAlign = 'center';
+    const g = p.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#999'; g.font = '500 22px ' + FF; g.textAlign = 'center';
     g.fillText('每天一分鐘 · 跑吧！漢字 · ' + (i + 1) + ' / ' + pages.length, PDFW / 2, PDFH - 50);
   });
   if(opt.preview){

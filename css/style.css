@@ -27,7 +27,7 @@ small,.mut{color:var(--mut)}
 .langtxt .lg.on{opacity:1;text-decoration:underline;text-underline-offset:4px}
 .langtxt .lgsep{opacity:.5}
 .langs{display:flex;gap:6px}
-.seg{height:34px;box-sizing:border-box;display:inline-flex;border:1.5px solid var(--brown);border-radius:999px;overflow:hidden}
+.seg{height:34px;box-sizing:border-box;display:inline-flex;border:1.5px solid var(--brown);border-radius:12px;overflow:hidden}
 .seg button{display:inline-flex;align-items:center;justify-content:center;text-align:center;min-width:46px;border:0;background:transparent;color:var(--brown);font:inherit;font-size:.8rem;font-weight:600;padding:0 12px;min-height:0;cursor:pointer;white-space:nowrap}
 .seg button+button{border-left:1.5px solid var(--brown)}
 .seg button.on{background:var(--brown);color:#fff}
@@ -45,11 +45,12 @@ small,.mut{color:var(--mut)}
 /* 按鈕：全部膠囊形 */
 .pill,button.pill,a.pill{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  min-height:44px;padding:8px 18px;border-radius:999px;border:1.5px solid var(--brown);
+  min-height:44px;padding:8px 18px;border-radius:12px;border:1.5px solid var(--brown);
   background:transparent;color:var(--brown);font:inherit;font-size:.95rem;font-weight:600;
   cursor:pointer;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s;
 }
 .pill:hover{background:var(--brown-l)}
+.langs .pill,.langs button.pill{border-radius:999px}   /* 「意見回饋」「登出」維持膠囊形 */
 .pill.on,.pill.fill{background:var(--brown);color:#fff}
 .pill.fill:hover,.pill.on:hover{background:var(--brown-d)}
 .pill.sm{min-height:36px;padding:4px 14px;font-size:.88rem}
@@ -103,7 +104,7 @@ table.t.click tr:not(:first-child):hover td{background:#faf5ec}
 .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--brown);opacity:.55}
 .bar span{position:relative;display:block;padding-left:10px;font-size:.82rem;line-height:22px;font-weight:700}
 .sec{margin:16px 0 4px;font-weight:700}
-.x{border:0;background:transparent;color:var(--brown);font-size:1.1rem;cursor:pointer;min-width:36px;min-height:36px;border-radius:999px}
+.x{border:0;background:transparent;color:var(--brown);font-size:1.1rem;cursor:pointer;min-width:36px;min-height:36px;border-radius:10px}
 .x:hover{background:var(--brown-l)}
 
 /* QR 視窗 */
@@ -135,7 +136,7 @@ table.t td{padding-left:8px}
 
 /* 色數設定編輯器 */
 .cchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.cchip{border:2px solid transparent;border-radius:999px;padding:6px 12px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.35;min-height:36px}
+.cchip{border:2px solid transparent;border-radius:10px;padding:6px 12px;font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;opacity:.35;min-height:36px}
 .cchip.on{opacity:1;box-shadow:0 0 0 2px var(--card),0 0 0 4px var(--brown)}
 .crow{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}
 .crow input.cpy{flex:1 1 100%}
@@ -334,7 +335,7 @@ details.hsec[open]>summary{margin-bottom:8px}
 
 /* 學習單：挑句子、指定填空、預覽 */
 .cws-list{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:14px;padding:6px;margin-top:6px;background:#fff}
-.cws-row{display:flex;flex-direction:column;align-items:flex-start;width:100%;margin:3px 0;height:auto;min-height:0;text-align:left;white-space:normal;border-radius:14px}
+.cws-row{display:flex;flex-direction:column;align-items:flex-start;width:100%;margin:3px 0;height:auto;min-height:0;text-align:left;white-space:normal;border-radius:12px}
 .cws-row small{font-size:.74rem;opacity:.75;font-weight:400}
 .cws-fill{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:6px 0}
 .cws-fill .no{font-size:.8rem;color:var(--muted,#8a7a6a);min-width:1.6em}
