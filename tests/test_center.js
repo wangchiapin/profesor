@@ -1129,7 +1129,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34)\b/.test(ix) && (ix.match(/\?v=7-35/g) || []).length >= 11 && ix.includes('js/help.js?v=7-35') && ix.includes('js/pubbank.js?v=7-35'), 'index.html 的 css／js 都改成 ?v=7-35（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35)\b/.test(ix) && (ix.match(/\?v=7-36/g) || []).length >= 11 && ix.includes('js/help.js?v=7-36') && ix.includes('js/pubbank.js?v=7-36'), 'index.html 的 css／js 都改成 ?v=7-36（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1221,6 +1221,8 @@ server.listen(0, 'localhost', async () => {
     ok(await page.$('.etabs [data-act=dscancel]') !== null && (await text(page, '.etabs')).includes('要練的主題'), '龍：練習範圍編輯＝回上一頁｜基本設定｜要練的主題');
     await page.click('.etabs [data-act=edtab][data-k=more]');
     ok(await page.$('#dragonSets [data-act=dsb]') !== null, '龍：「要練的主題」分頁可勾主題');
+    await page.click('.etabs [data-act=dscancel]'); await page.click('.gsw [data-act=togame][data-g=corre]'); await page.waitForSelector('#correCard');
+    ok(await page.$('#correCard') !== null, '從墨龍「練習範圍」切到跑吧：回到自訂句庫，不會空白');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   await browser.close(); server.close();

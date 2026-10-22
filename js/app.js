@@ -76,7 +76,7 @@ function parseHash(){
   const r = h[0] || 'home';
   if(r === 'game'){
     if(GAME_IDS.indexOf(h[1]) < 0) return { route: 'home', cur: null, redirect: '#/home' };
-    return { route: 'game', cur: null, g: h[1], gt: GAME_TABS.indexOf(h[2]) >= 0 ? h[2] : 'content' };
+    return { route: 'game', cur: null, g: h[1], gt: GAME_TABS.indexOf(h[2]) >= 0 && (h[2] !== 'ranges' || h[1] === 'dragon') ? h[2] : 'content' };
   }
   if(r === 'settings') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/content' };
   if(r === 'print') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/sheet' };
