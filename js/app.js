@@ -510,9 +510,9 @@ function colCardHtml(){
 // ---- 跑吧！漢字：句庫 ----
 function correCardHtml(){
   const A = S.a, P = A.plan;
-  let h = '<div class="card" id="correCard"><h3>' + esc(T('correBanksTitle')) + '</h3>';
+  let h = '<div class="card" id="correCard"><h3 class="ph"><span>' + esc(T('correBanksTitle')) + '</span>' +
+    (A.extrasReady ? '<small class="cq">' + esc(T('correQuota', { n: A.banks.length, max: P.active ? CORRE.PRO_SLOTS : CORRE.FREE_SLOTS })) + '</small>' : '') + '</h3>';
   if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-  h += '<p class="hint"><b>' + esc(T('correQuota', { n: A.banks.length, max: P.active ? CORRE.PRO_SLOTS : CORRE.FREE_SLOTS })) + '</b></p>';
   for(let i = 0; i < CORRE.PRO_SLOTS; i++){
     const b = CORRE.bankOf(A, i);
     if(b){

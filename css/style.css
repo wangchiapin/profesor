@@ -35,6 +35,8 @@ small,.mut{color:var(--mut)}
 .pill.xs{height:34px;box-sizing:border-box;min-height:0;padding:0 12px;font-size:.8rem;min-width:0}
 .ph{display:flex;align-items:center;gap:10px}
 .ph .badge{font-size:.8rem}
+#correCard .ph{flex-wrap:wrap}
+.ph .cq{font-size:.9rem;font-weight:700;color:var(--mut);margin-top:0}
 .ph .pexp{margin-left:auto;font-size:.85rem;font-weight:400;color:var(--mut)}
 .who{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.9rem;color:var(--mut);margin:0 0 8px;word-break:break-all}
 .nav{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px;margin:0 -4px;-webkit-overflow-scrolling:touch}
