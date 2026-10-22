@@ -565,7 +565,7 @@ function dragonThemeEditorHtml(){
   if(tab === 'basic'){
     h += '<div class="field"><label>' + esc(T('dragonThemeName')) + '</label><input type="text" id="dgName" maxlength="12" placeholder="' + esc(T('dragonThemeNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
       '<div class="field"><label>' + esc(T('dragonWordsLabel')) + '</label><textarea id="dgText" rows="8" placeholder="' + esc(T('dragonWordsPh')) + '">' + esc(dr.text) + '</textarea><p class="hint">' + esc(T('dragonTextHint', { min: DR.MIN_W, max: DR.MAX_W })) + '</p></div>' +
-      '<div class="row"><button class="pill sm" data-act="dggen">⚙️ ' + esc(T(dr.rows ? 'dragonRegen' : 'dragonGen')) + '</button></div>' + (dr.rows ? '<p class="hint">' + esc(T('dragonRegenHint')) + '</p>' : '');
+      '<div class="row"><button class="pill sm" data-act="dggen">⚙️ ' + esc(T(dr.rows ? 'dragonRegen' : 'dragonGen')) + '</button>' + (dr.rows ? '<span class="hint" style="flex:1;min-width:180px;margin:0">' + esc(T('dragonRegenHint')) + '</span>' : '') + '</div>';
   }else if(dr.rows){
     h += '<p class="hint">' + esc(T('dragonRowsHint')) + '</p><div class="tablewrap"><table class="t nw dgt"><tr><th>' + [T('dragonColTrad'), T('dragonColSimp'), T('dragonColPy'), 'ES', 'EN', ''].map(esc).join('</th><th>') + '</th></tr>' +
       dr.rows.map((r, i) => '<tr><td><b>' + esc(r.t) + '</b></td>' + ['s', 'p', 'es', 'en'].map(f => '<td><input type="text" data-dgr="' + i + '" data-f="' + f + '" maxlength="60" value="' + esc(r[f]) + '"></td>').join('') +
