@@ -195,7 +195,7 @@ textarea{width:100%;border:1.5px solid var(--line);border-radius:16px;padding:10
   .ws-cell span.d{font-size:16pt}
   .ws-cell{min-height:15mm}
   .ws-cell.blank{min-height:17mm}
-  .ws-key{break-before:page;border-top:0;margin-top:0;padding-top:0}
+  .ws-key{break-before:page;page-break-before:always;border-top:0;margin-top:0;padding-top:0}
 }
 
 /* 跑吧句庫編輯器 */

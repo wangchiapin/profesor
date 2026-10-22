@@ -960,7 +960,7 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=gtab][data-t=help]'); await page.waitForSelector('#hBbk');
     ok(page.url().endsWith('#/game/bbk/help'), '遊戲頁的「說明」分頁 → #/game/bbk/help', page.url());
     const t = await text(page);
-    ok(['使用步驟', '比比看：練習範圍', '訂閱後還可以', 'A 沒有 B 那麼高', '0–9999'].every(w => t.includes(w)) || t.includes('比比看：練習範圍'), '說明頁：這款遊戲的段落在（繁）');
+    ok(['使用步驟', '比比看：自訂設定', '訂閱後還可以', 'A 沒有 B 那麼高', '0–9999'].every(w => t.includes(w)) || t.includes('比比看：自訂設定'), '說明頁：這款遊戲的段落在（繁）');
     ok(await page.$$eval('.hsec', a => a.length) === 3 && await page.$$eval('details.hsec', a => a.filter(d => !d.open).length) === 2 && await page.$$eval('.hsteps > li', a => a.length) >= 4, '說明頁：自己的段落展開，步驟與訂閱兩段收起來（可點開）');
     ok(await noOverflow(page), '說明頁：手機寬度不會左右滑'); await shot(page, 'p1_help_tc');
     await page.click('#hStep summary'); ok(await page.$eval('#hStep', d => d.open), '點「使用步驟」可以展開');
@@ -969,7 +969,7 @@ server.listen(0, 'localhost', async () => {
       ok(await page.$eval('#' + id, e => e.tagName) === 'DIV', '說明：' + g + ' 自己的段落直接展開');
     }
     await page.evaluate(() => __profesor.go('game/bbk/help')); await page.waitForSelector('#hBbk');
-    for(const [l, w] of [['sc', '比比看：练习范围'], ['es', 'Compara y Adivina'], ['en', 'Compare & Guess']]){
+    for(const [l, w] of [['sc', '比比看：自定设置'], ['es', 'Compara y Adivina'], ['en', 'Compare & Guess']]){
       await page.click('[data-act=lang][data-l=' + l + ']'); await page.waitForTimeout(100);
       const tt = await text(page);
       ok(tt.includes(w) && !/[「」]/.test(l === 'sc' ? tt : '') && await noOverflow(page), '說明頁：' + l + ' 版本正常', tt.slice(0, 80)); await shot(page, 'p2_help_' + l);
@@ -1000,7 +1000,7 @@ server.listen(0, 'localhost', async () => {
     ok(!(await page.$('#linksCard .notice.alert')) && !(await page.$('#linksCard .link')) && !t.includes('學生遊戲連結'), '紅底提醒框、多包的遊戲名稱小框都拿掉了');
     ok(!(await page.$('.ghead')) && !(await text(page)).includes('開啟遊戲'), '遊戲頁沒有「開啟遊戲」那一欄');
     { const pt = await text(page, '#pubCard'); ok(pt.includes('🔗 公開句庫連結') && pt.includes('題目來源可選擇公開句庫或主題包，可選擇不同程度；此遊戲連結不回傳學生成績，也不會進入排行榜。') && !pt.includes('要收成績，請到「班級」頁') && !pt.includes('不用建立句庫'), '「公開句庫連結」新標題與說明，複製連結下方的說明拿掉', pt.slice(0, 200)); }
-    for(const [g, w] of [['colores', '可選擇自訂設定，學生成績會自動回傳至成績分頁'], ['bbk', '可選擇練習範圍，學生成績會自動回傳至成績分頁'], ['dragon', '可選擇練習範圍，學生成績會自動回傳至成績分頁']]){
+    for(const [g, w] of [['colores', '可選擇自訂設定，學生成績會自動回傳至成績分頁'], ['bbk', '可選擇自訂設定，學生成績會自動回傳至成績分頁'], ['dragon', '可選擇練習範圍，學生成績會自動回傳至成績分頁']]){
       await page.evaluate(g => __profesor.go('game/' + g + '/links'), g); await page.waitForSelector('#linksCard .lk');
       const lt = await text(page, '#linksCard'); ok(lt.includes('🔗 班級遊戲連結') && lt.includes(w) && lt.includes('⚠️ 注意：如有同暱稱之學生') && !(await page.$('#linksCard .link')), g + '：班級遊戲連結說明', lt.slice(0, 120)); }
     await page.evaluate(() => __profesor.go('game/corre/links')); await page.waitForSelector('#linksCard .lk'); t = await text(page, '#linksCard');
@@ -1111,7 +1111,7 @@ server.listen(0, 'localhost', async () => {
     const tt = await both();
     ok(tt.includes('選人：誰比較＿？') && !tt.includes('誰比較…'), '題型名稱改成「選人：誰比較＿？」');
     await page.click('[data-act=edtab][data-e=bbk][data-k=basic]');
-    ok((await text(page, '#bbkCard .editor .notice')).includes('有些題目比較主觀'), '主題下面有主觀提醒（淡黃色提醒框）');
+    ok((await text(page, '#bbkCard .editor')).includes('有些題目比較主觀') && !(await text(page, '#bbkCard .editor')).includes('特徵選太少') && await page.$('#bbkCard .editor .notice') === null, '基本設定只放主觀提醒（灰色小字），沒有黃色框；說明關卡內容' + ((await text(page, '#bbkCard .editor')).includes('第 2 關：第 1 關的句型') ? '' : '（缺）'));
     await page.click('[data-act=edtab][data-e=bbk][data-k=basic]'); await page.click('[data-act=bbklv][data-k="2"]');
     const t2 = await both();
     ok(t2.includes('選人：誰比 A ＿？') && t2.includes('選人：A 比誰＿？') && t2.includes('選比較詞'), '第 2 關題型名稱：選人：誰比 A ＿？／選人：A 比誰＿？／選比較詞');
@@ -1124,7 +1124,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27)\b/.test(ix) && (ix.match(/\?v=7-28/g) || []).length >= 11 && ix.includes('js/help.js?v=7-28') && ix.includes('js/pubbank.js?v=7-28'), 'index.html 的 css／js 都改成 ?v=7-28（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30)\b/.test(ix) && (ix.match(/\?v=7-31/g) || []).length >= 11 && ix.includes('js/help.js?v=7-31') && ix.includes('js/pubbank.js?v=7-31'), 'index.html 的 css／js 都改成 ?v=7-31（含 help.js、pubbank.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1158,10 +1158,11 @@ server.listen(0, 'localhost', async () => {
   { const BBK = [{ id: 'b1', name: '身高', lv: 1, d: ['height'], t: [], n: 5 }];
     const { page, errors, ctx } = await open(browser, { seedOpt: { bbk: BBK, pro: true }, ls: { profesorLang: 'tc' }, hash: '#/game/bbk/content' });
     await page.waitForSelector('#bbkCard');
-    ok((await text(page, '#bbkCard .ph span')) === '練習範圍' && (await text(page, '#bbkCard .ph .cq')).includes('1 / 15'), '比比看：標題＝分頁名，額度在旁邊');
+    ok((await text(page, '#bbkCard .ph span')) === '自訂設定' && (await text(page, '#bbkCard .ph .cq')).includes('1 / 15'), '比比看：標題＝分頁名，額度在旁邊');
     ok((await page.$$eval('#bbkCard .setrow button, #bbkCard .setrow a', e => e.map(x => x.textContent.trim()))).join() === '編輯,試玩,🗑 刪除', '比比看：列上只有 編輯／試玩／刪除', await page.$$eval('#bbkCard .setrow button, #bbkCard .setrow a', e => e.map(x => x.textContent.trim())));
     await page.click('[data-act=bbkedit][data-k="0"]');
-    ok((await page.$$eval('#bbkCard .esubs [data-act=edtab]', e => e.map(x => x.textContent))).join() === '基本設定,要考的內容', '比比看編輯器有兩個分頁');
+    ok((await page.$$eval('#bbkCard .etabs button', e => e.map(x => x.textContent))).join() === '回上一頁,基本設定,要考的內容', '比比看編輯器：回上一頁｜基本設定｜要考的內容');
+    ok(await page.$('#bbkCard .setrow') === null, '比比看編輯時整頁只剩編輯畫面');
     await page.click('[data-act=bbkcancel]');
     await page.evaluate(() => __profesor.go('game/bbk/links')); await page.waitForSelector('#pracCard');
     ok(await page.$eval('#pracCard .url', e => e.textContent.includes('compara-y-adivina')), '連結頁有「練習連結」卡（預設一般模式）');
@@ -1185,6 +1186,10 @@ server.listen(0, 'localhost', async () => {
     await page.evaluate(() => __profesor.go('game/colores/sheet')); await page.waitForSelector('#wsCard');
     ok((await page.$$eval('[data-act=wsread]', e => e.map(x => x.textContent))).join() === '老師唸,印在紙上', '聽讀找色：老師唸在前');
     ok((await page.$$eval('#wsCard .kind b', e => e.map(x => x.textContent))).includes('色數著色版'), '色數著色版改名');
+    ok((await page.$$eval('[data-sel=wscfg] > option', e => e.map(x => x.textContent))).slice(0, 4).join() === '請選擇,基本色,進階色,基本色＋進階色' || (await page.$$eval('[data-sel=wscfg] > option', e => e.map(x => x.textContent))).slice(1, 4).join() === '基本色,進階色,基本色＋進階色', '學習單下拉選單：最上面三個預設色');
+    await page.selectOption('[data-sel=wscfg]', 'p:adv'); await page.click('[data-act=wspreview]'); await page.waitForSelector('#wsCard .cws-prev .ws');
+    ok((await page.$$eval('#wsCard .ws-legend span, #wsCard .ws-legend > *', e => e.length)) >= 10, '預設色（進階）可以產生學習單');
+    ok(await page.evaluate(() => [...document.styleSheets].some(ss => [...ss.cssRules].some(r => r.type === 4 && [...r.cssRules].some(x => x.selectorText === '.ws-key' && x.style.breakBefore === 'page'))) ), '答案頁：列印時另起一頁');
     await page.selectOption('[data-sel=wscfg]', '0'); await page.click('[data-act=wspreview]'); await page.waitForSelector('#wsCard .cws-prev .ws');
     ok(await page.$('#wsCard [data-act=wsexport]') !== null, '預覽旁邊是「輸出PDF」，預覽出現在下方');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
