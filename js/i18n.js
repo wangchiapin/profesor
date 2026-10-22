@@ -100,7 +100,7 @@ const D = {
   jumpBbkWs: ['📐 比比看', '📐 比比看', '📐 Compara', '📐 Compare'],
   subTitle: ['🔒 這是訂閱功能', '🔒 这是订阅功能', '🔒 Función de suscripción', '🔒 Subscriber feature'],
   subWhy: ['訂閱後可以使用：', '订阅后可以使用：', 'Con la suscripción puedes usar:', 'With a subscription you get:'],
-  subList: ['建立班級和成績簿（最多 3 班）\n跑吧句庫 5 個、每庫 80 句、自訂干擾字\n色數設定 15 組、自訂顏色與數字\n比比看範圍 15 組\n三款遊戲的學習單', '建立班级和成绩簿（最多 3 班）\n跑吧句库 5 个、每库 80 句、自定干扰字\n色数设置 15 组、自定颜色与数字\n比比看范围 15 组\n三款游戏的学习单', 'Clases y libro de notas (hasta 3)\n5 bancos de Corre, 80 frases cada uno, distractores propios\n15 ajustes de Pop Colores, colores y números propios\n15 rangos de Compara\nHojas de trabajo de los tres juegos', 'Classes and gradebooks (up to 3)\n5 Run Hanzi banks, 80 sentences each, custom decoys\n15 Pop Colors sets, custom colors and numbers\n15 Compare ranges\nWorksheets for all three games'],
+  subList: ['建立班級和成績簿（最多 3 班）\n跑吧句庫 5 個、每庫 80 句、自訂干擾字\n色數設定 15 組、自訂顏色與數字\n比比看範圍 15 組\n各遊戲的學習單', '建立班级和成绩簿（最多 3 班）\n跑吧句库 5 个、每库 80 句、自定干扰字\n色数设置 15 组、自定颜色与数字\n比比看范围 15 组\n各游戏的学习单', 'Clases y libro de notas (hasta 3)\n5 bancos de Corre, 80 frases cada uno, distractores propios\n15 ajustes de Pop Colores, colores y números propios\n15 rangos de Compara\nHojas de trabajo de cada juego', 'Classes and gradebooks (up to 3)\n5 Run Hanzi banks, 80 sentences each, custom decoys\n15 Pop Colors sets, custom colors and numbers\n15 Compare ranges\nWorksheets for each game'],
   subGo: ['了解訂閱 →', '了解订阅 →', 'Ver la suscripción →', 'See the subscription →'],
   subLater: ['之後再說', '之后再说', 'Ahora no', 'Not now'],
   fbBtn: ['💬 意見回饋', '💬 意见反馈', '💬 Comentarios', '💬 Feedback'],
@@ -297,7 +297,7 @@ const D = {
 
   // ---- 班級列表 ----
   classesTitle: ['我的班級', '我的班级', 'Mis clases', 'My classes'],
-  classesHint: ['最多 3 個班級，三款遊戲共用；成績各遊戲分開記錄。', '最多 3 个班级，三款游戏共用；成绩各游戏分开记录。', 'Hasta 3 clases, compartidas por los tres juegos; las notas se guardan por juego.', 'Up to 3 classes, shared by the three games; scores are kept per game.'],
+  classesHint: ['最多 3 個班級，各遊戲共用；成績各遊戲分開記錄。', '最多 3 个班级，各游戏共用；成绩各游戏分开记录。', 'Hasta 3 clases, compartidas por todos los juegos; las notas se guardan por juego.', 'Up to 3 classes, shared by all the games; scores are kept per game.'],
   classNamePh: ['班級名稱', '班级名称', 'Nombre de la clase', 'Class name'],
   createClass: ['建立班級', '建立班级', 'Crear clase', 'Create class'],
   needName: ['請輸入班級名稱', '请输入班级名称', 'Escribe el nombre de la clase', 'Please enter a class name'],
@@ -314,10 +314,10 @@ const D = {
   classNameLabel: ['班級名稱', '班级名称', 'Nombre de la clase', 'Class name'],
   renamed: ['已改名', '已改名', 'Renombrada', 'Renamed'],
   deleteClass: ['刪除班級', '删除班级', 'Borrar la clase', 'Delete class'],
-  confirmDelClass: ['確定刪除「{name}」？\n這個班級在三款遊戲（跑吧、色數、比比看）的所有成績會一起刪除，無法復原。', '确定删除「{name}」？\n这个班级在三款游戏（跑吧、色数、比比看）的所有成绩会一起删除，无法恢复。', '¿Borrar «{name}»?\nSe borrarán también todas las notas de esta clase en los tres juegos. No se puede deshacer.', 'Delete "{name}"?\nAll scores of this class in all three games will be deleted too. This cannot be undone.'],
+  confirmDelClass: ['確定刪除「{name}」？\n這個班級在所有遊戲的成績會一起刪除，無法復原。', '确定删除「{name}」？\n这个班级在所有游戏的成绩会一起删除，无法恢复。', '¿Borrar «{name}»?\nSe borrarán también todas las notas de esta clase en todos los juegos. No se puede deshacer.', 'Delete "{name}"?\nAll scores of this class in all games will be deleted too. This cannot be undone.'],
   deleting: ['刪除中…', '删除中…', 'Borrando…', 'Deleting…'],
   boardTitle: ['班級排行榜', '班级排行榜', 'Ranking de la clase', 'Class leaderboard'],
-  boardHint: ['開啟後，學生在跑吧、色數的結果畫面看得到全班排行。', '开启后，学生在跑吧、色数的结果画面看得到全班排行。', 'Si lo activas, los alumnos ven el ranking de la clase al terminar en Corre Hanzi y Pop Colores.', 'When on, students see the class ranking on the result screen of Run Hanzi and Pop Colors.'],
+  boardHint: ['開啟後，學生在遊戲的結果畫面看得到全班排行。', '开启后，学生在游戏的结果画面看得到全班排行。', 'Si lo activas, los alumnos ven el ranking de la clase en la pantalla de resultados del juego.', 'When on, students see the class ranking on the game\'s result screen.'],
   linksTitle: ['學生遊戲連結', '学生游戏链接', 'Enlaces de juego para alumnos', 'Student game links'],
   linksHint: ['快速依你的設定建立遊戲連結，傳給你的學生。學生打開連結、輸入暱稱，每一回合的成績會自動回傳到這款遊戲的「成績」分頁。', '快速依你的设置建立游戏链接，传给你的学生。学生打开链接、输入昵称，每一回合的成绩会自动回传到这款游戏的“成绩”分页。', 'Crea rápidamente enlaces de juego con tus ajustes y envíalos a tus alumnos. El alumno abre el enlace y escribe su apodo; las notas de cada ronda llegan solas a la pestaña «Notas» de este juego.', 'Quickly create game links with your settings and send them to your students. Students open the link and enter a nickname; each round\'s score goes straight to the “Scores” tab of this game.'],
   linksNick: ['注意：如有同暱稱之學生，應告知學生修改暱稱。', '注意：如有同昵称的学生，应告知学生修改昵称。', 'Atención: si dos alumnos usan el mismo apodo, pide a uno que lo cambie.', 'Note: if two students use the same nickname, ask one of them to change it.'],
@@ -401,13 +401,13 @@ const D = {
 
   // ---- 遊戲設定 ----
   settingsTitle: ['遊戲設定', '游戏设置', 'Ajustes de juegos', 'Game settings'],
-  settingsHint: ['三款遊戲的句庫、練習範圍、設定組都在這裡管理。', '三款游戏的句库、练习范围、设置组都在这里管理。', 'Aquí gestionas los bancos de frases, los rangos y las configuraciones de los tres juegos.', 'Manage the sentence banks, ranges and setups of all three games here.'],
+  settingsHint: ['各遊戲的句庫、練習範圍、設定組都在這裡管理。', '各游戏的句库、练习范围、设置组都在这里管理。', 'Aquí gestionas los bancos de frases, los rangos y las configuraciones de cada juego.', 'Manage the sentence banks, ranges and setups of each game here.'],
   settingsColores: ['設定組在遊戲主選單最下面的「教師版」。', '设置组在游戏主选单最下面的「教师版」。', 'Las configuraciones están en «Versión docente», al final del menú del juego.', 'Setups are under "Teacher version" at the bottom of the game menu.'],
   settingsBbk: ['自選範圍在遊戲主選單最下面的「老師設定」。', '自选范围在游戏主选单最下面的「老师设置」。', 'El rango propio está en «Ajustes del profesor», al final del menú del juego.', 'Your own range is under "Teacher settings" at the bottom of the game menu.'],
 
   // ---- 學習單（網址仍是 #/print）----
   printTitle: ['學習單', '学习单', 'Hojas de trabajo', 'Worksheets'],
-  printHint: ['學習單都是訂閱功能。三款遊戲的學習單都在這裡產生，可以列印或存成 PDF。', '学习单都是订阅功能。三款游戏的学习单都在这里生成，可以打印或存成 PDF。', 'Las hojas de trabajo requieren suscripción. Las de los tres juegos se crean aquí; puedes imprimirlas o guardarlas en PDF.', 'Worksheets need a subscription. All three games\' worksheets are made here; print them or save as PDF.'],
+  printHint: ['學習單都是訂閱功能。各遊戲的學習單都在這裡產生，可以列印或存成 PDF。', '学习单都是订阅功能。各游戏的学习单都在这里生成，可以打印或存成 PDF。', 'Las hojas de trabajo requieren suscripción. Las de cada juego se crean aquí; puedes imprimirlas o guardarlas en PDF.', 'Worksheets need a subscription. Worksheets for every game are made here; print them or save as PDF.'],
   printColores: ['學習單：即將新增（聽讀找色、看色寫數、著色版）。', '学习单：即将新增（听读找色、看色写数、着色版）。', 'Hojas de trabajo: próximamente (oír y buscar color, ver color y escribir número, colorear).', 'Worksheets: coming soon (listen and find color, see color and write number, coloring).'],
   printBbk: ['用比比看的出題程式出一張學習單：題目、人物圖、選項，最後可附答案頁（含翻譯）。', '用比比看的出题程序出一张学习单：题目、人物图、选项，最后可附答案页（含翻译）。', 'Una hoja con las mismas preguntas del juego: frases, personas y opciones; con hoja de respuestas (con traducción) si quieres.', 'A sheet made by the game\'s own question generator: sentences, people and options, with an optional answer page (with translations).'],
   bwsRange: ['出題範圍', '出题范围', 'Rango de preguntas', 'Question range'],
