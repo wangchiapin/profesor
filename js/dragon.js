@@ -50,7 +50,7 @@ function parseText(text){
     if(!line.trim()) return;
     const p = line.split(/[,，｜|\t;；]/).map(x => x.trim());
     const t = (p[0] || '').replace(/\s+/g, '');
-    if(!t || !HAN.test(t) || Array.from(t).length > 8){ bad.push(line.trim()); return; }
+    if(!t || !HAN.test(t) || Array.from(t).length > 4){ bad.push(line.trim()); return; }
     if(seen.has(t)) return;
     seen.add(t); items.push({ t, es: (p[1] || '').slice(0, 60), en: (p[2] || '').slice(0, 60) });
   });
@@ -87,7 +87,7 @@ function draftValid(dr){
   if(dr.rows.some(r => !String(r.p || '').trim())) return T('dragonNeedPy');
   return '';
 }
-const toTheme = dr => ({ name: dr.name.trim().slice(0, 12), words: dr.rows.map(r => [r.t, (r.s || r.t).trim().slice(0, 8), String(r.p || '').trim().slice(0, 60), String(r.es || '').trim().slice(0, 60), String(r.en || '').trim().slice(0, 60)]) });
+const toTheme = dr => ({ name: dr.name.trim().slice(0, 12), words: dr.rows.map(r => [r.t, (r.s || r.t).trim().slice(0, 4), String(r.p || '').trim().slice(0, 60), String(r.es || '').trim().slice(0, 60), String(r.en || '').trim().slice(0, 60)]) });
 
 // ---- 內建主題詞庫（學習單用）：直接讀遊戲網頁裡的 THEMES，不另存一份，才不會跟遊戲不一致 ----
 const BASE = window.DRAGON_BASE || '../el-dragon-de-tinta/';
