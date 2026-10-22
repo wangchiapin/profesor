@@ -151,3 +151,9 @@ node tests/test_dragon.js [截圖資料夾]   # 墨龍（需 CORRE_LIBS，遊戲
 - 一般老師：首頁顯示 🔧 維修中、遊戲頁只有維修說明。管理者（a2224907@gmail.com，已驗證）照常使用，並看到「只有你看得到」的提示。
 - 開關放在 share-zone 的 stats.html#sub →「老師管理中心遊戲開關」。`?dev=<遊戲>` 仍可當次覆寫。
 - 清掉用不到的舊字串（dragonQuickHint*、colLinkOff 等）。
+
+### 新增遊戲到老師管理中心時（必做）
+- 遊戲代號要加進 `GAME_IDS`，維修開關才管得到（`portalStatus/center-<id>`）。
+- 同時到 share-zone 的 `stats.html#sub`「老師管理中心遊戲開關」清單（`CS`）加一列，不然開關裡看不到這款遊戲。
+- 新遊戲還沒做好之前，先在開關勾維修中；做好再取消。
+- 遊戲介面頁要加「老師管理中心」按鈕。
