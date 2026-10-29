@@ -33,6 +33,9 @@ function detailOf(game, r){
     const diff = ex.diff && I18N.D['diff_' + ex.diff] ? T('diff_' + ex.diff) : (ex.diff || '');
     return ex.sent != null ? T('detailCorre', { n: ex.sent, diff }).replace(/ · $/, '') : diff;
   }
+  if(game === 'ba' || game === 'bei'){
+    return ex.q != null ? T('detailBa', { ok: ex.ok || 0, q: ex.q }) : '';
+  }
   if(game === 'dragon'){
     if(ex.c == null) return '';
     return T('detailDragon', { n: ex.c, a: ex.a || 0 }) + (Array.isArray(ex.wr) && ex.wr.length ? ' · ' + T('dragonWrongTag', { w: ex.wr.join(' ') }) : '');

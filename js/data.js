@@ -15,9 +15,11 @@ const GAME_URL = {
   corre: 'https://wangchiapin.github.io/corre/',
   colores: 'https://wangchiapin.github.io/pop-colores-numeros/',
   bbk: 'https://wangchiapin.github.io/compara-y-adivina/',
-  dragon: 'https://wangchiapin.github.io/el-dragon-de-tinta/'
+  dragon: 'https://wangchiapin.github.io/el-dragon-de-tinta/',
+  ba: 'https://wangchiapin.github.io/practica-de-ba-oracion/',
+  bei: 'https://wangchiapin.github.io/practica-de-bei-oracion/'
 };
-const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colores, bbk: GAME_URL.bbk, dragon: GAME_URL.dragon };
+const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colores, bbk: GAME_URL.bbk, dragon: GAME_URL.dragon, ba: GAME_URL.ba, bei: GAME_URL.bei };
 const MAX_CLASSES = 3;
 const ADMIN_EMAIL = 'a2224907@gmail.com';   // 管理員（Firestore 規則也是這個信箱）；管理員看得到維修中的遊戲
 const PLAN_OK = ['month', 'year', 'trial', 'pro'];
@@ -329,6 +331,8 @@ function linkCorrePublic(o){
 }
 function linkColores(cid, sid){ return GAME_URL.colores + '?c=' + sid + '&class=' + cid; }
 function linkBbk(cid, sid){ return GAME_URL.bbk + '?' + (sid ? 'r=' + sid + '&' : '') + 'class=' + cid; }
+// 把／被：班級連結只帶班級碼（句庫碼要等「自訂句庫」做好才有）；g = 'ba' 或 'bei'
+function linkBaBei(g, cid, sid){ return GAME_URL[g] + '?class=' + cid + (sid ? '&bank=' + sid : ''); }
 function linkBbkPractice(sid){ return GAME_URL.bbk + '?r=' + sid; }
 
 function explain(e, t){
@@ -348,5 +352,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

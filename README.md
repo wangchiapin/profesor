@@ -104,6 +104,16 @@
 - 規則在 `firestore-rules-dragon.txt`（完整版，已貼到 subscription-48d3c）：`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`。
 - 開放時做過：① 貼規則 ② 遊戲 `RELEASE=true` ③ 中心 `READY=true` ④ 分享區卡片與訂閱比較表換成正式文字。
 
+## 把／被（2026-10-29 步驟 1：入口、班級連結、成績）
+
+- 兩款遊戲用同一套邏輯：`app.js` 的 `isBaBei(g)`；遊戲代號 `ba`、`bei`（網址在 `data.js` 的 `GAME_URL`）。
+- 開關：`app.js` 頂端 `BABEI_READY = false` 時，一般老師只看到「維修中」，管理員或網址加 `?dev=ba,bei` 才看得到。**開放前要做**：① 貼 `firestore-rules-babei.txt` ② 兩個遊戲的 `CLS_RELEASE = true` ③ 這裡 `BABEI_READY = true`。
+- 練習連結＝遊戲網址（不回傳成績）；班級連結＝`?class=班級碼`（要訂閱才能建班級）。
+- 成績：`class_scores` 的 `game='ba'`／`'bei'`，`k='lv1'|'lv2'|'lv3'`（第幾關），`best`＝該關最高分，`extra = {ok: 答對題數, q: 題數, f: 第一次就對的題數}`。成績冊沿用既有表格，「詳細」欄顯示「答對 ok / q 題」。
+- 遊戲端（`practica-de-ba-oracion`、`practica-de-bei-oracion` 的 `index.html`，「班級模式」區塊）：連結帶 `?class=` 才啟動；成績存到中央專案、不寫原本的公開排行榜；老師開了「班級排行榜」就在結果頁顯示。
+- 還沒做：自訂句庫、題數與題型比例、每題對錯明細（`class_plays`）、學習單。
+- 測試：`node tests/test_babei.js`（老師中心）、`node tests/test_babei_games.js`（兩個遊戲，要放在旁邊的資料夾）。
+
 ## 檔案
 
 ```

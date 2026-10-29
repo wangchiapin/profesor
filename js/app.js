@@ -5,9 +5,12 @@ const T = (k, p) => I18N.t(k, p);
 const esc = BOOKS.esc;
 const app = document.getElementById('app');
 const GAMES = ['corre', 'colores', 'bbk'];
-const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon' };
-const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc' };
-const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon'];
+const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon', ba: 'gameBa', bei: 'gameBei' };
+const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc', ba: 'gameBaDesc', bei: 'gameBeiDesc' };
+const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon', 'ba', 'bei'];
+// 把／被：遊戲那邊的班級成績還沒做好之前先關著（false＝一般老師看到「維修中」，管理員或網址加 ?dev=ba,bei 才看得到）；做好後改成 true
+const BABEI_READY = false;
+const isBaBei = g => g === 'ba' || g === 'bei';
 const GAME_TABS = ['content', 'ranges', 'links', 'scores', 'sheet', 'help'];
 const DR = window.DRAGON;
 // 遊戲開關：維修中的遊戲，一般老師只看到「維修中」；管理員（或網址加 ?dev=遊戲代號，例如 ?dev=dragon）照常能用
@@ -15,7 +18,7 @@ function devOn(g){
   try{ const m = /[?&]dev=([a-z,]+)/.exec(location.search); if(m) sessionStorage.setItem('gameDev', m[1]); return (sessionStorage.getItem('gameDev') || '').split(',').indexOf(g) >= 0; }
   catch(e){ return false; }
 }
-const gameMaint = g => !!(S.a && S.a.maint && S.a.maint[g]);
+const gameMaint = g => (isBaBei(g) && !BABEI_READY) || !!(S.a && S.a.maint && S.a.maint[g]);
 const gameOpen = g => !gameMaint(g) || !!(S.a && S.a.admin) || devOn(g);
 window.GAME_OPEN = gameOpen;
 const bookGames = () => GAME_IDS.filter(gameOpen);     // 成績冊的遊戲分頁（維修中的遊戲不顯示）
@@ -203,6 +206,7 @@ function usageOf(g){
   if(g === 'corre') return T('usageCorre') + '　' + (A.extrasReady ? A.banks.length + ' / ' + banksMax : '–');
   if(g === 'colores') return T('usageColores') + '　' + (A.extrasReady ? A.configs.length + ' / ' + cfgMax : '–');
   if(g === 'bbk') return T('usageBbk') + '　' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–');
+  if(isBaBei(g)) return '';
   return T('usageDragonThemes') + '　' + (A.dragonReady ? A.dragon.themes.length + ' / ' + DATA.DRAGON_THEMES_MAX : '–') + '　·　' + T('usageDragonSets') + '　' + (A.dragonReady ? A.dragon.sets.length + ' / ' + DATA.DRAGON_SETS_MAX : '–');
 }
 function homeHtml(){
@@ -213,7 +217,7 @@ function homeHtml(){
     '<div class="row" style="margin:0"><button class="pill fill sm" data-act="nav" data-r="classes">' + esc(T('manage')) + '</button></div></div></div>';
   const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3><p class="hint">' + esc(T('gamesPick')) + '</p>' + GAME_IDS.map(g =>
     '<div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small>' +
-    (!gameOpen(g) ? '' : usageOf(g).split('　·　').map(u => '<small class="mut">' + esc(u) + '</small>').join('')) + '</div>' +
+    (!gameOpen(g) ? '' : usageOf(g).split('　·　').filter(Boolean).map(u => '<small class="mut">' + esc(u) + '</small>').join('')) + '</div>' +
     (!gameOpen(g) ? '<span class="badge">🔧 ' + esc(T('maint')) + '</span>'
       : (gameMaint(g) ? '<span class="badge">🔧 ' + esc(T('maintAdminBadge')) + '</span>' : '') + '<div class="row" style="margin:0"><button class="pill fill sm" data-act="togame" data-g="' + g + '" data-t="content">' + esc(T('manage')) + '</button>' +
         '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>') + '</div>').join('') + '</div>';
@@ -289,7 +293,9 @@ function linkCardHtml(game){
   const c = clsC(), A = S.a;
   let h = '<div class="lk">';
   let url = '';
-  if(game === 'dragon'){
+  if(isBaBei(game)){
+    url = DATA.linkBaBei(game, c.cid);
+  }else if(game === 'dragon'){
     if(!DR.ready()) return h + maintBox() + '</div>';
     if(!A.dragonReady) return h + '<p class="hint">' + esc(T('bbkUnavailable')) + '</p></div>';
     const D = A.dragon;
@@ -351,6 +357,7 @@ function setLabel(game, k){
     if(k === 'link') return T('setOldLink');
     const it = (A.configs || []).find(x => x.sid === k); return it ? '🎨 ' + ((it.cfg && it.cfg.name) || '#') : T('setDeleted');
   }
+  if(isBaBei(game)){ const m = /^lv([1-3])$/.exec(k); return m ? T('levelN', { n: m[1] }) : (k === 'old' ? T('setOther') : T('setDeleted')); }
   if(game === 'dragon'){ const l = DR.themeLabel(k, (A.dragon || {}).themes); return l ? '🐉 ' + l : T('setDeleted'); }
   if(k === 'normal') return T('rangeNormal');
   if(k === 'other') return T('setOther');
@@ -650,7 +657,7 @@ function bankRouteHtml(){
     esc(why === 'locked' ? CORRE.tr('slotLockedEd') : T('bbkUnavailable')) + '</div>';
 }
 // ---- 遊戲頁：每款遊戲一頁，分頁＝題庫／連結／成績／學習單／說明 ----
-const GT_CONTENT = { corre: 'gtBankCorre', colores: 'gtBankColores', bbk: 'gtBankBbk', dragon: 'gtBankDragon' };
+const GT_CONTENT = { corre: 'gtBankCorre', colores: 'gtBankColores', bbk: 'gtBankBbk', dragon: 'gtBankDragon', ba: 'gtBankBa', bei: 'gtBankBa' };
 const GT_LABEL = { links: 'gtLinks', scores: 'gtScores', sheet: 'gtSheet', help: 'gtHelp' };
 function classPickHtml(){
   const A = S.a, ks = Object.keys(A.classes).sort();
@@ -660,7 +667,7 @@ function classPickHtml(){
     ks.map(k => '<button class="pill ' + (S.cls === k ? 'on' : '') + '" data-act="pickcls" data-slot="' + k + '">🏫 ' + esc(A.classes[k].data.name) + '</button>').join('') + '</div></div>';
 }
 function classLinksHtml(g){
-  return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T({ corre: 'linksHintCorre', colores: 'linksHintColores', bbk: 'linksHintBbk', dragon: 'linksHintDragon' }[g])) + '</p>' + classPickHtml() +
+  return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T({ corre: 'linksHintCorre', colores: 'linksHintColores', bbk: 'linksHintBbk', dragon: 'linksHintDragon', ba: 'linksHintBa', bei: 'linksHintBa' }[g])) + '</p>' + classPickHtml() +
     (clsC() ? linkCardHtml(g) : '') + '</div>';
 }
 // 色數的預設色：遊戲本來就支援 ?t=（把設定編進網址），不用建連結碼、不寫資料庫
@@ -708,7 +715,18 @@ function practiceCardHtml(g){
     '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
   return h + '</div>';
 }
+// 把／被：練習連結（不回傳成績）＝遊戲網址本身
+function baPracticeHtml(g){
+  const url = DATA.GAME_URL[g];
+  return '<div class="card" id="pracCard"><h3>🔗 ' + esc(T('pracTitle')) + '</h3><p class="hint">' + esc(T('pracHintBa')) + '</p>' +
+    '<div class="url" data-url="' + g + 'prac">' + esc(url) + '</div><div class="row">' +
+    '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
+    '<button class="pill sm" data-act="qr" data-url="' + esc(url) + '" data-game="' + g + '">' + esc(T('qr')) + '</button>' +
+    '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div></div>';
+}
+function baSoonHtml(what){ return '<div class="card"><div class="notice">🚧 ' + esc(T(what)) + '</div></div>'; }
 function gameLinksHtml(g){
+  if(isBaBei(g)) return baPracticeHtml(g) + classLinksHtml(g);
   if(g === 'corre') return pubCardHtml() + classLinksHtml(g);
   if(g === 'dragon') return dragonQuickHtml() + classLinksHtml(g);
   return practiceCardHtml(g) + classLinksHtml(g);
@@ -725,11 +743,11 @@ function gameHtml(){
   if(gameMaint(g)) h += maintAdminBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]]].concat(g === 'dragon' ? [['ranges', 'gtRangesDragon']] : []).concat([['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]]).map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
-  if(S.gt === 'content') return h + (g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
+  if(S.gt === 'content') return h + (isBaBei(g) ? baSoonHtml('baBankSoon') : g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
   if(S.gt === 'ranges') return h + (g === 'dragon' ? dragonRangesHtml() : '');
   if(S.gt === 'links') return h + gameLinksHtml(g);
   if(S.gt === 'scores') return h + gameScoresHtml();
-  if(S.gt === 'sheet') return h + (g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
+  if(S.gt === 'sheet') return h + (isBaBei(g) ? baSoonHtml('baSheetSoon') : g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
   return h + helpHtml(g);
 }
 // ---- 遊戲設定說明（#/help）：內容在 js/help.js（靜態文字，四種語言）----
