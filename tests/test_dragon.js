@@ -76,7 +76,7 @@ server.listen(0, 'localhost', async () => {
 
   console.log('\n[A] 已開放（不用 ?dev=dragon）：各頁都是正常功能，沒有維修中');
   { const { page, errors, ctx } = await open(browser);
-    ok((await text(page)).includes('墨龍飛天') && !(await text(page)).includes('維修中'), '首頁：墨龍沒有維修中');
+    ok((await text(page)).includes('墨龍飛天') && await page.$$eval('.grow', r => { const d = r.find(x => x.querySelector('[data-g=dragon]')); return !!d && !d.innerText.includes('維修中'); }), '首頁：墨龍沒有維修中（把、被還在維修中，不算）');
     await go(page, '#/game/dragon/content'); await page.waitForSelector('#dragonCard [data-act=dgnew]');
     ok(!(await text(page, '#dragonCard')).includes('維修中'), '墨龍內容分頁：卡片可操作');
     await go(page, '#/game/dragon/links'); await page.waitForSelector('#dragonQuick [data-act=dqk]'); ok(!!(await page.$('#linksCard')), '連結分頁：快速連結＋班級連結');

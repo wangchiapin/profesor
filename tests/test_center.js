@@ -798,7 +798,7 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page, '.backhome')).includes('← 老師管理中心') && await page.$$eval('.backhome', a => a.length) === 1, '遊戲頁標題是「← 老師管理中心」，按了回首頁');
     const tabs = await page.$$eval('.gtabs [data-act=gtab]', b => b.map(x => x.dataset.t + ':' + x.innerText));
     ok(tabs.join('|') === 'content:📚 句庫|links:連結|scores:成績|sheet:學習單|help:說明'.replace('📚 句庫', tabs[0].split(':')[1]), '遊戲頁分頁：內容｜連結｜成績｜學習單｜說明', tabs);
-    ok((await page.$$eval('.gsw [data-act=togame]', b => b.map(x => x.dataset.g))).join() === 'corre,colores,bbk,dragon', '遊戲切換：四款');
+    ok((await page.$$eval('.gsw [data-act=togame]', b => b.map(x => x.dataset.g))).join() === 'corre,colores,bbk,dragon,ba,bei', '遊戲切換：六款（含把、被）');
     await page.click('.gsw [data-g=colores]'); await page.waitForSelector('#colCard');
     ok(page.url().endsWith('#/game/colores/content'), '切換遊戲：停在同一個分頁', page.url());
     await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForSelector('#wsCard');
