@@ -8,7 +8,7 @@ function ok(c, name, extra){ if(c){ pass++; console.log('  ✓', name); } else {
 const DIRS = { ba: process.env.BA_DIR || path.join(ROOT, '..', 'practica-de-ba-oracion'), bei: process.env.BEI_DIR || path.join(ROOT, '..', 'practica-de-bei-oracion') };
 const CID = 'class0000aaaa';
 const MOCK = `(function(){
-  const store = window.__DB = { classes: { ${CID}: { owner: 'u1', slot: 0, name: '週三班', showBoard: true } } };
+  const store = window.__DB = { classes: { ${CID}: { owner: 'u1', slot: 0, name: '週三班', showBoard: true } }, portalStatus: { 'center-ba': { off: false }, 'center-bei': { off: false } } };
   const cl = v => JSON.parse(JSON.stringify(v));
   const fs = { collection: c => ({
     doc: id => ({ get: async () => { const d = (store[c] || {})[id]; return { exists: !!d, id, data: () => cl(d) }; },
@@ -31,7 +31,7 @@ function serve(dir){
     if(!f.startsWith(dir) || !fs.existsSync(f)){ r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': f.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream' }); fs.createReadStream(f).pipe(r); });
     s.listen(0, 'localhost', () => res(s)); });
 }
-async function open(browser, base, q, seedClass = true){
+async function open(browser, base, q, seedClass = true, maint = ''){
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -40,6 +40,8 @@ async function open(browser, base, q, seedClass = true){
     if(u.includes('gstatic.com/firebasejs')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }); return r.abort(); });
   await page.addInitScript(MOCK);
   if(!seedClass) await page.addInitScript('window.__DB.classes = {};');
+  if(maint === 'on') await page.addInitScript("window.__DB.portalStatus = { 'center-ba': { off: true }, 'center-bei': { off: true } };");
+  if(maint === 'none') await page.addInitScript('window.__DB.portalStatus = {};');
   await page.addInitScript(`try{localStorage.setItem('ba_cfg',JSON.stringify({name:'Ana'}))}catch(e){}`);
   await page.goto(base + '/index.html' + q); await page.waitForTimeout(400);
   return { page, errors, ctx };
@@ -85,8 +87,18 @@ const dbOf = (page, c) => page.evaluate(c => window.__DB[c] || {}, c);
       ok(Object.keys(await dbOf(page, 'class_scores')).length === 2, '第 2 關另存一筆');
       ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
+    console.log('\n[' + g + '-M] 老師中心維修開關：開啟（off:true）或沒有設定（預設維修中）→ 班級連結不能玩、不記成績；?preview 不受影響');
+    for(const m of ['on', 'none']){
+      const { page, errors, ctx } = await open(browser, base, '?class=' + CID, true, m);
+      ok((await text(page)).includes('維修中'), '維修中（' + m + '）：顯示維修中');
+      ok(await page.evaluate(() => !!document.getElementById('clsFatal')), '維修中（' + m + '）：全螢幕擋住');
+      ok(Object.keys(await dbOf(page, 'class_scores')).length === 0, '維修中（' + m + '）：沒有寫成績');
+      ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+    { const { page, ctx } = await open(browser, base, '?class=' + CID + '&preview=1', true, 'on');
+      ok(await page.evaluate(() => !document.getElementById('clsFatal')), '預覽（?preview）不受維修影響'); await ctx.close(); }
+
     console.log('\n[' + g + '-D] 班級碼不存在：連結失效');
-    { const { page, errors, ctx } = await open(browser, base, '?class=nope0000nope&dev=1', false);
+    { const { page, errors, ctx } = await open(browser, base, '?class=nope0000nope', false);
       ok((await text(page)).includes('連結已失效'), '顯示連結失效'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
     srv.close();
   }

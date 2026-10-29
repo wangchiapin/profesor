@@ -269,6 +269,7 @@ table.t small.setk{color:var(--mut);font-size:.8rem;font-weight:400;white-space:
 .gtabs .pill{flex:1 0 auto;padding:4px 8px}
 .grow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .grow:last-child{border-bottom:0}
+.grow.faded{opacity:.45;cursor:pointer}
 .ginfo{display:flex;flex-direction:column;gap:2px;min-width:0}
 .ginfo small{color:var(--mut)}
 .ginfo .mut{font-size:12px}

@@ -73,8 +73,9 @@ server.listen(0, 'localhost', async () => {
 
   console.log('\n[A] 沒有 ?dev：把／被還沒開放，一般老師看到維修中');
   { const { page, errors, ctx } = await open(browser);
-    const t = await text(page);
-    ok(t.includes('維修中'), '首頁有維修中標示');
+    ok((await page.$$('.grow.faded')).length === 2, '首頁：把、被的卡片變淡（維修中）');
+    await page.click('.grow.faded .pill.fill'); await page.waitForTimeout(200);
+    ok((await page.$eval('#toast', e => e.textContent)).includes('維修中'), '點卡片只出現「維修中」');
     await go(page, '#/game/ba/links');
     ok((await text(page)).includes('維修中'), '把的連結頁：維修中');
     ok(!(await page.$('#linksCard')), '連結頁沒有班級連結卡');

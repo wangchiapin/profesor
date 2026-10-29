@@ -19,7 +19,6 @@ function devOn(g){
 const gameMaint = g => !!(S.a && S.a.maint && S.a.maint[g]);   // 維修開關：分享區後台「老師管理中心遊戲開關」（把、被預設維修中，見 data.js）
 const gameOpen = g => !gameMaint(g) || !!(S.a && S.a.admin) || devOn(g);
 window.GAME_OPEN = gameOpen;
-const bookGames = () => GAME_IDS.filter(gameOpen);     // 成績冊的遊戲分頁（維修中的遊戲不顯示）
 const maintBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>：' + esc(T('maintNote')) + '</div>';
 const maintAdminBox = () => '<div class="notice">🔧 <b>' + esc(T('maint')) + '</b>：' + esc(T('maintAdminNote')) + '</div>';
 
@@ -213,12 +212,17 @@ function homeHtml(){
     (P.expiresAt ? esc(T(P.active ? 'planUntil' : 'planExpired', { date: fdate(P.expiresAt) })) : '') + '</span></h3>' + planNoticeHtml() +
     '<div class="grow"><div class="ginfo"><b>' + esc(T('usageClasses')) + '</b><small class="mut">' + nCls + ' / ' + DATA.MAX_CLASSES + '</small></div>' +
     '<div class="row" style="margin:0"><button class="pill fill sm" data-act="nav" data-r="classes">' + esc(T('manage')) + '</button></div></div></div>';
-  const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3><p class="hint">' + esc(T('gamesPick')) + '</p>' + GAME_IDS.map(g =>
-    '<div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small>' +
-    (!gameOpen(g) ? '' : usageOf(g).split('　·　').filter(Boolean).map(u => '<small class="mut">' + esc(u) + '</small>').join('')) + '</div>' +
-    (!gameOpen(g) ? '<span class="badge">🔧 ' + esc(T('maint')) + '</span>'
-      : (gameMaint(g) ? '<span class="badge">🔧 ' + esc(T('maintAdminBadge')) + '</span>' : '') + '<div class="row" style="margin:0"><button class="pill fill sm" data-act="togame" data-g="' + g + '" data-t="content">' + esc(T('manage')) + '</button>' +
-        '<a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a></div>') + '</div>').join('') + '</div>';
+  // 維修中的遊戲：卡片照常顯示（版面不變），變淡色；點下去只顯示「維修中」（管理者和 ?dev= 仍可照常使用）
+  const games = '<div class="card"><h3>' + esc(T('gamesTitle')) + '</h3><p class="hint">' + esc(T('gamesPick')) + '</p>' + GAME_IDS.map(g => {
+    const m = !gameOpen(g);
+    return '<div class="grow' + (m ? ' faded' : '') + '"' + (m ? ' data-act="maintclick"' : '') + '><div class="ginfo"><b>' + (m ? '🔧 ' : '') + esc(T(GAME_KEY[g])) + '</b><small>' + esc(T(GAME_DESC[g])) + '</small>' +
+      usageOf(g).split('　·　').filter(Boolean).map(u => '<small class="mut">' + esc(u) + '</small>').join('') + '</div>' +
+      (!m && gameMaint(g) ? '<span class="badge">🔧 ' + esc(T('maintAdminBadge')) + '</span>' : '') +
+      '<div class="row" style="margin:0">' +
+      (m ? '<button class="pill fill sm" data-act="maintclick">' + esc(T('manage')) + '</button><span class="pill sm" data-act="maintclick">' + esc(T('openGame')) + '</span>'
+         : '<button class="pill fill sm" data-act="togame" data-g="' + g + '" data-t="content">' + esc(T('manage')) + '</button><a class="pill sm" href="' + DATA.GAME_URL[g] + '" target="_blank" rel="noopener">' + esc(T('openGame')) + '</a>') +
+      '</div></div>';
+  }).join('') + '</div>';
   return plan + games;
 }
 // 班級頁最上面的分頁：每班一個（顯示班名），最後是「＋ 建立班級」（還沒滿 3 班才有）
@@ -401,7 +405,7 @@ function classHtml(){
     '<div class="row"><button class="pill sm" data-act="classdelete">🗑 ' + esc(T('deleteClass')) + '</button></div>' +
     (S.msg ? '<div class="err">' + esc(S.msg) + '</div>' : '') + '</div>';
   h += '<div class="card" id="shortCard"><h3>' + esc(T('classShortcuts')) + '</h3><p class="hint">' + esc(T('classShortcutsHint')) + '</p>' +
-    bookGames().map(g => '<div class="grow"><div class="ginfo"><b>' + esc(T(GAME_KEY[g])) + '</b></div><div class="row" style="margin:0">' +
+    GAME_IDS.map(g => '<div class="grow' + (gameOpen(g) ? '' : ' faded') + '"><div class="ginfo"><b>' + (gameOpen(g) ? '' : '🔧 ') + esc(T(GAME_KEY[g])) + '</b></div><div class="row" style="margin:0">' +
       '<button class="pill sm" data-act="togame" data-g="' + g + '" data-t="links" data-slot="' + esc(String(S.cur)) + '">🔗 ' + esc(T('gtLinks')) + '</button>' +
       '<button class="pill sm" data-act="togame" data-g="' + g + '" data-t="scores" data-slot="' + esc(String(S.cur)) + '">📊 ' + esc(T('gtScores')) + '</button></div></div>').join('') + '</div>';
   return h;
@@ -1214,7 +1218,8 @@ const actions = {
   async login(){ S.msg = ''; try{ await DATA.login(); }catch(e){ console.error(e); S.msg = err(e); render(); } },
   async logout(){ await DATA.logout(); },
   nav(el){ go(el.dataset.r); },
-  togame(el){ if(el.dataset.slot != null && el.dataset.slot !== '') setCls(el.dataset.slot); goGame(el.dataset.g, el.dataset.t || 'content'); },
+  maintclick(){ toast('🔧 ' + T('maint')); },
+  togame(el){ if(!gameOpen(el.dataset.g)){ toast('🔧 ' + T('maint')); return; } if(el.dataset.slot != null && el.dataset.slot !== '') setCls(el.dataset.slot); goGame(el.dataset.g, el.dataset.t || 'content'); },
   gtab(el){ goGame(S.g, el.dataset.t); },
   pickcls(el){ setCls(el.dataset.slot); S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.dragonSel = ''; S.colCfg = ''; S.bbkSel = ''; if(S.gt === 'scores') return loadBook(); render(); },
   reload(){ return loadAccount(); },

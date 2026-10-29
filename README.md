@@ -97,7 +97,7 @@
 
 ## 墨龍飛天：主題、練習範圍、班級連結（2026-10-21 已開放）
 
-- 狀態開關：`js/dragon.js` 的 `READY=true`（已開放）。要暫時改回「🔧 維修中」就改成 `false`；網址帶 `?dev=dragon` 仍可測試（同一個分頁會記住）。遊戲那邊對應的是 `RELEASE`。
+- 狀態開關：只有老師管理中心這一個（`portalStatus/center-dragon`），遊戲裡的 `RELEASE`、`?dev=1` 已刪除。
 - 方案：免費＝練習連結，可用 5 個內建主題（食物、動物、顏色、交通、家裡）；訂閱＝10 個內建主題＋自訂主題（最多 3 個，每個 6～40 詞）＋練習範圍（最多 15 組）＋班級連結（成績進成績冊）＋學習單 PDF。
 - 資料：`dragon_sets/{uid}` = `{ themes:[{id,name,words}], sets:[{id,name,builtin,custom,sid?}], updatedAt }`；`shared_dragon/{sid}` = `{ owner, name, builtin, custom:[{id,name,words}], updatedAt }`，學生連結（`?d=<sid>`）讀這份，範圍一改就跟著改。詞的格式 `[繁, 簡, 拼音, 西, 英]`，簡體和拼音用 opencc-js／pinyin-pro 自動產生，可手改。
 - 成績：`class_scores` 的 `game='dragon'`，`k`＝主題 id，`extra = {c: 吃對數, a: 飛行高度, wr: 錯字（最多 5 個）}`。
@@ -159,9 +159,10 @@ node tests/test_dragon.js [截圖資料夾]   # 墨龍（需 CORRE_LIBS，遊戲
 - 7-43：墨龍學習單加「混合出題」（在「附單字表」前面；順序＝混合出題、附單字表、附答案頁）：把勾選的主題合成一組隨機出題，題數不變；單字表仍照主題分段。只有勾 2 個以上主題才有作用。
 
 ### 7-46：遊戲維修開關
-- 中央 Firebase 的 `portalStatus` 集合，文件 `center-corre / center-colores / center-bbk / center-dragon`，`{off:true}` ＝ 維修中；沒有文件＝開放。
-- 一般老師：首頁顯示 🔧 維修中、遊戲頁只有維修說明。管理者（a2224907@gmail.com，已驗證）照常使用，並看到「只有你看得到」的提示。
-- 開關放在 share-zone 的 stats.html#sub →「老師管理中心遊戲開關」。`?dev=<遊戲>` 仍可當次覆寫。
+- 中央 Firebase 的 `portalStatus` 集合，文件 `center-corre / center-colores / center-bbk / center-dragon`，`{off:true}` ＝ 維修中；沒有文件＝開放（把、被例外：沒有文件＝維修中）。
+- 一般老師（2026-10-29 改）：首頁和班級頁的卡片照常顯示、版面不變，只是變淡色（名稱前加 🔧）；點下去只跳出「🔧 維修中」，進不去。管理者（a2224907@gmail.com，已驗證）照常使用，並看到「只有你看得到」的提示。
+- 學生端（2026-10-29 改）：維修中時，六款遊戲的班級／練習／範圍連結都顯示「🔧 維修中」、不能玩、不記成績（網址加 `?preview` 的老師預覽不受影響；讀不到開關就放行）。公開頁（沒有連結參數）不受影響。
+- 開關放在 share-zone 的 stats.html#sub →「老師管理中心遊戲開關」。`?dev=<遊戲>` 仍可讓老師中心當次覆寫（只影響老師端畫面，學生連結不受影響）。
 - 清掉用不到的舊字串（dragonQuickHint*、colLinkOff 等）。
 
 ### 新增遊戲到老師管理中心時（必做）

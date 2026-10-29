@@ -997,7 +997,7 @@ server.listen(0, 'localhost', async () => {
     // 班級頁只管班級：沒有連結、成績，只有各遊戲的快速入口
     await page.click('[data-act=nav][data-r=classes]'); await page.waitForSelector('#shortCard');
     ok(!(await page.$('#linksCard')) && !(await page.$('#bookCard')) && !(await page.$('table.t')), '班級頁很精簡：沒有連結、成績（搬到各遊戲）');
-    ok((await page.$$('#shortCard [data-act=togame]')).length === 8, '班級頁：四款遊戲各有「連結」「成績」快速入口');
+    ok((await page.$$('#shortCard [data-act=togame]')).length === 12, '班級頁：六款遊戲各有「連結」「成績」快速入口（維修中的也列出，只是變淡）');
     await page.click('#shortCard [data-g=bbk][data-t=scores]'); await page.waitForSelector('#bookCard');
     ok(page.url().endsWith('#/game/bbk/scores') && await page.evaluate(() => localStorage.getItem('profesorCls')) === '0', '快速入口：帶著這個班到比比看的成績');
     await page.evaluate(() => __profesor.go('game/corre/links')); await page.waitForSelector('#linksCard .lk');
@@ -1249,8 +1249,11 @@ server.listen(0, 'localhost', async () => {
 
   console.log('\n[M] 遊戲維修開關（portalStatus）');
   { const { page, errors, ctx } = await open(browser, { seedOpt: { maint: ['bbk'] }, ls: { profesorLang: 'tc' } });
-    await page.waitForSelector('.badge');
-    ok((await text(page)).includes('維修中'), '一般老師：首頁顯示 🔧 維修中');
+    await page.waitForSelector('.grow.faded');
+    const nf = (await page.$$('.grow.faded')).length, na = (await page.$$('.grow')).length;
+    ok(nf === 3 && na >= 6, '一般老師：首頁六款卡片都在（版面不變），維修中的（比比看＋預設維修的把、被）變淡', [nf, na]);
+    await page.click('.grow.faded .pill.fill'); await page.waitForTimeout(200);
+    ok((await page.$eval('#toast', e => e.textContent)).includes('維修中') && !(await page.$('#bbkCard')), '一般老師：點維修中的卡片只出現「維修中」，不會進去');
     await page.evaluate(() => __profesor.go('game/bbk/content'));
     await page.waitForTimeout(300);
     ok(await page.$('#bbkCard') === null && (await text(page)).includes('維修'), '一般老師：比比看的卡片收起來、顯示維修說明');
