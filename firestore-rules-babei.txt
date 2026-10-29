@@ -1,5 +1,5 @@
-// 把／被 班級成績（2026-10-29）：跟 firestore-rules-dragon.txt 完整版只差一行——class_scores 的 game 多收 'ba'、'bei'。
-// 整份貼進中心專案 subscription-48d3c 的規則即可（class_plays 這次沒動；步驟 3 做錯題明細時再改）。
+// 把／被 班級成績（2026-10-29）：以 2026-10-29 中心專案「實際線上的規則」為底，只改一行——class_scores 的 game 多收 'ba'、'bei'。
+// 整份貼進中心專案 subscription-48d3c 的規則即可（含 game_reports；class_plays 這次沒動，步驟 3 做錯題明細時再改）。
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -437,6 +437,39 @@ service cloud.firestore {
           && d.at == request.time;
       }
       allow create: if signedIn() && okReport();
+      allow read, delete: if isAdmin();
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done'])
+        && request.resource.data.done is bool;
+    }
+
+    // ===== 把、被：題目回報（🚩 這題怪怪的）=====
+    match /game_reports/{id} {
+      function okGameReport() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['game','why','note','id','lv','qt','q','tr','ans','pick','imgs','imgk','lang','ver','done','at'])
+          && d.keys().hasAll(['game','why','note','id','lv','qt','q','tr','ans','pick','imgs','imgk','lang','ver','done','at'])
+          && d.game in ['ba','bei']
+          && d.why in ['wrong','image','other']
+          && d.note is string && d.note.size() <= 100
+          && d.id is int && d.id >= 1 && d.id <= 5000
+          && d.lv is int && d.lv >= 1 && d.lv <= 4
+          && d.qt in ['A','L','P','T']
+          && d.q is string && d.q.size() <= 80
+          && d.tr is string && d.tr.size() <= 200
+          && d.ans is string && d.ans.size() <= 80
+          && d.pick is string && d.pick.size() <= 100
+          && d.imgs is list && d.imgs.size() >= 1 && d.imgs.size() <= 3
+          && (d.imgs.size() < 1 || (d.imgs[0] is string && d.imgs[0].size() <= 12000))
+          && (d.imgs.size() < 2 || (d.imgs[1] is string && d.imgs[1].size() <= 12000))
+          && (d.imgs.size() < 3 || (d.imgs[2] is string && d.imgs[2].size() <= 12000))
+          && d.imgk is list && d.imgk.size() == d.imgs.size()
+          && d.lang in ['es','en','zh']
+          && d.ver is string && d.ver.size() <= 12
+          && d.done == false
+          && d.at == request.time;
+      }
+      allow create: if signedIn() && okGameReport();
       allow read, delete: if isAdmin();
       allow update: if isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['done'])
