@@ -63,11 +63,7 @@ const dbOf = (page, c) => page.evaluate(c => window.__DB[c] || {}, c);
       ok(!!(await page.$('button[onclick="openLB()"]')), '有排行榜按鈕');
       ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
-    console.log('\n[' + g + '-B] ?class=…（未開放）：維修中');
-    { const { page, errors, ctx } = await open(browser, base, '?class=' + CID);
-      ok((await text(page)).includes('維修中'), '顯示維修中'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
-
-    console.log('\n[' + g + '-C] ?class=…&dev=1：成績回傳老師');
+    console.log('\n[' + g + '-C] ?class=…：成績回傳老師（開不開放由老師中心開關決定，遊戲本身不再擋）');
     { const { page, errors, ctx } = await open(browser, base, '?class=' + CID + '&dev=1');
       ok((await page.$eval('#clsBar', e => e.textContent)).includes('成績會回傳給老師'), '班級橫幅');
       await play(page, 1); await page.waitForTimeout(500);

@@ -8,8 +8,6 @@ const GAMES = ['corre', 'colores', 'bbk'];
 const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon', ba: 'gameBa', bei: 'gameBei' };
 const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc', ba: 'gameBaDesc', bei: 'gameBeiDesc' };
 const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon', 'ba', 'bei'];
-// 把／被：遊戲那邊的班級成績還沒做好之前先關著（false＝一般老師看到「維修中」，管理員或網址加 ?dev=ba,bei 才看得到）；做好後改成 true
-const BABEI_READY = false;
 const isBaBei = g => g === 'ba' || g === 'bei';
 const GAME_TABS = ['content', 'ranges', 'links', 'scores', 'sheet', 'help'];
 const DR = window.DRAGON;
@@ -18,7 +16,7 @@ function devOn(g){
   try{ const m = /[?&]dev=([a-z,]+)/.exec(location.search); if(m) sessionStorage.setItem('gameDev', m[1]); return (sessionStorage.getItem('gameDev') || '').split(',').indexOf(g) >= 0; }
   catch(e){ return false; }
 }
-const gameMaint = g => (isBaBei(g) && !BABEI_READY) || !!(S.a && S.a.maint && S.a.maint[g]);
+const gameMaint = g => !!(S.a && S.a.maint && S.a.maint[g]);   // 維修開關：分享區後台「老師管理中心遊戲開關」（把、被預設維修中，見 data.js）
 const gameOpen = g => !gameMaint(g) || !!(S.a && S.a.admin) || devOn(g);
 window.GAME_OPEN = gameOpen;
 const bookGames = () => GAME_IDS.filter(gameOpen);     // 成績冊的遊戲分頁（維修中的遊戲不顯示）

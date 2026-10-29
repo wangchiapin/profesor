@@ -73,10 +73,16 @@ async function loadAccount(user){
       catch(e){ console.warn('class read failed', k, e); }
     }));
   }catch(e){ console.warn('classes unavailable', e); acct.clsReady = false; }
-  // 遊戲開關：portalStatus 裡 center-<遊戲代號>，off:true＝維修中（在 stats.html #sub「老師管理中心遊戲開關」設定）；讀不到就當全部開放
+  // 遊戲開關：portalStatus 裡 center-<遊戲代號>，off:true＝維修中、off:false＝開放（在 stats.html「老師管理中心遊戲開關」設定）。
+  // 沒有文件時：把、被預設維修中（要 Ben 在後台打開才開放），其他遊戲預設開放；讀不到開關資料時照預設
+  ['ba', 'bei'].forEach(g => { acct.maint[g] = true; });
   try{
     const ps = await db.collection('portalStatus').get();
-    ps.docs.forEach(d => { if(d.id.indexOf('center-') === 0 && d.data().off === true) acct.maint[d.id.slice(7)] = true; });
+    ps.docs.forEach(d => {
+      if(d.id.indexOf('center-') !== 0) return;
+      const g = d.id.slice(7), off = d.data().off;
+      if(off === true) acct.maint[g] = true; else if(off === false) delete acct.maint[g];
+    });
   }catch(e){ console.warn('game switches unavailable', e); }
   // 用量與連結來源：失敗不影響其他功能
   try{

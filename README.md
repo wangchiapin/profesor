@@ -1,6 +1,6 @@
 # 老師管理中心 Centro del profesor
 
-> 跑吧！漢字・色數消消樂・比比看・墨龍飛天 四款遊戲共用的老師端（另有 把／被 兩款已做好、目前關閉，見下方「把／被」）：登入、班級、各遊戲的題庫／連結／成績／學習單／說明
+> 跑吧！漢字・色數消消樂・比比看・墨龍飛天 四款遊戲共用的老師端（另有 把／被 兩款，預設維修中，由管理者在分享區開關，見下方「把／被」）：登入、班級、各遊戲的題庫／連結／成績／學習單／說明
 
 - **網址：** https://wangchiapin.github.io/profesor/
 - **Firebase 專案：** 中心專案 subscription-48d3c（跟遊戲同一個）
@@ -107,7 +107,7 @@
 ## 把／被（2026-10-29 步驟 1：入口、班級連結、成績）
 
 - 兩款遊戲用同一套邏輯：`app.js` 的 `isBaBei(g)`；遊戲代號 `ba`、`bei`（網址在 `data.js` 的 `GAME_URL`）。
-- 開關：`app.js` 頂端 `BABEI_READY = false` 時，一般老師只看到「維修中」，管理員或網址加 `?dev=ba,bei` 才看得到。**開放前要做**：① 規則：`class_scores` 收 `ba`／`bei` 已包含在 game-kit 正本，game-kit 紀錄 2026-10-29 已貼進 Firebase（開放前再確認一次） ② 兩個遊戲的 `CLS_RELEASE = true` ③ 這裡 `BABEI_READY = true`。
+- 開關：把／被預設「維修中」（`data.js` 預設 `acct.maint.ba/bei = true`）。管理者到 cadadiaunosminutos-share-zone 的 `stats.html` →「🔧 老師管理中心遊戲開關」切換（寫入 `portalStatus/center-ba`、`center-bei`）；管理員與網址 `?dev=ba,bei` 仍可先看。遊戲本身已不再有自己的開關（`BABEI_READY`、`CLS_RELEASE` 已刪）。**開放前要做**：規則 `class_scores` 收 `ba`／`bei` 已包含在 game-kit 正本，2026-10-29 已貼進 Firebase（開放前再確認一次），然後在開關頁把把／被打開。
 - 規則：不再有 `firestore-rules-babei.txt`（2026-10-29 刪除）；一律用 game-kit `firebase-rules/subscription-48d3c.rules.txt`，它含 `game_reports`（把／被／聲調偵探 `tonos` 回報）。
 - 練習連結＝遊戲網址（不回傳成績）；班級連結＝`?class=班級碼`（要訂閱才能建班級）。
 - 成績：`class_scores` 的 `game='ba'`／`'bei'`，`k='lv1'|'lv2'|'lv3'`（第幾關；把有 3 關、被有 4 關，遊戲端被會送 `lv4`；成績冊 `setLabel` 依遊戲認 lv1～lv3（把）／lv1～lv4（被），認不得的代號才顯示「已刪除」。遊戲以後新增關卡時，這裡要一起改），`best`＝該關最高分，`extra = {ok: 答對題數, q: 題數, f: 第一次就對的題數}`。成績冊沿用既有表格，「詳細」欄顯示「答對 ok / q 題」。
