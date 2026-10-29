@@ -289,7 +289,7 @@ async function coloresLinkOff(items, i){
 function linkColoresPractice(sid){ return GAME_URL.colores + '?c=' + sid; }
 const coloresMax = plan => plan && plan.active ? 15 : 3;
 
-// ---- 跑吧！漢字：句庫（格式與 corre/teacher/ 完全相同，規則已在 corre/teacher/firestore.rules.txt）----
+// ---- 跑吧！漢字：句庫（格式與 corre/teacher/ 完全相同，規則見 game-kit firebase-rules/subscription-48d3c.rules.txt）----
 // teacher_banks/{uid} = { slots: { '0'..'4': sid }, updatedAt }
 // shared_banks/{sid}  = { owner, slot, name, speed, script, boss, phonetic?, sentences[], pro, updatedAt }
 // 連結碼建立後就不換，所以改了句子，已發出去的連結會跟著變。
@@ -342,7 +342,7 @@ function explain(e, t){
   return (e && e.message) || String(e);
 }
 
-// ---- 意見回饋：老師寫給 Ben（只有管理員讀得到；規則見 firestore-rules-step5-1.txt）----
+// ---- 意見回饋：老師寫給 Ben（只有管理員讀得到；規則見 game-kit firebase-rules/subscription-48d3c.rules.txt）----
 function sendFeedback(f){
   const u = auth.currentUser;
   return db.collection('center_feedback').add({

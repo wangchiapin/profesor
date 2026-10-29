@@ -16,7 +16,7 @@
   const NOW = () => Date.now();
   function stamp(d){ const o = {}; for(const k in d) o[k] = (d[k] && d[k].__ts) ? NOW() : d[k]; return o; }
   function checkWrite(pid, c, id, data, user){
-    // 比比看範圍：照 firestore-rules-step2.txt 的規則模擬（額度：免費 3、訂閱 15；到期後只能變少或不變）
+    // 比比看範圍：照 game-kit firebase-rules/subscription-48d3c.rules.txt 的規則模擬（額度：免費 3、訂閱 15；到期後只能變少或不變）
     if(c === 'bbk_sets'){
       if(!user || user.uid !== id) deny();
       const p = col(pid, 'site_plans')[id], pro = !!(p && p.expiresAt > NOW()), n = data.items.length;
@@ -31,7 +31,7 @@
       if(keys !== ['d','lv','n','name','owner','t','th','updatedAt'].join()) deny();
       return;
     }
-    // 跑吧句庫：照 corre/teacher/firestore.rules.txt 的重點模擬（位置 1–4 或超過 50 句要訂閱中；每庫最多 80 句；本人才能寫）
+    // 跑吧句庫：照 game-kit firebase-rules/subscription-48d3c.rules.txt 的重點模擬（位置 1–4 或超過 50 句要訂閱中；每庫最多 80 句；本人才能寫）
     if(c === 'teacher_banks'){
       if(!user || user.uid !== id) deny();
       const p = col(pid, 'site_plans')[id], pro = !!(p && p.expiresAt > NOW());
@@ -50,7 +50,7 @@
       if(!ok) deny();
       return;
     }
-    // 墨龍：照 firestore-rules-dragon.txt 的重點模擬（自訂主題最多 3 個、範圍最多 15 個；要訂閱中才能寫；shared_dragon 只有本人能改）
+    // 墨龍：照 game-kit firebase-rules/subscription-48d3c.rules.txt 的重點模擬（自訂主題最多 3 個、範圍最多 15 個；要訂閱中才能寫；shared_dragon 只有本人能改）
     if(c === 'dragon_sets'){
       if(!user || user.uid !== id) deny();
       const p = col(pid, 'site_plans')[id], pro = !!(p && p.expiresAt > NOW());

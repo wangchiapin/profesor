@@ -357,7 +357,7 @@ function setLabel(game, k){
     if(k === 'link') return T('setOldLink');
     const it = (A.configs || []).find(x => x.sid === k); return it ? '🎨 ' + ((it.cfg && it.cfg.name) || '#') : T('setDeleted');
   }
-  if(isBaBei(game)){ const m = /^lv([1-3])$/.exec(k); return m ? T('levelN', { n: m[1] }) : (k === 'old' ? T('setOther') : T('setDeleted')); }
+  if(isBaBei(game)){ const m = new RegExp('^lv([1-' + (game === 'bei' ? 4 : 3) + '])$').exec(k); return m ? T('levelN', { n: m[1] }) : (k === 'old' ? T('setOther') : T('setDeleted')); }   // 把有 3 關、被有 4 關（遊戲端送 lv1～lv3／lv1～lv4）
   if(game === 'dragon'){ const l = DR.themeLabel(k, (A.dragon || {}).themes); return l ? '🐉 ' + l : T('setDeleted'); }
   if(k === 'normal') return T('rangeNormal');
   if(k === 'other') return T('setOther');

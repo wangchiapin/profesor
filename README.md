@@ -1,6 +1,6 @@
 # 老師管理中心 Centro del profesor
 
-> 跑吧！漢字・色數消消樂・比比看・墨龍飛天 四款遊戲共用的老師端：登入、班級、各遊戲的題庫／連結／成績／學習單／說明
+> 跑吧！漢字・色數消消樂・比比看・墨龍飛天 四款遊戲共用的老師端（另有 把／被 兩款已做好、目前關閉，見下方「把／被」）：登入、班級、各遊戲的題庫／連結／成績／學習單／說明
 
 - **網址：** https://wangchiapin.github.io/profesor/
 - **Firebase 專案：** 中心專案 subscription-48d3c（跟遊戲同一個）
@@ -15,7 +15,7 @@
 |---|---|
 | `#/home` 首頁 | 方案與到期日、班級用量、四款遊戲卡片（用量、「管理」、「開啟遊戲」） |
 | `#/classes`、`#/class/N` 班級 | 只管班級：建立（最多 3 班）、改名、排行榜開關、刪除；下方有各遊戲「連結」「成績」的快速入口 |
-| `#/game/<corre｜colores｜bbk｜dragon>/<分頁>` 遊戲頁 | 上方遊戲切換、黏在上面的分頁：**題庫／設定**（content）｜**連結**（links）｜**成績**（scores）｜**學習單**（sheet）｜**說明**（help） |
+| `#/game/<corre｜colores｜bbk｜dragon｜ba｜bei>/<分頁>` 遊戲頁 | 上方遊戲切換、黏在上面的分頁：**題庫／設定**（content）｜**連結**（links）｜**成績**（scores）｜**學習單**（sheet）｜**說明**（help） |
 | `#/bank/<0-4>` | 跑吧句庫編輯頁 |
 
 - 「連結」「成績」分頁上有「選擇班級」，選的班記在這台裝置（`localStorage` 的 `profesorCls`），換遊戲、換分頁都維持。
@@ -29,7 +29,7 @@
 |---|---|
 | `site_members/{uid}`、`site_plans/{uid}` | 會員、方案（`month`／`year`／`trial`／`pro` 且 `expiresAt` 還沒到才算訂閱） |
 | `teacher_classes/{uid}`、`classes/{cid}` | 班級（三款共用，最多 3 班） |
-| `class_scores/{cid}_{game}_{k}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生×每個設定一筆；`k`＝設定名稱：跑吧（公開句庫 `pool-A1`／`pool-A2`／`pool-B1`、題包 `pack-<代碼>` 或 `pack-<代碼>-<等級>`、老師句庫＝句庫碼；改版前的舊公開題庫 `pool`）／色數（設定碼；舊式連結 `link`）（步驟 6-2，規則見 `firestore-rules-step6-2.txt`） |
+| `class_scores/{cid}_{game}_{k}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生×每個設定一筆；`k`＝設定名稱：跑吧（公開句庫 `pool-A1`／`pool-A2`／`pool-B1`、題包 `pack-<代碼>` 或 `pack-<代碼>-<等級>`、老師句庫＝句庫碼；改版前的舊公開題庫 `pool`）／色數（設定碼；舊式連結 `link`）（步驟 6-2，規則見 game-kit 的 `subscription-48d3c.rules.txt`） |
 | `class_plays/{自動 id}` | 比比看每回合每題的紀錄；`r`＝範圍碼（一般模式 `''`），成績冊依它分開 |
 | `teacher_banks`、`shared_banks` | 跑吧句庫（步驟 4 起在中心編輯） |
 | `teacher_configs`、`shared_configs` | 色數設定組（讀；沒有連結碼時，照色數教師區的做法寫入連結碼） |
@@ -49,7 +49,7 @@
 - `shared_bbk/{sid}` = `{ owner, name, th, lv, d, t, n, updatedAt }`：學生連結讀這份；按「練習連結」或班級頁「產生連結」才建立
 - 有範圍碼的設定一改，`shared_bbk` 跟著改 → 已發出去的連結用新範圍；刪除設定 → 連結退回一般模式
 - 特徵與題型清單在 `js/bbk.js`，要跟遊戲（`themes/people.js` 的 dims、`index.html` 的 POOL）一致
-- 規則：`firestore-rules-step2.txt`（要手動貼到 Firebase 主控台）
+- 規則：正本在 game-kit（私人 repo）的 `firebase-rules/``subscription-48d3c.rules.txt`（整份手動貼到 Firebase 主控台）
 
 ## 色數設定組與學習單（步驟 3）
 
@@ -73,7 +73,7 @@
 
 - 「遊戲設定」：跑吧句庫卡片，5 個位置（免費 1 個、每庫 50 句；訂閱 5 個、每庫 80 句；每句最多 20 字）。每個句庫：編輯、試玩（`corre/?bank=<句庫碼>&preview=1`；複製這個連結給學生也行，成績不回傳）、刪除。分頁名稱「自訂句庫」。
 - 編輯頁 `#/bank/<0-4>`：上方三個分頁「設定｜加句子（一句一句／批次建立／公開句庫、主題包）｜句庫內的句子」（分頁列捲動時固定在上方，上傳列固定在下方；新句庫先開設定，已有句子先開句子清單）。干擾字最多 5 個、每個詞不得超過 4 個字（超過會跳提醒）。可做的事：句庫設定、輸入一句自動產生簡體／台灣拼音／翻譯再逐詞微調、批次匯入、從公開題庫（`corre-d16da` 專案，只讀）或主題包（訂閱）挑句、句子清單改／刪、上傳。有沒上傳的修改，離開前會先問。
-- 資料跟 `corre/teacher/` 同一份、格式完全相同（`teacher_banks/{uid}.slots` → `shared_banks/{sid}`），規則在 `corre/teacher/firestore.rules.txt`，**不用新規則**。句庫碼建立後不換，所以改句子後已發出的連結自動跟著變。
+- 資料跟 `corre/teacher/` 同一份、格式完全相同（`teacher_banks/{uid}.slots` → `shared_banks/{sid}`），規則已在 game-kit 的 `subscription-48d3c.rules.txt`，**不用新規則**。句庫碼建立後不換，所以改句子後已發出的連結自動跟著變。
 - 「學習單」：跑吧學習單 PDF（訂閱限定）。來源可選我的句庫／公開句庫／主題包；題數（全部／隨機 10、20 句／自己挑，上限 50 句）；內容可複選：句子總表、排列句子、填空（隨機或老師指定挖詞）、翻譯、連連看、聽寫，有練習的附答案頁；可先預覽；中文字大小 14／16／21 點（預設 14，整頁照比例縮放）。
 - 程式在 `js/corre.js`（文字在 `js/corre-text.js`）。繁簡轉換與拼音函式庫（opencc-js、pinyin-pro）第一次按「自動產生」或「批次匯入」才載入。舊的 `corre/teacher/` 頁暫時保留，兩邊改的是同一份資料。
 
@@ -82,7 +82,7 @@
 - 學習單在各遊戲頁的「學習單」分頁。
 - 遊戲頁用分頁取代原本很長的單頁，分頁列捲動時黏在上方。
 - 沒訂閱的老師按到訂閱功能（建立班級、第 2～5 個句庫、超過額度的範圍／設定組、自訂顏色與數字、學習單、干擾字），會跳出「建議訂閱」視窗，連到入口網站。
-- 右上角「💬 意見回饋」：類型（建議／問題／其他）＋內容，連同老師 email、介面語言、所在頁面存進 `center_feedback`。Ben 在 stats 頁「訂閱 → 👩‍🏫 老師管理中心回饋」看、標記已處理、刪除、匯出 CSV。**要先貼 `firestore-rules-step5-1.txt`。**
+- 右上角「💬 意見回饋」：類型（建議／問題／其他）＋內容，連同老師 email、介面語言、所在頁面存進 `center_feedback`。Ben 在 stats 頁「訂閱 → 👩‍🏫 老師管理中心回饋」看、標記已處理、刪除、匯出 CSV。規則已含在 game-kit 的 `subscription-48d3c.rules.txt`。
 - 跑吧句庫：每一句可以選填「干擾字」（訂閱功能，最多 5 個、每個 1～4 字），存成 `sentences[].decoy`（繁）和 `decoySimp`（自動轉簡）。既有規則不檢查句子內的欄位，所以不用改句庫規則。遊戲讀取干擾字在步驟 5-2 做。
   - 注意：舊的 `corre/teacher/` 頁存檔時會把干擾字拿掉；步驟 5-2 會把它改成自動跳到中心。
 
@@ -101,15 +101,16 @@
 - 方案：免費＝練習連結，可用 5 個內建主題（食物、動物、顏色、交通、家裡）；訂閱＝10 個內建主題＋自訂主題（最多 3 個，每個 6～40 詞）＋練習範圍（最多 15 組）＋班級連結（成績進成績冊）＋學習單 PDF。
 - 資料：`dragon_sets/{uid}` = `{ themes:[{id,name,words}], sets:[{id,name,builtin,custom,sid?}], updatedAt }`；`shared_dragon/{sid}` = `{ owner, name, builtin, custom:[{id,name,words}], updatedAt }`，學生連結（`?d=<sid>`）讀這份，範圍一改就跟著改。詞的格式 `[繁, 簡, 拼音, 西, 英]`，簡體和拼音用 opencc-js／pinyin-pro 自動產生，可手改。
 - 成績：`class_scores` 的 `game='dragon'`，`k`＝主題 id，`extra = {c: 吃對數, a: 飛行高度, wr: 錯字（最多 5 個）}`。
-- 規則在 `firestore-rules-dragon.txt`（完整版，已貼到 subscription-48d3c）：`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`。
+- 規則在 game-kit 的 `subscription-48d3c.rules.txt`（已貼到 subscription-48d3c）：`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`。
 - 開放時做過：① 貼規則 ② 遊戲 `RELEASE=true` ③ 中心 `READY=true` ④ 分享區卡片與訂閱比較表換成正式文字。
 
 ## 把／被（2026-10-29 步驟 1：入口、班級連結、成績）
 
 - 兩款遊戲用同一套邏輯：`app.js` 的 `isBaBei(g)`；遊戲代號 `ba`、`bei`（網址在 `data.js` 的 `GAME_URL`）。
-- 開關：`app.js` 頂端 `BABEI_READY = false` 時，一般老師只看到「維修中」，管理員或網址加 `?dev=ba,bei` 才看得到。**開放前要做**：① 貼 `firestore-rules-babei.txt` ② 兩個遊戲的 `CLS_RELEASE = true` ③ 這裡 `BABEI_READY = true`。
+- 開關：`app.js` 頂端 `BABEI_READY = false` 時，一般老師只看到「維修中」，管理員或網址加 `?dev=ba,bei` 才看得到。**開放前要做**：① 規則：`class_scores` 收 `ba`／`bei` 已包含在 game-kit 正本，game-kit 紀錄 2026-10-29 已貼進 Firebase（開放前再確認一次） ② 兩個遊戲的 `CLS_RELEASE = true` ③ 這裡 `BABEI_READY = true`。
+- 規則：不再有 `firestore-rules-babei.txt`（2026-10-29 刪除）；一律用 game-kit `firebase-rules/subscription-48d3c.rules.txt`，它含 `game_reports`（把／被／聲調偵探 `tonos` 回報）。
 - 練習連結＝遊戲網址（不回傳成績）；班級連結＝`?class=班級碼`（要訂閱才能建班級）。
-- 成績：`class_scores` 的 `game='ba'`／`'bei'`，`k='lv1'|'lv2'|'lv3'`（第幾關），`best`＝該關最高分，`extra = {ok: 答對題數, q: 題數, f: 第一次就對的題數}`。成績冊沿用既有表格，「詳細」欄顯示「答對 ok / q 題」。
+- 成績：`class_scores` 的 `game='ba'`／`'bei'`，`k='lv1'|'lv2'|'lv3'`（第幾關；把有 3 關、被有 4 關，遊戲端被會送 `lv4`；成績冊 `setLabel` 依遊戲認 lv1～lv3（把）／lv1～lv4（被），認不得的代號才顯示「已刪除」。遊戲以後新增關卡時，這裡要一起改），`best`＝該關最高分，`extra = {ok: 答對題數, q: 題數, f: 第一次就對的題數}`。成績冊沿用既有表格，「詳細」欄顯示「答對 ok / q 題」。
 - 遊戲端（`practica-de-ba-oracion`、`practica-de-bei-oracion` 的 `index.html`，「班級模式」區塊）：連結帶 `?class=` 才啟動；成績存到中央專案、不寫原本的公開排行榜；老師開了「班級排行榜」就在結果頁顯示。
 - 還沒做：自訂句庫、題數與題型比例、每題對錯明細（`class_plays`）、學習單。
 - 測試：`node tests/test_babei.js`（老師中心）、`node tests/test_babei_games.js`（兩個遊戲，要放在旁邊的資料夾）。
@@ -130,6 +131,7 @@ js/corre-text.js  句庫編輯器的四語文字
 js/books.js       成績簿表格與比比看常錯統計（只產生 HTML）
 js/app.js         畫面與操作
 js/qrcode.js      qrcode-generator 1.4.4（MIT，Kazuhiko Arase）
+（規則檔已全部移到 game-kit 的 firebase-rules/，這裡不再放）
 tests/            Playwright 測試（模擬 Firebase，不會碰真的資料庫）
 ```
 
