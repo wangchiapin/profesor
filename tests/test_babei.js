@@ -320,6 +320,63 @@ server.listen(0, 'localhost', async () => {
     global.GT_FAIL = false; await ctx.close(); }
   }
 
+  console.log('\n[G] 自訂句子：上傳圖片（壓縮、每份 10 張、換圖／刪圖、免費版鎖住、刪句庫連動）');
+  { const { page, errors, ctx } = await open(browser, { q: '?dev=ba', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=set]'); await page.fill('#babName', '有圖的');
+    await page.click('[data-act=edtab][data-k=write]'); await page.waitForSelector('#babText');
+    const nouns = ['杯子', '包包', '筆', '手機', '鑰匙', '帽子', '外套', '蘋果', '書包', '雨傘', '眼鏡', '錢包'];
+    await page.fill('#babText', nouns.map(n => '她 把 ' + n + ' 放在 桌子上｜Puso ' + n + '.').join('\n')); await page.click('[data-act=babgen]'); await page.waitForTimeout(500);
+    ok((await text(page, '#babCard')).includes('只有訂閱') === false && (await text(page, '#babCard')).includes('著作權'), '寫句子頁有圖片說明（不要上傳學生的臉、著作權自負）');
+    ok((await page.$$('[data-act=babimg]')).length === 12, '每一句都有「加圖片」按鈕');
+    const png = Buffer.from(await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 1200; c.height = 800; const x = c.getContext('2d'); const d = x.createImageData(1200, 800); for(let i = 0; i < d.data.length; i += 4){ d.data[i] = Math.random() * 255; d.data[i + 1] = Math.random() * 255; d.data[i + 2] = Math.random() * 255; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); return c.toDataURL('image/png').split(',')[1]; }), 'base64');
+    const addImg = async k => { const had = (await page.$$('.bimg')).length; const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-act=babimg][data-k="' + k + '"]')]); await fc.setFiles({ name: 'a.png', mimeType: 'image/png', buffer: png }); await page.waitForFunction(n => document.querySelectorAll('.bimg').length >= n, had + 1); };
+    await addImg(0);
+    const sz = await page.$eval('.bimg', e => e.src.length);
+    ok((sz - 23) * 3 / 4 <= 50 * 1024 && /^data:image\/jpeg/.test(await page.$eval('.bimg', e => e.src)), '圖片自動壓成 JPEG、50KB 以下（雜訊圖也行）', sz);
+    for(let k = 1; k < 11; k++) await addImg(k);
+    ok((await page.$$('.bimg')).length === 11, '加了 11 張圖');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    let d = await db(page), b = Object.values(d.shared_babanks)[0], sid = Object.keys(d.shared_babanks)[0];
+    const i1 = d.shared_babimgs && d.shared_babimgs[sid + '_1'], i2 = d.shared_babimgs && d.shared_babimgs[sid + '_2'];
+    ok(i1 && Object.keys(i1.imgs).length === 10 && i2 && Object.keys(i2.imgs).length === 1, '11 張圖：第 1 份 10 張、第 2 份 1 張', [i1 && Object.keys(i1.imgs).length, i2 && Object.keys(i2.imgs).length]);
+    ok(b.custom.filter(c => c.im).length === 11 && b.custom.filter(c => /^1[a-z0-9]{8}$/.test(c.im || '')).length === 10 && b.custom.filter(c => /^2[a-z0-9]{8}$/.test(c.im || '')).length === 1 && !b.custom[11].im, '句子裡存圖片代號（1／2＋代號），沒圖的句子沒有這欄');
+    ok(i1.owner === 'u1' && Object.values(i1.imgs).every(v => /^data:image\/jpeg;base64,/.test(v)), '圖片文件只有本人、JPEG');
+    // 再編輯：圖會讀回來
+    await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=write]'); await page.waitForFunction(() => document.querySelectorAll('.bimg').length === 11);
+    ok(true, '再編輯：11 張圖讀回來');
+    // 換圖、刪圖
+    await page.click('[data-act=babimgdel][data-k="0"]'); await page.click('[data-act=babimgdel][data-k="1"]');
+    ok((await page.$$('.bimg')).length === 9, '可以刪圖');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    d = await db(page); const j1 = d.shared_babimgs[sid + '_1'], j2 = d.shared_babimgs[sid + '_2'];
+    ok(Object.keys(j1.imgs).length === 8 && Object.keys(j2.imgs).length === 1, '刪 2 張後：第 1 份剩 8 張，第 2 份還是 1 張（原本在哪份就留在哪份）');
+    await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName'); await page.click('[data-act=edtab][data-k=write]'); await page.waitForFunction(() => document.querySelectorAll('.bimg').length === 9);
+    await addImg(0);
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    d = await db(page); ok(Object.keys(d.shared_babimgs[sid + '_1'].imgs).length === 9 && Object.keys(d.shared_babimgs[sid + '_2'].imgs).length === 1, '再加 1 張：放進有空位的第 1 份');
+    // 全部刪光 → 圖片文件刪掉
+    await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName'); await page.click('[data-act=edtab][data-k=write]'); await page.waitForFunction(() => document.querySelectorAll('.bimg').length === 10);
+    for(let k = 0; k < 12; k++){ if(await page.$('[data-act=babimgdel][data-k="' + k + '"]')) await page.click('[data-act=babimgdel][data-k="' + k + '"]'); }
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    d = await db(page); ok(!d.shared_babimgs || Object.keys(d.shared_babimgs).length === 0, '圖片全刪光：圖片文件也刪掉');
+    // 加圖後刪整個句庫
+    await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName'); await page.click('[data-act=edtab][data-k=write]'); await addImg(0);
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    ok(Object.keys((await db(page)).shared_babimgs || {}).length === 1, '又加了 1 張圖');
+    await page.click('[data-act=babdel][data-k="0"]'); await page.waitForTimeout(500);
+    d = await db(page); ok(Object.keys(d.shared_babanks || {}).length === 0 && Object.keys(d.shared_babimgs || {}).length === 0, '刪句庫：圖片文件一起刪掉');
+    ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, q: '?dev=ba', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=write]'); await page.fill('#babText', '我 把 書 放在 桌子上｜Puse el libro.'); await page.click('[data-act=babgen]'); await page.waitForTimeout(400);
+    ok(!!(await page.$('[data-act=babimg]')) && (await text(page, '#babCard')).includes('🔒'), '免費版：有「加圖片」按鈕但標示鎖');
+    let chooser = false; page.once('filechooser', () => { chooser = true; });
+    await page.click('[data-act=babimg][data-k="0"]'); await page.waitForTimeout(400);
+    ok(!chooser && (await page.$$('.bimg')).length === 0, '免費版按「加圖片」：不會開檔案選擇，跳出建議訂閱');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
   await browser.close(); server.close();
   console.log('\n通過 ' + pass + '　失敗 ' + fail); process.exit(fail ? 1 : 0);
 });

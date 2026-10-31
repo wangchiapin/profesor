@@ -341,6 +341,14 @@ async function saveBaBank(game, bslots, slot, sid, data){
     b.set(db.collection('teacher_babanks').doc(uid()), Object.assign({}, slots, { updatedAt: ts }));
   }
   b.set(db.collection('shared_babanks').doc(sid), { owner: uid(), game, slot, name: data.name, ids: data.ids, custom: data.custom || [], updatedAt: ts });
+  // 圖片：shared_babimgs/{句庫碼}_{1|2}，每份最多 10 張；只有圖片有增減（imgDocs 有值）才寫
+  if(data.imgDocs){
+    [1, 2].forEach(n => {
+      const imgs = data.imgDocs[n - 1] || {}, ref = db.collection('shared_babimgs').doc(sid + '_' + n);
+      if(Object.keys(imgs).length) b.set(ref, { owner: uid(), imgs, updatedAt: ts });
+      else if(data.hadImgDocs && data.hadImgDocs.indexOf(n) >= 0) b.delete(ref);
+    });
+  }
   await b.commit();
   return { sid, slots };
 }
@@ -349,9 +357,21 @@ async function deleteBaBank(game, bslots, slot, sid){
   const slots = Object.assign({}, bslots, { [game]: g });
   const b = db.batch();
   b.delete(db.collection('shared_babanks').doc(sid));
+  b.delete(db.collection('shared_babimgs').doc(sid + '_1'));
+  b.delete(db.collection('shared_babimgs').doc(sid + '_2'));
   b.set(db.collection('teacher_babanks').doc(uid()), Object.assign({}, slots, { updatedAt: serverTs() }));
   await b.commit();
   return slots;
+}
+// 讀句庫的圖片：回傳 { 圖片代號: dataURL }；custom[].im = 「1或2」＋圖片代號，數字是圖片在哪一份
+async function loadBaImgs(sid, custom){
+  const need = new Set((custom || []).filter(c => c.im).map(c => String(c.im).charAt(0)).filter(n => n === '1' || n === '2'));
+  const out = {};
+  await Promise.all(Array.from(need).map(async n => {
+    const s = await db.collection('shared_babimgs').doc(sid + '_' + n).get();
+    if(s.exists){ const m = (s.data() || {}).imgs || {}; Object.keys(m).forEach(k => { out[k] = m[k]; }); }
+  }));
+  return out;
 }
 // 句子清單檔（遊戲 repo 的 sentences.json，由 tools/make_sentences.py 從遊戲產生）
 const _sent = {};
@@ -403,5 +423,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, saveBaBank, deleteBaBank, loadSentences, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

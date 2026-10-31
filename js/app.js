@@ -752,15 +752,49 @@ const BA_CH = g => g === 'bei' ? '被' : '把';
 const baTot = dr => dr.ids.length + dr.custom.length;
 function baParseEntry(c){   // 資料庫 → 草稿（詞字串格式同遊戲：繁|簡|拼音|注音，簡體空白＝同繁體）
   const tk = (c.tk || []).map(x => { const [tc, sc, py, zy] = String(x).split('|'); return { tc, sc: sc || tc, py: py || '', zy: zy || '', py0: py || '' }; });
-  return { tk, es: c.es || '', en: c.en || '' };
+  const im = /^[12][a-z0-9]{3,12}$/.test(String(c.im || '')) ? String(c.im) : '';
+  return { tk, es: c.es || '', en: c.en || '', im: im.slice(1), n: im ? +im.charAt(0) : 0 };
 }
 const baEncEntry = c => ({ tk: c.tk.map(t => [t.tc, t.sc === t.tc ? '' : t.sc, String(t.py).replace(/[|<>&"']/g, ''), String(t.zy).replace(/[|<>&"']/g, '')].join('|')), es: c.es, en: c.en || '' });
 const baLineOf = c => c.tk.map(t => t.tc).join(' ') + '｜' + c.es + (c.en ? '｜' + c.en : '');
 const baSimp = () => I18N.getLang() === 'sc';
+const BA_IMG_MAX = 20, BA_IMG_PER_DOC = 10, BA_IMG_KB = 50;
+const baImgCount = dr => dr.custom.filter(c => c.im && dr.imgs[c.im]).length;
+function baNewImgKey(){ const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for(let i = 0; i < 8; i++) s += a.charAt(Math.floor(Math.random() * a.length)); return s; }
+// 圖片：裁成正方形、縮小，壓到 50KB 以下（JPEG）
+function baImgCompress(file){
+  return new Promise((resolve, reject) => {
+    if(!file || !/^image\//.test(file.type || '')){ reject(new Error('type')); return; }
+    const url = URL.createObjectURL(file), im = new Image();
+    im.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+    im.onload = () => {
+      URL.revokeObjectURL(url);
+      const w = im.naturalWidth, h = im.naturalHeight, side = Math.min(w, h);
+      if(!side){ reject(new Error('decode')); return; }
+      const sx = (w - side) / 2, sy = (h - side) / 2, lim = BA_IMG_KB * 1024;
+      for(const px of [480, 400, 320, 240]){
+        const cv = document.createElement('canvas'); cv.width = px; cv.height = px;
+        const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, px, px); ctx.drawImage(im, sx, sy, side, side, 0, 0, px, px);
+        for(let q = 0.82; q >= 0.4; q -= 0.1){
+          const d = cv.toDataURL('image/jpeg', q);
+          if((d.length - 23) * 3 / 4 <= lim) { resolve(d); return; }
+        }
+      }
+      reject(new Error('big'));
+    };
+    im.src = url;
+  });
+}
 function babWriteCardHtml(c, i){
   return '<div class="bcard"><div class="bch"><span class="mut">' + (i + 1) + '</span><button class="x" data-act="babcdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></div><div class="btoks">' +
     c.tk.map((t, j) => '<div class="btk"><b>' + esc(baSimp() ? t.sc : t.tc) + '</b><input type="text" class="bpy" data-bc="' + i + '" data-bt="' + j + '" maxlength="40" value="' + esc(t.py) + '"><small id="bz-' + i + '-' + j + '">' + esc(t.zy) + '</small><em id="be-' + i + '-' + j + '" ' + (t.py !== t.py0 ? '' : 'hidden') + '>✎ ' + esc(T('baEdited')) + '</em></div>').join('') +
-    '</div><div class="bes">' + esc(c.es) + (c.en ? '<br>' + esc(c.en) : '') + '</div></div>';
+    '</div><div class="bes">' + esc(c.es) + (c.en ? '<br>' + esc(c.en) : '') + '</div>' + babImgRowHtml(c, i) + '</div>';
+}
+function babImgRowHtml(c, i){
+  const dr = S.babEdit.dr, has = c.im && dr.imgs[c.im], lock = S.a.plan.active ? '' : ' 🔒';
+  if(has) return '<div class="bimgrow"><img class="bimg" alt="" src="' + esc(dr.imgs[c.im]) + '"><button class="pill sm" data-act="babimg" data-k="' + i + '">' + esc(T('baImgChg')) + lock + '</button><button class="pill sm" data-act="babimgdel" data-k="' + i + '">' + esc(T('baImgDel')) + '</button></div>';
+  if(c.im && dr.imgLoad === 'loading') return '<div class="bimgrow"><span class="mut">…</span></div>';
+  return '<div class="bimgrow"><button class="pill sm" data-act="babimg" data-k="' + i + '">＋ ' + esc(T('baImgAdd')) + lock + '</button></div>';
 }
 function baSentText(x){ return I18N.getLang() === 'sc' ? x.sc : x.zh; }
 function baSentTr(x){ return I18N.getLang() === 'en' ? x.en : x.es; }
@@ -807,6 +841,7 @@ function babEditorHtml(){
   }else if(tab === 'write'){
     h += cnt + '<p class="hint">' + esc(T('baWriteHint')) + '</p><div class="field"><textarea id="babText" rows="6" placeholder="' + esc(T('baWriteEx')) + '">' + esc(dr.text) + '</textarea></div>' +
       '<div class="row"><button class="pill sm" data-act="babgen">' + esc(T('baGen')) + '</button></div>' +
+      (dr.custom.length ? '<p class="hint">' + esc(T('baImgNote')) + (dr.imgLoad === 'fail' ? ' <b>' + esc(T('baImgLoadFail')) + '</b>' : '') + '</p>' : '') +
       (dr.custom.length ? '<p class="hint">' + esc(T('baReadHint')) + '</p>' + dr.custom.map(babWriteCardHtml).join('') : '');
   }else if(!sent){
     const st = S.babSent[g] || {};
@@ -1479,8 +1514,14 @@ const actions = {
   babedit(el){
     const g = S.g, i = +el.dataset.k, b = S.a.babanks[g].find(x => x.slot === i);
     if(!b && S.a.babanks[g].length >= baSlotsMax()){ if(!S.a.plan.active) needSub(); return; }
-    S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], custom: b ? (b.custom || []).map(baParseEntry) : [], text: '', dirty: false, lv: 'all', q: '' } };
-    S.babEdit.dr.text = S.babEdit.dr.custom.map(baLineOf).join('\n');
+    S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], custom: b ? (b.custom || []).map(baParseEntry) : [], text: '', dirty: false, lv: 'all', q: '', imgs: {}, imgDirty: false, imgLoad: '', hadN: [] } };
+    const dr0 = S.babEdit.dr; dr0.text = dr0.custom.map(baLineOf).join('\n');
+    dr0.hadN = Array.from(new Set(dr0.custom.filter(c => c.im).map(c => c.n))).filter(n => n === 1 || n === 2);
+    if(dr0.hadN.length){
+      dr0.imgLoad = 'loading';
+      DATA.loadBaImgs(b.sid, (b.custom || [])).then(m => { Object.keys(m).forEach(k => { dr0.imgs[k] = m[k]; }); dr0.imgLoad = 'ok'; if(S.babEdit && S.babEdit.dr === dr0) render(); })
+        .catch(e => { console.warn('imgs', e); dr0.imgLoad = 'fail'; if(S.babEdit && S.babEdit.dr === dr0) render(); });
+    }
     S.babMsg = ''; baSentences(g); render();
   },
   babcancel(){ S.babEdit = null; S.babMsg = ''; render(); },
@@ -1499,7 +1540,7 @@ const actions = {
     const E = S.babEdit, dr = E.dr, list = S.babSent[E.g].list, rm = new Set(list.filter(x => String(x.lv) === dr.lv).map(x => x.id));
     dr.ids = dr.ids.filter(id => !rm.has(id)); render();
   },
-  babcdel(el){ const dr = S.babEdit.dr; dr.custom.splice(+el.dataset.k, 1); dr.text = dr.custom.map(baLineOf).join('\n'); render(); },
+  babcdel(el){ const dr = S.babEdit.dr; const gone = dr.custom.splice(+el.dataset.k, 1); if(gone[0] && gone[0].im) dr.imgDirty = true; dr.text = dr.custom.map(baLineOf).join('\n'); render(); },
   babgen(){ return run(async () => {
     const E = S.babEdit; if(!E) return;
     const g = E.g, dr = E.dr, lines = dr.text.split(/\r?\n/).map(x => x.trim()).filter(Boolean), parsed = [], errs = [], seen = new Set();
@@ -1522,17 +1563,40 @@ const actions = {
     const prev = new Map(dr.custom.map(c => [c.tk.map(t => t.tc).join(' '), c]));
     dr.custom = parsed.map(p => {
       const old = prev.get(p.key);
-      if(old) return { tk: old.tk, es: p.es, en: p.en };
+      if(old){ prev.delete(p.key); return { tk: old.tk, es: p.es, en: p.en, im: old.im, n: old.n }; }
       const m = CORRE.makeTokens(p.key), py = GTR.apply(m.trad, m.pinyin);
       return { tk: m.trad.map((tc, j) => ({ tc, sc: m.simp[j], py: py[j], zy: CORRE.ZY.conv(py[j]), py0: py[j] })), es: p.es, en: p.en };
     });
+    if(Array.from(prev.values()).some(c => c.im)) dr.imgDirty = true;   // 改了詞的句子，原本的圖片不再保留
     dr.text = dr.custom.map(baLineOf).join('\n'); dr.dirty = false; S.babMsg = ''; render();
   }); },
+  babimg(el){
+    if(!S.a.plan.active){ needSub(); return; }
+    const E = S.babEdit; if(!E) return; const dr = E.dr, i = +el.dataset.k, c = dr.custom[i]; if(!c) return;
+    if(dr.imgLoad === 'loading' || dr.imgLoad === 'fail'){ S.babMsg = T(dr.imgLoad === 'fail' ? 'baImgLoadFail' : 'baImgWait'); render(); return; }
+    if(!(c.im && dr.imgs[c.im]) && baImgCount(dr) >= BA_IMG_MAX){ S.babMsg = T('baImgMax', { max: BA_IMG_MAX }); render(); return; }
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'babFile'; inp.style.display = 'none'; document.body.appendChild(inp);
+    inp.addEventListener('change', async () => {
+      const f = inp.files && inp.files[0]; inp.remove(); if(!f || S.babEdit !== E) return;
+      try{
+        const url = await baImgCompress(f);
+        if(c.im) delete dr.imgs[c.im];
+        c.im = baNewImgKey(); c.n = 0; dr.imgs[c.im] = url; dr.imgDirty = true; S.babMsg = ''; render();
+      }catch(err){ console.warn(err); S.babMsg = T('baImgFail'); render(); }
+    });
+    inp.click();
+  },
+  babimgdel(el){
+    if(!S.a.plan.active){ needSub(); return; }
+    const dr = S.babEdit.dr, c = dr.custom[+el.dataset.k]; if(!c || !c.im) return;
+    delete dr.imgs[c.im]; c.im = ''; c.n = 0; dr.imgDirty = true; render();
+  },
   babrm(el){ const dr = S.babEdit.dr, i = dr.ids.indexOf(+el.dataset.k); if(i >= 0) dr.ids.splice(i, 1); render(); },
   babsave(){ return run(async () => {
     const E = S.babEdit; if(!E) return;
     const g = E.g, dr = E.dr, A = S.a, max = baSentMax(), n = baTot(dr);
     if(dr.dirty){ S.babMsg = T('baDirty'); render(); return; }
+    if(dr.custom.some(c => c.im) && (dr.imgLoad === 'loading' || dr.imgLoad === 'fail')){ S.babMsg = T(dr.imgLoad === 'fail' ? 'baImgLoadFail' : 'baImgWait'); render(); return; }
     if(n < BA_MIN){ S.babMsg = T('baErrMin', { min: BA_MIN, n }); render(); return; }
     if(n > max){ S.babMsg = T('baErrMax', { max, n }); render(); return; }
     if(!E.sid && A.babanks[g].length >= baSlotsMax()){ S.babMsg = T(A.plan.active ? 'baFullPro' : 'baFullFree'); render(); return; }
@@ -1541,8 +1605,13 @@ const actions = {
     const order = new Map(S.babSent[g].list.map((x, k) => [x.id, k]));
     const ids = dr.ids.filter(id => order.has(id)).sort((a, b) => order.get(a) - order.get(b));
     try{
-      const custom = dr.custom.map(baEncEntry);
-      const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids, custom });
+      // 圖片：每份最多 10 張；原本在哪一份就留在哪一份，新的放進還有空位的那份
+      const withImg = dr.custom.filter(c => c.im && dr.imgs[c.im]), cnt = { 1: 0, 2: 0 };
+      withImg.forEach(c => { if(c.n === 1 || c.n === 2) cnt[c.n]++; else c.n = 0; });
+      withImg.forEach(c => { if(!c.n){ c.n = cnt[1] < BA_IMG_PER_DOC ? 1 : 2; cnt[c.n]++; } });
+      const imgDocs = [{}, {}]; withImg.forEach(c => { imgDocs[c.n - 1][c.im] = dr.imgs[c.im]; });
+      const custom = dr.custom.map(c => { const o = baEncEntry(c); if(c.im && dr.imgs[c.im]) o.im = c.n + c.im; return o; });
+      const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids, custom, imgDocs: dr.imgDirty ? imgDocs : null, hadImgDocs: dr.hadN });
       A.babslots = r.slots;
       const rec = { slot: E.i, sid: r.sid, name, ids, custom };
       const at = A.babanks[g].findIndex(x => x.sid === r.sid);

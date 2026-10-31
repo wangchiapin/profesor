@@ -385,3 +385,6 @@ details.hsec[open]>summary{margin-bottom:8px}
 .btk em[hidden]{display:none}
 .bes{font-size:.88rem;color:#666}
 #babText{width:100%;font:inherit;box-sizing:border-box}
+
+.bimgrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.bimg{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}

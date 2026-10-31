@@ -83,6 +83,16 @@
       if(!(data.name.length >= 1 && data.name.length <= 40)) deny();
       return;
     }
+    // 把／被自訂句子的圖片：只有訂閱老師本人能寫；每份最多 10 張、都是 JPEG；docId = 句庫碼_1 或 _2
+    if(c === 'shared_babimgs'){
+      if(!user || data.owner !== user.uid) deny();
+      const p = col(pid, 'site_plans')[user.uid]; if(!(p && p.expiresAt > NOW())) deny();
+      if(!/^[a-z0-9]{8,32}_[12]$/.test(id)) deny();
+      if(Object.keys(data).sort().join() !== ['imgs','owner','updatedAt'].join()) deny();
+      const ks = Object.keys(data.imgs || {}); if(ks.length < 1 || ks.length > 10) deny();
+      if(!ks.every(k => /^[a-z0-9]{3,12}$/.test(k) && /^data:image\/jpeg;base64,/.test(data.imgs[k]))) deny();
+      return;
+    }
     if(c === 'shared_dragon'){
       if(!user || data.owner !== user.uid) deny();
       const old = col(pid, c)[id]; if(old && old.owner !== user.uid) deny();
