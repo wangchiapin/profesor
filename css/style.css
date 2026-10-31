@@ -373,3 +373,15 @@ details.hsec[open]>summary{margin-bottom:8px}
 .brow .bt small{display:block;font-size:.8rem;color:#777;margin-top:2px}
 .brow .bl{flex:0 0 auto;font-size:.78rem;color:#777;white-space:nowrap}
 .babcount.bad{color:#c0392b;font-weight:700}
+/* 把／被 自己寫句子 */
+.bcard{border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:8px 10px;margin:8px 0}
+.bch{display:flex;justify-content:space-between;align-items:center}
+.btoks{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.btk{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:64px}
+.btk b{font-size:1.25rem}
+.btk .bpy{width:92px;text-align:center;padding:4px 6px;font-size:.9rem}
+.btk small{font-size:.8rem;color:#777;min-height:1em}
+.btk em{font-size:.7rem;color:var(--brown);font-style:normal}
+.btk em[hidden]{display:none}
+.bes{font-size:.88rem;color:#666}
+#babText{width:100%;font:inherit;box-sizing:border-box}

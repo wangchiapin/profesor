@@ -748,6 +748,20 @@ function baSentences(g){   // 回傳句子陣列；還沒載入就開始載入�
   }
   return null;
 }
+const BA_CH = g => g === 'bei' ? '被' : '把';
+const baTot = dr => dr.ids.length + dr.custom.length;
+function baParseEntry(c){   // 資料庫 → 草稿（詞字串格式同遊戲：繁|簡|拼音|注音，簡體空白＝同繁體）
+  const tk = (c.tk || []).map(x => { const [tc, sc, py, zy] = String(x).split('|'); return { tc, sc: sc || tc, py: py || '', zy: zy || '', py0: py || '' }; });
+  return { tk, es: c.es || '', en: c.en || '' };
+}
+const baEncEntry = c => ({ tk: c.tk.map(t => [t.tc, t.sc === t.tc ? '' : t.sc, String(t.py).replace(/[|<>&"']/g, ''), String(t.zy).replace(/[|<>&"']/g, '')].join('|')), es: c.es, en: c.en || '' });
+const baLineOf = c => c.tk.map(t => t.tc).join(' ') + '｜' + c.es + (c.en ? '｜' + c.en : '');
+const baSimp = () => I18N.getLang() === 'sc';
+function babWriteCardHtml(c, i){
+  return '<div class="bcard"><div class="bch"><span class="mut">' + (i + 1) + '</span><button class="x" data-act="babcdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></div><div class="btoks">' +
+    c.tk.map((t, j) => '<div class="btk"><b>' + esc(baSimp() ? t.sc : t.tc) + '</b><input type="text" class="bpy" data-bc="' + i + '" data-bt="' + j + '" maxlength="40" value="' + esc(t.py) + '"><small id="bz-' + i + '-' + j + '">' + esc(t.zy) + '</small><em id="be-' + i + '-' + j + '" ' + (t.py !== t.py0 ? '' : 'hidden') + '>✎ ' + esc(T('baEdited')) + '</em></div>').join('') +
+    '</div><div class="bes">' + esc(c.es) + (c.en ? '<br>' + esc(c.en) : '') + '</div></div>';
+}
 function baSentText(x){ return I18N.getLang() === 'sc' ? x.sc : x.zh; }
 function baSentTr(x){ return I18N.getLang() === 'en' ? x.en : x.es; }
 function baBankCardHtml(g){
@@ -758,7 +772,7 @@ function baBankCardHtml(g){
   for(let i = 0; i < BA_SLOTS.pro; i++){
     const b = list.find(x => x.slot === i);
     if(b){
-      h += '<div class="setrow"><div><b>📚 ' + esc(b.name || ('#' + (i + 1))) + '</b><small>' + esc(T('baSlotN', { n: i + 1 }) + ' · ' + T('baSummary', { n: b.ids.length })) + '</small></div><div class="row">' +
+      h += '<div class="setrow"><div><b>📚 ' + esc(b.name || ('#' + (i + 1))) + '</b><small>' + esc(T('baSlotN', { n: i + 1 }) + ' · ' + T('baSummary', { n: b.ids.length + (b.custom || []).length })) + '</small></div><div class="row">' +
         '<button class="pill sm" data-act="babedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
         '<a class="pill sm" href="' + esc(DATA.linkBaBankPractice(g, b.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' +
         '<button class="pill sm" data-act="babdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
@@ -785,11 +799,15 @@ function babPickListHtml(E, sent){
 function babEditorHtml(){
   const E = S.babEdit, dr = E.dr, tab = E.tab || 'set', g = E.g, max = baSentMax();
   let h = '<div class="gtabs etabs"><button class="pill sm" data-act="babcancel">' + esc(CORRE.tr('back')) + '</button>' +
-    [['set', 'baEdSet'], ['pick', 'baEdPick'], ['list', 'baEdList']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="bab" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
-  const cnt = '<p class="hint babcount ' + (dr.ids.length < BA_MIN || dr.ids.length > max ? 'bad' : '') + '">' + esc(T('baCount', { n: dr.ids.length, min: BA_MIN, max })) + '</p>';
-  const sent = tab === 'set' ? null : baSentences(g);
+    [['set', 'baEdSet'], ['pick', 'baEdPick'], ['write', 'baEdWrite'], ['list', 'baEdList']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="bab" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
+  const cnt = '<p class="hint babcount ' + (baTot(dr) < BA_MIN || baTot(dr) > max ? 'bad' : '') + '">' + esc(T('baCount', { n: baTot(dr), min: BA_MIN, max })) + '</p>';
+  const sent = (tab === 'pick' || tab === 'list') ? baSentences(g) : null;
   if(tab === 'set'){
     h += '<div class="field"><label>' + esc(T('baNameLabel')) + '</label><input type="text" id="babName" maxlength="20" placeholder="' + esc(T('baNamePh')) + '" value="' + esc(dr.name) + '"></div>' + cnt + '<p class="hint">' + esc(T('baSetHint')) + '</p>';
+  }else if(tab === 'write'){
+    h += cnt + '<p class="hint">' + esc(T('baWriteHint')) + '</p><div class="field"><textarea id="babText" rows="6" placeholder="' + esc(T('baWriteEx')) + '">' + esc(dr.text) + '</textarea></div>' +
+      '<div class="row"><button class="pill sm" data-act="babgen">' + esc(T('baGen')) + '</button></div>' +
+      (dr.custom.length ? '<p class="hint">' + esc(T('baReadHint')) + '</p>' + dr.custom.map(babWriteCardHtml).join('') : '');
   }else if(!sent){
     const st = S.babSent[g] || {};
     h += st.fail ? '<div class="err">' + esc(T('baSentFail')) + '</div><div class="row"><button class="pill sm" data-act="babretry">' + esc(T('retry')) + '</button></div>' : '<p class="hint">' + esc(T('baLoadingSent')) + '</p>';
@@ -803,8 +821,10 @@ function babEditorHtml(){
     h += '<div class="field"><input type="search" id="babQ" placeholder="' + esc(T('baSearchPh')) + '" value="' + esc(dr.q) + '"></div><p class="hint">' + esc(T('baPickHint')) + '</p><div id="babList" class="blist">' + babPickListHtml(E, sent) + '</div>';
   }else{
     const byId = S.babSent[g].byId;
-    h += cnt + (dr.ids.length ? dr.ids.map(id => { const x = byId.get(id); return x ?
-      '<div class="brow on static"><span class="bt"><b>' + esc(baSentText(x)) + '</b><small>' + esc(baSentTr(x)) + '</small></span><span class="bl">' + esc(T('levelN', { n: x.lv })) + '</span><button class="x" data-act="babrm" data-k="' + id + '" aria-label="' + esc(T('del')) + '">✕</button></div>' : ''; }).join('') : '<p class="hint">' + esc(T('baListEmpty')) + '</p>');
+    h += cnt + (!dr.ids.length && !dr.custom.length ? '<p class="hint">' + esc(T('baListEmpty')) + '</p>' : '') + dr.custom.map((c, i) =>
+      '<div class="brow on static"><span class="bt"><b>' + esc(c.tk.map(t => baSimp() ? t.sc : t.tc).join('')) + '</b><small>' + esc(c.es) + '</small></span><span class="bl">' + esc(T('baMine')) + '</span><button class="x" data-act="babcdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></div>').join('') +
+      (dr.ids.length ? dr.ids.map(id => { const x = byId.get(id); return x ?
+      '<div class="brow on static"><span class="bt"><b>' + esc(baSentText(x)) + '</b><small>' + esc(baSentTr(x)) + '</small></span><span class="bl">' + esc(T('levelN', { n: x.lv })) + '</span><button class="x" data-act="babrm" data-k="' + id + '" aria-label="' + esc(T('del')) + '">✕</button></div>' : ''; }).join('') : '');
   }
   if(S.babMsg) h += '<div class="err">' + esc(S.babMsg) + '</div>';
   return h + '<div class="row"><button class="pill fill sm" data-act="babsave">' + esc(T('save')) + '</button><button class="pill sm" data-act="babcancel">' + esc(T('cancel')) + '</button></div></div>';
@@ -1459,7 +1479,8 @@ const actions = {
   babedit(el){
     const g = S.g, i = +el.dataset.k, b = S.a.babanks[g].find(x => x.slot === i);
     if(!b && S.a.babanks[g].length >= baSlotsMax()){ if(!S.a.plan.active) needSub(); return; }
-    S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], lv: 'all', q: '' } };
+    S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], custom: b ? (b.custom || []).map(baParseEntry) : [], text: '', dirty: false, lv: 'all', q: '' } };
+    S.babEdit.dr.text = S.babEdit.dr.custom.map(baLineOf).join('\n');
     S.babMsg = ''; baSentences(g); render();
   },
   babcancel(){ S.babEdit = null; S.babMsg = ''; render(); },
@@ -1478,10 +1499,40 @@ const actions = {
     const E = S.babEdit, dr = E.dr, list = S.babSent[E.g].list, rm = new Set(list.filter(x => String(x.lv) === dr.lv).map(x => x.id));
     dr.ids = dr.ids.filter(id => !rm.has(id)); render();
   },
+  babcdel(el){ const dr = S.babEdit.dr; dr.custom.splice(+el.dataset.k, 1); dr.text = dr.custom.map(baLineOf).join('\n'); render(); },
+  babgen(){ return run(async () => {
+    const E = S.babEdit; if(!E) return;
+    const g = E.g, dr = E.dr, lines = dr.text.split(/\r?\n/).map(x => x.trim()).filter(Boolean), parsed = [], errs = [], seen = new Set();
+    lines.forEach((ln, i) => {
+      const parts = ln.split(/[｜|]/).map(x => x.trim()), words = parts[0].replace(/[。．.！!？?，,\s]+$/, '').split(/[\s\u3000]+/).filter(Boolean), es = parts[1] || '', en = parts[2] || '';
+      const bad = m => errs.push(T('baLine', { n: i + 1, m: T(m) }));
+      if(!words.length) return bad('baLErrHan');
+      if(words.some(w => !/^[㐀-鿿]+$/.test(w))) return bad('baLErrHan');
+      if(words.length > 8) return bad('baLErrWords');
+      if(words.some(w => Array.from(w).length > 6)) return bad('baLErrWordLen');
+      if(Array.from(words.join('')).length > 25) return bad('baLErrChars');
+      if(words.join('').indexOf(BA_CH(g)) < 0) return bad(g === 'bei' ? 'baLErrBei' : 'baLErrBa');
+      if(!es) return bad('baLErrEs');
+      if(es.length > 200 || en.length > 200) return bad('baLErrTr');
+      const key = words.join(' '); if(seen.has(key)) return; seen.add(key);
+      parsed.push({ words, key, es, en });
+    });
+    if(errs.length){ S.babMsg = errs.slice(0, 3).join('　'); render(); return; }
+    try{ await CORRE.ready(); await GTR.ready(); }catch(e){ console.error(e); S.babMsg = T('baGtFail'); render(); return; }
+    const prev = new Map(dr.custom.map(c => [c.tk.map(t => t.tc).join(' '), c]));
+    dr.custom = parsed.map(p => {
+      const old = prev.get(p.key);
+      if(old) return { tk: old.tk, es: p.es, en: p.en };
+      const m = CORRE.makeTokens(p.key), py = GTR.apply(m.trad, m.pinyin);
+      return { tk: m.trad.map((tc, j) => ({ tc, sc: m.simp[j], py: py[j], zy: CORRE.ZY.conv(py[j]), py0: py[j] })), es: p.es, en: p.en };
+    });
+    dr.text = dr.custom.map(baLineOf).join('\n'); dr.dirty = false; S.babMsg = ''; render();
+  }); },
   babrm(el){ const dr = S.babEdit.dr, i = dr.ids.indexOf(+el.dataset.k); if(i >= 0) dr.ids.splice(i, 1); render(); },
   babsave(){ return run(async () => {
     const E = S.babEdit; if(!E) return;
-    const g = E.g, dr = E.dr, A = S.a, max = baSentMax(), n = dr.ids.length;
+    const g = E.g, dr = E.dr, A = S.a, max = baSentMax(), n = baTot(dr);
+    if(dr.dirty){ S.babMsg = T('baDirty'); render(); return; }
     if(n < BA_MIN){ S.babMsg = T('baErrMin', { min: BA_MIN, n }); render(); return; }
     if(n > max){ S.babMsg = T('baErrMax', { max, n }); render(); return; }
     if(!E.sid && A.babanks[g].length >= baSlotsMax()){ S.babMsg = T(A.plan.active ? 'baFullPro' : 'baFullFree'); render(); return; }
@@ -1490,9 +1541,10 @@ const actions = {
     const order = new Map(S.babSent[g].list.map((x, k) => [x.id, k]));
     const ids = dr.ids.filter(id => order.has(id)).sort((a, b) => order.get(a) - order.get(b));
     try{
-      const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids });
+      const custom = dr.custom.map(baEncEntry);
+      const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids, custom });
       A.babslots = r.slots;
-      const rec = { slot: E.i, sid: r.sid, name, ids };
+      const rec = { slot: E.i, sid: r.sid, name, ids, custom };
       const at = A.babanks[g].findIndex(x => x.sid === r.sid);
       if(at >= 0) A.babanks[g][at] = rec; else A.babanks[g].push(rec);
       A.babanks[g].sort((a, b) => a.slot - b.slot);
@@ -1758,6 +1810,15 @@ document.addEventListener('input', e => {
   if(e.target.id === 'dsName' && S.dragonSetEdit) S.dragonSetEdit.dr.name = e.target.value;
   if(S.babEdit){
     if(e.target.id === 'babName') S.babEdit.dr.name = e.target.value;
+    if(e.target.id === 'babText'){ S.babEdit.dr.text = e.target.value; S.babEdit.dr.dirty = true; }
+    if(e.target.dataset && e.target.dataset.bc != null){
+      const c = S.babEdit.dr.custom[+e.target.dataset.bc], t = c && c.tk[+e.target.dataset.bt];
+      if(t){
+        t.py = e.target.value.replace(/[|<>&"']/g, ''); t.zy = CORRE.ZY.conv(t.py);
+        const z = document.getElementById('bz-' + e.target.dataset.bc + '-' + e.target.dataset.bt), m = document.getElementById('be-' + e.target.dataset.bc + '-' + e.target.dataset.bt);
+        if(z) z.textContent = t.zy; if(m) m.hidden = t.py === t.py0;
+      }
+    }
     if(e.target.id === 'babQ'){   // 只更新下面的句子列表，輸入框不重畫（才不會掉游標）
       S.babEdit.dr.q = e.target.value;
       const L = document.getElementById('babList'), st = S.babSent[S.babEdit.g];

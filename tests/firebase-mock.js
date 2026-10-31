@@ -74,9 +74,11 @@
       if(!user || data.owner !== user.uid) deny();
       const old = col(pid, c)[id]; if(old && (old.owner !== user.uid || old.slot !== data.slot || old.game !== data.game)) deny();
       const p = col(pid, 'site_plans')[user.uid], pro = !!(p && p.expiresAt > NOW());
-      if(Object.keys(data).sort().join() !== ['game','ids','name','owner','slot','updatedAt'].join()) deny();
+      if(Object.keys(data).sort().join() !== ['custom','game','ids','name','owner','slot','updatedAt'].join()) deny();
       if(['ba','bei'].indexOf(data.game) < 0 || !(data.slot >= 0 && data.slot <= 4)) deny();
-      if(!(data.ids.length >= 10 && data.ids.length <= (pro ? 80 : 50)) || !data.ids.every(Number.isInteger)) deny();
+      const tot = data.ids.length + data.custom.length;
+      if(!(tot >= 10 && tot <= (pro ? 80 : 50)) || !data.ids.every(Number.isInteger)) deny();
+      if(!data.custom.every(c => Array.isArray(c.tk) && c.tk.length >= 1 && c.tk.length <= 8 && typeof c.es === 'string' && c.es.length >= 1 && c.es.length <= 200 && typeof c.en === 'string' && c.en.length <= 200 && c.tk.every(x => typeof x === 'string' && x.length <= 80))) deny();
       if(!pro && data.slot > 0) deny();
       if(!(data.name.length >= 1 && data.name.length <= 40)) deny();
       return;

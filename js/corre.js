@@ -924,5 +924,5 @@ async function makeWorksheet(data, opt){
 async function simpOf(text){ await loadLibs(); return toSimplified(String(text || '')); }
 async function pinyinOf(text){ await loadLibs(); const t = String(text || '').trim(); return t ? toPinyinTW(t, toSimplified(t)).trim() : ''; }
 window.CORRE = { simpOf, buildPdf, pinyinOf, tr, open, close, mount, capture, isDirty, summary, paused, remove, bankName, bankOf, qrCanvas, makeWorksheet,
-  FREE_SLOTS, PRO_SLOTS, MAX_CHARS, ZY, _toneFix: fixYiBu };
+  FREE_SLOTS, PRO_SLOTS, MAX_CHARS, ZY, _toneFix: fixYiBu, ready: loadLibs, makeTokens };
 })();

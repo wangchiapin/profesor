@@ -95,7 +95,7 @@ async function loadAccount(user){
     }));
     acct.banks.sort((a, b) => a.slot - b.slot);
   }catch(e){ console.warn('banks unavailable', e); acct.extrasReady = false; }
-  // 把／被：自訂句庫（teacher_babanks/{uid} = { ba:{ '0'..'4': sid }, bei:{…} }；shared_babanks/{sid} = { owner, game, slot, name, ids[] }）
+  // 把／被：自訂句庫（teacher_babanks/{uid} = { ba:{ '0'..'4': sid }, bei:{…} }；shared_babanks/{sid} = { owner, game, slot, name, ids[], custom[] }）
   try{
     const ax = await db.collection('teacher_babanks').doc(user.uid).get();
     const ad = ax.exists ? ax.data() : {};
@@ -103,7 +103,7 @@ async function loadAccount(user){
       const sl = (ad[g] && typeof ad[g] === 'object') ? ad[g] : {};
       acct.babslots[g] = sl;
       await Promise.all(Object.keys(sl).sort().map(async k => {
-        try{ const s = await db.collection('shared_babanks').doc(sl[k]).get(); if(s.exists){ const d = s.data(); acct.babanks[g].push({ slot: +k, sid: s.id, name: d.name || '', ids: Array.isArray(d.ids) ? d.ids : [] }); } }
+        try{ const s = await db.collection('shared_babanks').doc(sl[k]).get(); if(s.exists){ const d = s.data(); acct.babanks[g].push({ slot: +k, sid: s.id, name: d.name || '', ids: Array.isArray(d.ids) ? d.ids : [], custom: Array.isArray(d.custom) ? d.custom : [] }); } }
         catch(e){ console.warn('babank read failed', g, k, e); }
       }));
       acct.babanks[g].sort((a, b) => a.slot - b.slot);
@@ -340,7 +340,7 @@ async function saveBaBank(game, bslots, slot, sid, data){
     sid = newId(14); slots = Object.assign({}, bslots, { [game]: Object.assign({}, bslots[game], { [String(slot)]: sid }) });
     b.set(db.collection('teacher_babanks').doc(uid()), Object.assign({}, slots, { updatedAt: ts }));
   }
-  b.set(db.collection('shared_babanks').doc(sid), { owner: uid(), game, slot, name: data.name, ids: data.ids, updatedAt: ts });
+  b.set(db.collection('shared_babanks').doc(sid), { owner: uid(), game, slot, name: data.name, ids: data.ids, custom: data.custom || [], updatedAt: ts });
   await b.commit();
   return { sid, slots };
 }

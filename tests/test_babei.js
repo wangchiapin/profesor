@@ -36,7 +36,13 @@ function seed({ pro = true } = {}){
   return s;
 }
 let BASE;
-const LIBS = { opencc: '', pinyin: '' };   // 把／被測試用不到轉簡體與拼音
+// 「自己寫句子」要用繁簡轉換與拼音函式庫：測試時從本機讀（npm i opencc-js@1.4.1 pinyin-pro@3.20.0，或用 CORRE_LIBS 指到 node_modules 所在資料夾）
+let LIBS = { opencc: '', pinyin: '' };
+try{
+  const base = process.env.CORRE_LIBS ? [process.env.CORRE_LIBS] : [ROOT, process.cwd()];
+  const rq = m => { for(const d of base){ const f = path.join(d, 'node_modules', m); if(fs.existsSync(f)) return f; } throw new Error('not found: ' + m); };
+  LIBS = { opencc: fs.readFileSync(rq('opencc-js/dist/umd/full.js'), 'utf8'), pinyin: fs.readFileSync(rq('pinyin-pro/dist/index.js'), 'utf8') };
+}catch(e){ console.log('（找不到 opencc-js / pinyin-pro，略過「自己寫句子」的測試）'); }
 async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc' } = {}){
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   const page = await ctx.newPage(); const errors = [];
@@ -49,6 +55,7 @@ async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc' } = {}){
     if(u.includes('gstatic.com/firebasejs')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: '' });
     if(u.includes('cdn.jsdelivr.net/npm/opencc-js')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.opencc });
     if(u.includes('cdn.jsdelivr.net/npm/pinyin-pro')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.pinyin });
+    if(u === 'https://wangchiapin.github.io/corre/manager/gt-readings.json'){ if(global.GT_FAIL) return r.fulfill({ status: 500, body: '' }); const f = path.join(CORRE_DIR, 'manager', 'gt-readings.json'); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' }); }
     { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/practica-de-(ba|bei)-oracion\/sentences\.json/);
       if(m){ if(global.SENT_FAIL) return r.fulfill({ status: 500, body: '' }); const f = path.join(ROOT, '..', 'practica-de-' + m[1] + '-oracion', 'sentences.json'); return r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }); } }
     { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/corre\/bank\/([A-Za-z0-9]+\.json)$/);
@@ -128,7 +135,7 @@ server.listen(0, 'localhost', async () => {
     ok(!!(await page.$('[data-act=babedit]')), '有「新增句庫」按鈕');
     await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
     const tabs = await page.$$eval('.etabs .pill', els => els.map(e => e.textContent.trim()));
-    ok(tabs.join('|') === '回上一頁|設定|挑句子|句庫內的句子', '三個分頁：設定｜挑句子｜句庫內的句子', tabs);
+    ok(tabs.join('|') === '回上一頁|設定|挑句子|自己寫句子|句庫內的句子', '編輯頁分頁：設定｜挑句子｜自己寫句子｜句庫內的句子', tabs);
     ok((await text(page, '#babCard')).includes('已選 0 句（最少 10 句、最多 80 句）'), '設定頁顯示張數與上限（訂閱 80）');
     await page.fill('#babName', '第三週複習');
     // 先存 3 句 → 不夠 10 句
@@ -224,6 +231,94 @@ server.listen(0, 'localhost', async () => {
     ok((await text(page, '#babCard')).includes('讀不到句子清單'), '句子清單讀不到：顯示說明與「重新載入」');
     global.SENT_FAIL = false; await page.click('[data-act=babretry]'); await page.waitForSelector('#babList .brow');
     ok(true, '按重新載入後可以挑句子'); await ctx.close(); }
+
+
+  if(LIBS.opencc){
+  console.log('\n[F] 自訂句庫：自己寫句子（檢查、GoodTeacher 讀音、改讀音、存檔、再編輯）');
+  { const { page, errors, ctx } = await open(browser, { q: '?dev=ba,bei', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=write]'); await page.waitForSelector('#babText');
+    const tabs = await page.$$eval('.etabs .pill', els => els.map(e => e.textContent.trim()));
+    ok(tabs.join('|') === '回上一頁|設定|挑句子|自己寫句子|句庫內的句子', '編輯頁四個分頁（多了「自己寫句子」）', tabs);
+    const gen = async txt => { await page.fill('#babText', txt); await page.click('[data-act=babgen]'); await page.waitForTimeout(400); return text(page, '#babCard'); };
+    let t = await gen('我 放在 桌子上｜Puse en la mesa.');
+    ok(t.includes('第 1 行：句子裡要有「把」'), '沒有「把」：擋住並指出第幾行', t.slice(0, 120));
+    t = await gen('我 把 書 放在 桌子上');
+    ok(t.includes('第 1 行：要寫西文翻譯'), '沒有西文翻譯：擋住');
+    t = await gen('我 把 書 放 在 桌 子 上 好｜x');
+    ok(t.includes('最多 8 個詞'), '超過 8 個詞：擋住');
+    t = await gen('我 把 一二三四五六七｜x');
+    ok(t.includes('每個詞最多 6 個字'), '詞超過 6 個字：擋住');
+    t = await gen('我 把 book 放在 桌子上｜x');
+    ok(t.includes('只能寫漢字'), '夾英文／標點：擋住');
+    t = await gen('一二三四五 把 一二三四五 六七八九十一 一二三四五六 桌子上桌子｜x');
+    ok(t.includes('整句最多 25 個字'), '整句超過 25 字：擋住');
+    t = await gen('他 把 垃圾 放在 銀行 上面｜Puso la basura.\n我 放在 桌上｜x');
+    ok(t.includes('第 2 行：句子裡要有「把」') && !(await page.$('.bcard')), '多行時一行有錯就整批不產生，並指出是第幾行', t.slice(0, 200));
+    // 正確的一行
+    await gen('他 把 垃圾 放在 銀行 上面｜Puso la basura encima del banco.｜He put the trash on the bank.');
+    ok((await page.$$('.bcard')).length === 1, '產生 1 張句子卡');
+    const toks = await page.$$eval('.btk', els => els.map(e => [e.querySelector('b').textContent, e.querySelector('input').value, e.querySelector('small').textContent]));
+    ok(toks.length === 6 && toks[0][0] === '他' && toks[0][1] === 'tā' && toks[0][2] === 'ㄊㄚ' && toks[1][1] === 'bǎ' && toks[1][2] === 'ㄅㄚˇ', '每個詞有拼音與注音（他 tā ㄊㄚ、把 bǎ ㄅㄚˇ）', toks);
+    ok(toks[2][1] === 'lè sè' && toks[2][2] === 'ㄌㄜˋ ㄙㄜˋ', '垃圾＝lè sè（GoodTeacher／台灣讀音）', toks[2]);
+    ok(toks[4][1] === 'yín háng', '銀行＝yín háng（多音字照 GoodTeacher 規則）', toks[4]);
+    // 改讀音
+    await page.fill('input[data-bc="0"][data-bt="2"]', 'lā jī');
+    ok((await page.$eval('#bz-0-2', e => e.textContent)) === 'ㄌㄚ ㄐㄧ' && !(await page.$eval('#be-0-2', e => e.hidden)), '改拼音：注音跟著變、出現「已修改」');
+    await page.fill('input[data-bc="0"][data-bt="2"]', 'lè sè');
+    ok(await page.$eval('#be-0-2', e => e.hidden), '改回原本的拼音：「已修改」標記消失');
+    await page.fill('input[data-bc="0"][data-bt="2"]', 'lā jī');
+    // 沒有按產生就存檔
+    await page.fill('#babText', '他 把 垃圾 放在 銀行 上面｜Puso la basura encima del banco.｜He put the trash on the bank.\n我 把 書 放在 桌子上｜Puse el libro.');
+    await page.click('[data-act=babsave]'); t = await text(page, '#babCard');
+    ok(t.includes('請先按「產生讀音」'), '改了文字沒按「產生讀音」：不能存');
+    // 重新產生：沒改的那一行保留老師改過的讀音
+    await page.click('[data-act=babgen]'); await page.waitForTimeout(300);
+    ok((await page.$eval('input[data-bc="0"][data-bt="2"]', e => e.value)) === 'lā jī' && (await page.$$('.bcard')).length === 2, '重新產生：沒改的句子保留老師改過的讀音，新增的句子照規則產生');
+    // 不到 10 句
+    await page.click('[data-act=babsave]');
+    ok((await text(page, '#babCard')).includes('至少要 10 句，現在只有 2 句'), '自己寫的句子也算進句數：不到 10 句存不了');
+    // 補到 10 句
+    const nouns = ['杯子', '包包', '筆', '手機', '鑰匙', '帽子', '外套', '蘋果'];
+    const lines = ['他 把 垃圾 放在 銀行 上面｜Puso la basura encima del banco.｜He put the trash on the bank.', '我 把 書 放在 桌子上｜Puse el libro.'].concat(nouns.map((n, i) => '她 把 ' + n + ' 放在 桌子上｜Puso el objeto ' + i + '.'));
+    await gen(lines.join('\n'));
+    ok((await page.$$('.bcard')).length === 10 && (await text(page, '#babCard')).includes('已選 10 句'), '10 句：計數顯示已選 10 句');
+    ok((await page.$eval('input[data-bc="0"][data-bt="2"]', e => e.value)) === 'lā jī', '再次產生仍保留改過的讀音');
+    await page.click('[data-act=edtab][data-k=set]'); await page.fill('#babName', '自己寫的');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    const d = await db(page), b = Object.values(d.shared_babanks)[0];
+    ok(b.ids.length === 0 && b.custom.length === 10 && b.name === '自己寫的' && b.game === 'ba', '存檔：shared_babanks 有 custom 10 句', b && b.custom && b.custom.length);
+    ok(b.custom[0].tk[2] === '垃圾||lā jī|ㄌㄚ ㄐㄧ' && b.custom[0].tk[0] === '他||tā|ㄊㄚ' && b.custom[1].tk[2] === '書|书|shū|ㄕㄨ', '存的格式同遊戲：繁|簡|拼音|注音（改過的讀音只存在這一句）', b.custom[0].tk);
+    ok(b.custom[0].es === 'Puso la basura encima del banco.' && b.custom[0].en === 'He put the trash on the bank.' && b.custom[2].en === '', '翻譯：西文、英文（沒寫的英文是空字串）');
+    ok((await text(page, '#babCard')).includes('10 句'), '清單顯示 10 句');
+    // 再編輯
+    await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=write]'); await page.waitForSelector('#babText');
+    ok((await page.$$('.bcard')).length === 10 && (await page.inputValue('#babText')).split('\n').length === 10 && (await page.$eval('input[data-bc="0"][data-bt="2"]', e => e.value)) === 'lā jī', '再編輯：文字、讀音都還在');
+    await page.click('[data-act=edtab][data-k=list]'); await page.waitForSelector('.brow.static');
+    ok((await page.$$('.brow.static')).length === 10 && (await text(page, '#babCard')).includes('✎ 自己寫'), '「句庫內的句子」分頁：列出自己寫的句子並標示');
+    await page.click('[data-act=babcdel]'); ok((await page.$$('.brow.static')).length === 9, '可以刪掉一句自己寫的');
+    // 混合：挑句子 + 自己寫
+    await page.click('[data-act=edtab][data-k=pick]'); await page.waitForSelector('#babList .brow'); await page.click('#babList .brow:nth-child(2)');
+    ok((await text(page, '#babCard')).includes('已選 10 句'), '挑的句子與自己寫的句子合起來算句數');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    const b2 = Object.values((await db(page)).shared_babanks)[0];
+    ok(b2.ids.length === 1 && b2.custom.length === 9, '混合句庫：1 句挑的＋9 句自己寫的');
+    ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors);
+    await shot(page, 'ba-bank-list-custom'); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { q: '?dev=bei', hash: '#/game/bei/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=write]'); await page.fill('#babText', '杯子 被 他 打破 了｜x'); await page.click('[data-act=babgen]'); await page.waitForTimeout(400);
+    ok((await page.$$('.bcard')).length === 1, '被：有「被」可以產生');
+    await page.fill('#babText', '他 把 杯子 打破 了｜x'); await page.click('[data-act=babgen]'); await page.waitForTimeout(300);
+    ok((await text(page, '#babCard')).includes('句子裡要有「被」'), '被的句庫：沒有「被」擋住');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { global.GT_FAIL = true;
+    const { page, errors, ctx } = await open(browser, { q: '?dev=ba', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.click('[data-act=edtab][data-k=write]'); await page.fill('#babText', '我 把 書 放在 桌子上｜x'); await page.click('[data-act=babgen]'); await page.waitForTimeout(500);
+    ok((await text(page, '#babCard')).includes('讀音資料載入失敗') && !(await page.$('.bcard')), 'GoodTeacher 資料讀不到：顯示說明，不退回別的讀音');
+    global.GT_FAIL = false; await ctx.close(); }
+  }
 
   await browser.close(); server.close();
   console.log('\n通過 ' + pass + '　失敗 ' + fail); process.exit(fail ? 1 : 0);
