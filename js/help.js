@@ -136,6 +136,23 @@ window.HELP = {
     ]
    },
    {
+    "id": "hBa",
+    "h": "🔤 把／被：自訂句庫",
+    "intro": "自訂句庫讓你從遊戲現有的句子中，挑出這次要練習的句子，做成一個句庫給學生玩。把、被各自有各自的句庫。",
+    "items": [
+     "<b>建立</b>：到把或被的遊戲頁，第一個分頁「自訂句庫」按「新增句庫」，編輯頁有三個分頁：「設定」（取名字）、「挑句子」（可以整關一起加，也可以一句一句勾，還能搜尋）、「句庫內的句子」（看已經挑了哪些、可以移除）。",
+     "<b>句數</b>：每個句庫最少 10 句；免費最多 50 句，訂閱最多 80 句。這裡只顯示文字，按「試玩」才看得到圖。",
+     "<b>個數</b>：把和被各自算，免費每個遊戲 1 個句庫，訂閱每個遊戲最多 5 個。",
+     "<b>學生怎麼玩</b>：首頁只有名字欄和一張「開始」卡片（上面寫句庫名稱）；每次從句庫隨機抽 10 題，不影響原本關卡的星星。",
+     "<b>連結</b>：「試玩」連結不記成績（免費也能用）；訂閱老師在「連結」分頁選好班級，「題目來源」選句庫，就能做出會回傳成績的班級連結，成績冊依句庫分開顯示。"
+    ],
+    "note": "句庫碼建立後不會換，你之後增減句子，已經發出去的連結會自動跟著變。刪除句庫後，已發出的連結會失效。",
+    "plan": [
+     "每個遊戲 1 個句庫、每庫 50 句，只能用試玩連結",
+     "每個遊戲 5 個句庫、每庫 80 句，班級連結回傳成績"
+    ]
+   },
+   {
     "id": "hSub",
     "h": "訂閱後還可以",
     "items": [
@@ -278,6 +295,23 @@ window.HELP = {
     "plan": [
      "5 个内建主题的练习连结",
      "10 个内建主题、3 个自定字库、15 组练习范围、班级连结、学习单"
+    ]
+   },
+   {
+    "id": "hBa",
+    "h": "🔤 把／被：自定句库",
+    "intro": "自定句库让你从游戏现有的句子中，挑出这次要练习的句子，做成一个句库给学生玩。把、被各自有各自的句库。",
+    "items": [
+     "<b>建立</b>：到把或被的游戏页，第一个分页“自定句库”按“新增句库”，编辑页有三个分页：“设置”（取名字）、“挑句子”（可以整关一起加，也可以一句一句勾，还能搜索）、“句库内的句子”（看已经挑了哪些、可以移除）。",
+     "<b>句数</b>：每个句库最少 10 句；免费最多 50 句，订阅最多 80 句。这里只显示文字，按“试玩”才看得到图。",
+     "<b>个数</b>：把和被各自算，免费每个游戏 1 个句库，订阅每个游戏最多 5 个。",
+     "<b>学生怎么玩</b>：首页只有名字栏和一张“开始”卡片（上面写句库名称）；每次从句库随机抽 10 题，不影响原本关卡的星星。",
+     "<b>链接</b>：“试玩”链接不记成绩（免费也能用）；订阅老师在“链接”分页选好班级，“题目来源”选句库，就能做出会回传成绩的班级链接，成绩册依句库分开显示。"
+    ],
+    "note": "句库码建立后不会换，你之后增减句子，已经发出去的链接会自动跟着变。删除句库后，已发出的链接会失效。",
+    "plan": [
+     "每个游戏 1 个句库、每库 50 句，只能用试玩链接",
+     "每个游戏 5 个句库、每库 80 句，班级链接回传成绩"
     ]
    },
    {
@@ -426,6 +460,23 @@ window.HELP = {
     ]
    },
    {
+    "id": "hBa",
+    "h": "🔤 把／被: bancos propios",
+    "intro": "Con un banco propio eliges, entre las oraciones que ya trae el juego, las que quieres practicar y las conviertes en un banco para tus alumnos. 把 y 被 tienen bancos separados.",
+    "items": [
+     "<b>Crear</b>: en la página del juego (把 o 被), primera pestaña «Bancos propios» → «Nuevo banco». El editor tiene tres pestañas: «Ajustes» (nombre), «Elegir oraciones» (añade un nivel entero o marca una por una; hay buscador) y «Oraciones del banco» (ver y quitar).",
+     "<b>Tamaño</b>: mínimo 10 oraciones; hasta 50 en el plan gratis y 80 con suscripción. Aquí solo se ve el texto; las imágenes se ven con «Probar».",
+     "<b>Cantidad</b>: se cuenta por juego: 1 banco por juego en el plan gratis y hasta 5 con suscripción.",
+     "<b>Cómo juega el alumno</b>: la pantalla de inicio solo tiene el nombre y una tarjeta «Empezar» con el nombre del banco; cada partida son 10 preguntas al azar del banco y no cambia las estrellas de los niveles.",
+     "<b>Enlaces</b>: el enlace «Probar» no guarda resultados (también en el plan gratis). Con suscripción, en la pestaña «Enlaces» elige la clase y, en «Origen de las preguntas», el banco: el enlace de clase devuelve resultados, y el libro de notas los separa por banco."
+    ],
+    "note": "El código del banco no cambia: si luego añades o quitas oraciones, los enlaces ya enviados se actualizan solos. Si eliminas el banco, esos enlaces dejan de funcionar.",
+    "plan": [
+     "1 banco por juego, 50 oraciones, solo enlace de prueba",
+     "5 bancos por juego, 80 oraciones, enlaces de clase con resultados"
+    ]
+   },
+   {
     "id": "hSub",
     "h": "Con la suscripción, además",
     "items": [
@@ -568,6 +619,23 @@ window.HELP = {
     "plan": [
      "Practice link with 5 built-in themes",
      "10 built-in themes, 3 custom word banks, 15 practice sets, class links and worksheets"
+    ]
+   },
+   {
+    "id": "hBa",
+    "h": "🔤 把 / 被: sentence banks",
+    "intro": "A sentence bank lets you pick, from the sentences already in the game, the ones you want to practice and turn them into a bank for your students. 把 and 被 have separate banks.",
+    "items": [
+     "<b>Create</b>: on the game page (把 or 被), first tab “Sentence banks” → “New bank”. The editor has three tabs: “Settings” (name), “Pick sentences” (add a whole level or tick one by one; there is a search box) and “Bank sentences” (review and remove).",
+     "<b>Size</b>: at least 10 sentences; up to 50 on the free plan and 80 with a subscription. Only text is shown here; pictures appear in “Try it”.",
+     "<b>How many</b>: counted per game: 1 bank per game on the free plan, up to 5 with a subscription.",
+     "<b>How students play</b>: the start page has just the name field and one “Start” card showing the bank name; each round is 10 random questions from the bank and does not change level stars.",
+     "<b>Links</b>: the “Try it” link does not record scores (free plan too). With a subscription, pick the class on the “Links” tab and the bank under “Question source”: the class link sends scores back and the gradebook keeps them apart per bank."
+    ],
+    "note": "The bank code never changes: if you add or remove sentences later, links you already sent update automatically. If you delete the bank, those links stop working.",
+    "plan": [
+     "1 bank per game, 50 sentences, try-it link only",
+     "5 banks per game, 80 sentences, class links that send scores"
     ]
    },
    {

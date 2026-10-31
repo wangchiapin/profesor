@@ -361,3 +361,15 @@ details.hsec[open]>summary{margin-bottom:8px}
 .ws ruby,.pgws ruby{ruby-align:center}
 .ws rt,.pgws rt{font-size:.5em;font-weight:400;line-height:1.1}
 .ws-cell ruby{white-space:nowrap}
+/* 把／被 自訂句庫：挑句子清單 */
+.blist{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.brow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;font:inherit;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:8px 10px;cursor:pointer;min-height:48px}
+.brow.on{border-color:var(--brown);background:#fff8ec}
+.brow.static{cursor:default}
+.brow .bk{flex:0 0 22px;height:22px;border:2px solid var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--brown);background:#fff}
+.brow.on .bk{border-color:var(--brown)}
+.brow .bt{flex:1;min-width:0}
+.brow .bt b{display:block;font-size:1.05rem;word-break:break-all}
+.brow .bt small{display:block;font-size:.8rem;color:#777;margin-top:2px}
+.brow .bl{flex:0 0 auto;font-size:.78rem;color:#777;white-space:nowrap}
+.babcount.bad{color:#c0392b;font-weight:700}

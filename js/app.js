@@ -33,6 +33,7 @@ const S = {
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
+  babEdit: null, babMsg: '', babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
   bankMsg: '', cws: null                                           // 跑吧句庫卡片的錯誤訊息、跑吧學習單選項
 };
 
@@ -126,9 +127,9 @@ async function onRoute(){
   const prevG = S.route === 'game' ? S.g : null;
   S.route = r.route; S.cur = r.cur;
   if(S.route === 'game'){
-    if(prevG !== r.g){ S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
+    if(prevG !== r.g){ S.babEdit = null; S.babMsg = ''; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
     S.g = r.g; S.gt = r.gt; S.game = r.g;
-    if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonMsg = ''; }
+    if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonMsg = ''; S.babEdit = null; S.babMsg = ''; }
     if(S.gt !== 'ranges') S.dragonSetEdit = null;
     if(S.gt !== 'sheet') S.wsSheet = null;
     render(); window.scrollTo(0, 0);
@@ -137,7 +138,7 @@ async function onRoute(){
   }
   if(S.route === 'class'){ if(classOf(S.cur)) setCls(S.cur); render(); window.scrollTo(0, 0); return; }
   if(classesRedirect()) return;
-  S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = '';
+  S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = ''; S.babEdit = null; S.babMsg = '';
   S.wsSheet = null;
   render(); window.scrollTo(0, 0);
 }
@@ -296,7 +297,13 @@ function linkCardHtml(game){
   let h = '<div class="lk">';
   let url = '';
   if(isBaBei(game)){
-    url = DATA.linkBaBei(game, c.cid);
+    const banks = A.babanks[game] || [];
+    if(banks.length){
+      if(!banks.some(b => b.sid === S.baSrc[game])) S.baSrc[game] = '';
+      h += '<div class="field"><label>' + esc(T('baSrcLabel')) + '</label><select data-sel="basrc"><option value="">' + esc(T('baSrcLevels')) + '</option>' +
+        banks.map(b => '<option value="' + esc(b.sid) + '" ' + (S.baSrc[game] === b.sid ? 'selected' : '') + '>📚 ' + esc(b.name || ('#' + (b.slot + 1))) + '</option>').join('') + '</select></div>';
+    }
+    url = DATA.linkBaBei(game, c.cid, S.baSrc[game]);
   }else if(game === 'dragon'){
     if(!DR.ready()) return h + maintBox() + '</div>';
     if(!A.dragonReady) return h + '<p class="hint">' + esc(T('bbkUnavailable')) + '</p></div>';
@@ -359,7 +366,7 @@ function setLabel(game, k){
     if(k === 'link') return T('setOldLink');
     const it = (A.configs || []).find(x => x.sid === k); return it ? '🎨 ' + ((it.cfg && it.cfg.name) || '#') : T('setDeleted');
   }
-  if(isBaBei(game)){ const m = new RegExp('^lv([1-' + (game === 'bei' ? 4 : 3) + '])$').exec(k); return m ? T('levelN', { n: m[1] }) : (k === 'old' ? T('setOther') : T('setDeleted')); }   // 把有 3 關、被有 4 關（遊戲端送 lv1～lv3／lv1～lv4）
+  if(isBaBei(game)){ const bk = ((A.babanks || {})[game] || []).find(x => x.sid === k); if(bk) return '📚 ' + (bk.name || '#'); const m = new RegExp('^lv([1-' + (game === 'bei' ? 4 : 3) + '])$').exec(k); return m ? T('levelN', { n: m[1] }) : (k === 'old' ? T('setOther') : T('setDeleted')); }   // 把有 3 關、被有 4 關（遊戲端送 lv1～lv3／lv1～lv4）
   if(game === 'dragon'){ const l = DR.themeLabel(k, (A.dragon || {}).themes); return l ? '🐉 ' + l : T('setDeleted'); }
   if(k === 'normal') return T('rangeNormal');
   if(k === 'other') return T('setOther');
@@ -726,6 +733,82 @@ function baPracticeHtml(g){
     '<button class="pill sm" data-act="qr" data-url="' + esc(url) + '" data-game="' + g + '">' + esc(T('qr')) + '</button>' +
     '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div></div>';
 }
+// ---- 把／被：自訂句庫（只從遊戲現有的句子挑；句庫只存句子編號）----
+const BA_SLOTS = { free: 1, pro: 5 }, BA_MIN = 10, BA_MAX = { free: 50, pro: 80 };
+const baSlotsMax = () => S.a.plan.active ? BA_SLOTS.pro : BA_SLOTS.free;
+const baSentMax = () => S.a.plan.active ? BA_MAX.pro : BA_MAX.free;
+const baLvCount = g => g === 'bei' ? 4 : 3;
+function baSentences(g){   // 回傳句子陣列；還沒載入就開始載入（載完重畫）
+  const st = S.babSent[g];
+  if(st && st.list) return st.list;
+  if(!st){
+    S.babSent[g] = { loading: true };
+    DATA.loadSentences(g).then(list => { S.babSent[g] = { list, byId: new Map(list.map(x => [x.id, x])) }; if(S.babEdit) render(); })
+      .catch(e => { console.warn('sentences', e); S.babSent[g] = { fail: true }; if(S.babEdit) render(); });
+  }
+  return null;
+}
+function baSentText(x){ return I18N.getLang() === 'sc' ? x.sc : x.zh; }
+function baSentTr(x){ return I18N.getLang() === 'en' ? x.en : x.es; }
+function baBankCardHtml(g){
+  if(S.babEdit && S.babEdit.g === g) return '<div class="card" id="babCard">' + babEditorHtml() + '</div>';
+  const A = S.a, P = A.plan, max = baSlotsMax(), list = A.babanks[g];
+  let h = '<div class="card" id="babCard">' + phHead(T('baBanksTitle'), A.baReady ? T('baQuota', { n: list.length, max }) : '');
+  if(!A.baReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  for(let i = 0; i < BA_SLOTS.pro; i++){
+    const b = list.find(x => x.slot === i);
+    if(b){
+      h += '<div class="setrow"><div><b>📚 ' + esc(b.name || ('#' + (i + 1))) + '</b><small>' + esc(T('baSlotN', { n: i + 1 }) + ' · ' + T('baSummary', { n: b.ids.length })) + '</small></div><div class="row">' +
+        '<button class="pill sm" data-act="babedit" data-k="' + i + '">' + esc(T('edit')) + '</button>' +
+        '<a class="pill sm" href="' + esc(DATA.linkBaBankPractice(g, b.sid)) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' +
+        '<button class="pill sm" data-act="babdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+    }
+  }
+  if(list.length < max){
+    let free = 0; while(list.some(x => x.slot === free)) free++;
+    h += '<div class="row"><button class="pill fill sm" data-act="babedit" data-k="' + free + '">＋ ' + esc(T('baNew')) + '</button></div>';
+  }else{
+    h += (P.active ? '' : '<div class="row">' + lockBtn(T('baNew')) + '</div>') + '<div class="notice">' + esc(T(P.active ? 'baFullPro' : 'baFullFree')) + (P.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
+  }
+  if(!P.active) h += '<div class="notice">' + esc(T('baFreeNote')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div>';
+  if(S.babMsg) h += '<div class="err">' + esc(S.babMsg) + '</div>';
+  h += '<p class="hint">' + esc(T('baPracticeHint')) + '</p>';
+  return h + '</div>';
+}
+function babPickListHtml(E, sent){
+  const dr = E.dr, q = dr.q.trim().toLowerCase(), sel = new Set(dr.ids);
+  const rows = sent.filter(x => (dr.lv === 'all' || String(x.lv) === dr.lv) && (!q || (x.zh + x.sc + x.es + x.en).toLowerCase().indexOf(q) >= 0));
+  return '<p class="hint">' + esc(T('baShown', { n: rows.length })) + '</p>' + rows.map(x =>
+    '<button class="brow ' + (sel.has(x.id) ? 'on' : '') + '" data-act="babtog" data-k="' + x.id + '"><span class="bk">' + (sel.has(x.id) ? '✓' : '') + '</span>' +
+    '<span class="bt"><b>' + esc(baSentText(x)) + '</b><small>' + esc(baSentTr(x)) + '</small></span><span class="bl">' + esc(T('levelN', { n: x.lv })) + '</span></button>').join('');
+}
+function babEditorHtml(){
+  const E = S.babEdit, dr = E.dr, tab = E.tab || 'set', g = E.g, max = baSentMax();
+  let h = '<div class="gtabs etabs"><button class="pill sm" data-act="babcancel">' + esc(CORRE.tr('back')) + '</button>' +
+    [['set', 'baEdSet'], ['pick', 'baEdPick'], ['list', 'baEdList']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="bab" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
+  const cnt = '<p class="hint babcount ' + (dr.ids.length < BA_MIN || dr.ids.length > max ? 'bad' : '') + '">' + esc(T('baCount', { n: dr.ids.length, min: BA_MIN, max })) + '</p>';
+  const sent = tab === 'set' ? null : baSentences(g);
+  if(tab === 'set'){
+    h += '<div class="field"><label>' + esc(T('baNameLabel')) + '</label><input type="text" id="babName" maxlength="20" placeholder="' + esc(T('baNamePh')) + '" value="' + esc(dr.name) + '"></div>' + cnt + '<p class="hint">' + esc(T('baSetHint')) + '</p>';
+  }else if(!sent){
+    const st = S.babSent[g] || {};
+    h += st.fail ? '<div class="err">' + esc(T('baSentFail')) + '</div><div class="row"><button class="pill sm" data-act="babretry">' + esc(T('retry')) + '</button></div>' : '<p class="hint">' + esc(T('baLoadingSent')) + '</p>';
+  }else if(tab === 'pick'){
+    const lvs = ['all'].concat(Array.from({ length: baLvCount(g) }, (_, i) => String(i + 1)));
+    h += cnt + '<div class="row" style="margin-top:0">' + lvs.map(l => '<button class="pill sm ' + (dr.lv === l ? 'on' : '') + '" data-act="babfilter" data-k="' + l + '">' + esc(l === 'all' ? T('baAllLv') : T('levelN', { n: l })) + '</button>').join('') + '</div>';
+    if(dr.lv !== 'all'){
+      const ids = sent.filter(x => String(x.lv) === dr.lv).map(x => x.id), all = ids.every(id => dr.ids.indexOf(id) >= 0);
+      h += '<div class="row"><button class="pill sm" data-act="' + (all ? 'babremlv' : 'babaddlv') + '">' + esc(T(all ? 'baRemoveLevel' : 'baAddLevel')) + '</button></div>';
+    }
+    h += '<div class="field"><input type="search" id="babQ" placeholder="' + esc(T('baSearchPh')) + '" value="' + esc(dr.q) + '"></div><p class="hint">' + esc(T('baPickHint')) + '</p><div id="babList" class="blist">' + babPickListHtml(E, sent) + '</div>';
+  }else{
+    const byId = S.babSent[g].byId;
+    h += cnt + (dr.ids.length ? dr.ids.map(id => { const x = byId.get(id); return x ?
+      '<div class="brow on static"><span class="bt"><b>' + esc(baSentText(x)) + '</b><small>' + esc(baSentTr(x)) + '</small></span><span class="bl">' + esc(T('levelN', { n: x.lv })) + '</span><button class="x" data-act="babrm" data-k="' + id + '" aria-label="' + esc(T('del')) + '">✕</button></div>' : ''; }).join('') : '<p class="hint">' + esc(T('baListEmpty')) + '</p>');
+  }
+  if(S.babMsg) h += '<div class="err">' + esc(S.babMsg) + '</div>';
+  return h + '<div class="row"><button class="pill fill sm" data-act="babsave">' + esc(T('save')) + '</button><button class="pill sm" data-act="babcancel">' + esc(T('cancel')) + '</button></div></div>';
+}
 function baSoonHtml(what){ return '<div class="card"><div class="notice">🚧 ' + esc(T(what)) + '</div></div>'; }
 function gameLinksHtml(g){
   if(isBaBei(g)) return baPracticeHtml(g) + classLinksHtml(g);
@@ -745,7 +828,7 @@ function gameHtml(){
   if(gameMaint(g)) h += maintAdminBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]]].concat(g === 'dragon' ? [['ranges', 'gtRangesDragon']] : []).concat([['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]]).map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
-  if(S.gt === 'content') return h + (isBaBei(g) ? baSoonHtml('baBankSoon') : g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
+  if(S.gt === 'content') return h + (isBaBei(g) ? baBankCardHtml(g) : g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
   if(S.gt === 'ranges') return h + (g === 'dragon' ? dragonRangesHtml() : '');
   if(S.gt === 'links') return h + gameLinksHtml(g);
   if(S.gt === 'scores') return h + gameScoresHtml();
@@ -756,7 +839,7 @@ function gameHtml(){
 function helpLang(){ const H = window.HELP || {}; return H[I18N.getLang()] || H.tc || { btn: '', sections: [], jump: [] }; }
 function helpHtml(game){
   const H = helpLang();
-  const mine = { corre: 'hCorre', colores: 'hCol', bbk: 'hBbk', dragon: 'hDragon' }[game];
+  const mine = { corre: 'hCorre', colores: 'hCol', bbk: 'hBbk', dragon: 'hDragon', ba: 'hBa', bei: 'hBa' }[game];
   const list = a => '<ul class="hlist">' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
   const sec = x => (x.id === mine ? '<div class="card hsec" id="' + x.id + '"><h3>' + esc(x.h) + '</h3>' : '<details class="card hsec" id="' + x.id + '"><summary><b>' + esc(x.h) + '</b></summary>') +
     (x.intro ? '<p>' + x.intro + '</p>' : '') +
@@ -1333,7 +1416,7 @@ const actions = {
     catch(e){ console.error(e); S.bbkMsg = err(e); }
     render();
   }); },
-  edtab(el){ const E = { col: S.colEdit, dg: S.dragonEdit, ds: S.dragonSetEdit }[el.dataset.e] || S.bbkEdit; if(E){ E.tab = el.dataset.k; render(); } },
+  edtab(el){ const E = { col: S.colEdit, dg: S.dragonEdit, ds: S.dragonSetEdit, bab: S.babEdit }[el.dataset.e] || S.bbkEdit; if(E){ E.tab = el.dataset.k; render(); } },
   // 試玩：還沒有連結時，先開一個空白分頁（避免被擋），建立連結後再帶過去
   bbkplay(el){ const w = window.open('', '_blank'); return run(async () => {
     const i = +el.dataset.k;
@@ -1370,6 +1453,61 @@ const actions = {
   bbkmake(){ return run(async () => {
     try{ S.a.bbk = await DATA.ensureBbkSid(S.a.bbk, +S.bbkSel); S.msg = ''; }
     catch(e){ console.error(e); S.msg = T('configFail', { m: err(e) }); }
+    render();
+  }); },
+  // ---- 把／被：自訂句庫 ----
+  babedit(el){
+    const g = S.g, i = +el.dataset.k, b = S.a.babanks[g].find(x => x.slot === i);
+    if(!b && S.a.babanks[g].length >= baSlotsMax()){ if(!S.a.plan.active) needSub(); return; }
+    S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], lv: 'all', q: '' } };
+    S.babMsg = ''; baSentences(g); render();
+  },
+  babcancel(){ S.babEdit = null; S.babMsg = ''; render(); },
+  babretry(){ delete S.babSent[S.babEdit.g]; baSentences(S.babEdit.g); render(); },
+  babfilter(el){ S.babEdit.dr.lv = el.dataset.k; render(); },
+  babtog(el){
+    const dr = S.babEdit.dr, id = +el.dataset.k, i = dr.ids.indexOf(id);
+    if(i >= 0) dr.ids.splice(i, 1); else dr.ids.push(id);
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  },
+  babaddlv(){
+    const E = S.babEdit, dr = E.dr, list = S.babSent[E.g].list;
+    list.filter(x => String(x.lv) === dr.lv && dr.ids.indexOf(x.id) < 0).forEach(x => dr.ids.push(x.id)); render();
+  },
+  babremlv(){
+    const E = S.babEdit, dr = E.dr, list = S.babSent[E.g].list, rm = new Set(list.filter(x => String(x.lv) === dr.lv).map(x => x.id));
+    dr.ids = dr.ids.filter(id => !rm.has(id)); render();
+  },
+  babrm(el){ const dr = S.babEdit.dr, i = dr.ids.indexOf(+el.dataset.k); if(i >= 0) dr.ids.splice(i, 1); render(); },
+  babsave(){ return run(async () => {
+    const E = S.babEdit; if(!E) return;
+    const g = E.g, dr = E.dr, A = S.a, max = baSentMax(), n = dr.ids.length;
+    if(n < BA_MIN){ S.babMsg = T('baErrMin', { min: BA_MIN, n }); render(); return; }
+    if(n > max){ S.babMsg = T('baErrMax', { max, n }); render(); return; }
+    if(!E.sid && A.babanks[g].length >= baSlotsMax()){ S.babMsg = T(A.plan.active ? 'baFullPro' : 'baFullFree'); render(); return; }
+    const name = (dr.name || '').trim().slice(0, 20) || T('baDefaultName', { n: E.i + 1 });
+    // 句子編號依遊戲清單排序、去掉清單裡已經沒有的編號
+    const order = new Map(S.babSent[g].list.map((x, k) => [x.id, k]));
+    const ids = dr.ids.filter(id => order.has(id)).sort((a, b) => order.get(a) - order.get(b));
+    try{
+      const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids });
+      A.babslots = r.slots;
+      const rec = { slot: E.i, sid: r.sid, name, ids };
+      const at = A.babanks[g].findIndex(x => x.sid === r.sid);
+      if(at >= 0) A.babanks[g][at] = rec; else A.babanks[g].push(rec);
+      A.babanks[g].sort((a, b) => a.slot - b.slot);
+      S.babEdit = null; S.babMsg = ''; render(); toast(T('saved'));
+    }catch(e){ console.error(e); S.babMsg = err(e); render(); }
+  }); },
+  babdel(el){ return run(async () => {
+    const g = S.g, i = +el.dataset.k, b = S.a.babanks[g].find(x => x.slot === i);
+    if(!b || !confirm(T('baConfirmDel', { name: b.name || ('#' + (i + 1)) }))) return;
+    try{
+      S.a.babslots = await DATA.deleteBaBank(g, S.a.babslots, i, b.sid);
+      S.a.babanks[g] = S.a.babanks[g].filter(x => x.sid !== b.sid);
+      if(S.baSrc[g] === b.sid) S.baSrc[g] = '';
+      S.babMsg = '';
+    }catch(e){ console.error(e); S.babMsg = err(e); }
     render();
   }); },
   // ---- 色數設定組 ----
@@ -1594,6 +1732,7 @@ document.addEventListener('change', e => {
       }
     } }
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
+  if(s.dataset.sel === 'basrc') S.baSrc[S.g] = s.value;
   if(s.dataset.sel === 'colprac') S.colPrac = s.value;
   if(s.dataset.sel === 'bbkprac') S.bbkPrac = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
@@ -1617,6 +1756,14 @@ document.addEventListener('input', e => {
     if(e.target.dataset && e.target.dataset.dgr != null && dr.rows && dr.rows[+e.target.dataset.dgr]) { dr.rows[+e.target.dataset.dgr][e.target.dataset.f] = e.target.value; dr.text = DR.rowsToText(dr.rows); }
   }
   if(e.target.id === 'dsName' && S.dragonSetEdit) S.dragonSetEdit.dr.name = e.target.value;
+  if(S.babEdit){
+    if(e.target.id === 'babName') S.babEdit.dr.name = e.target.value;
+    if(e.target.id === 'babQ'){   // 只更新下面的句子列表，輸入框不重畫（才不會掉游標）
+      S.babEdit.dr.q = e.target.value;
+      const L = document.getElementById('babList'), st = S.babSent[S.babEdit.g];
+      if(L && st && st.list) L.innerHTML = babPickListHtml(S.babEdit, st.list);
+    }
+  }
   if(S.colEdit){
     if(e.target.id === 'colName') S.colEdit.dr.name = e.target.value;
     if(e.target.id === 'colList') S.colEdit.dr.list = e.target.value;

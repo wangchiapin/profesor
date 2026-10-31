@@ -59,6 +59,28 @@
       if(!okQuota || !(pro || (before && nSets <= before.sets.length && nTh <= before.themes.length))) deny();
       return;
     }
+    // 把／被自訂句庫：照新規則的重點模擬（每個遊戲免費只能用位置 0、訂閱 0–4；每庫 10–50 句、訂閱 10–80 句；句子編號是整數；本人才能寫）
+    if(c === 'teacher_babanks'){
+      if(!user || user.uid !== id) deny();
+      const p = col(pid, 'site_plans')[id], pro = !!(p && p.expiresAt > NOW()), old = col(pid, c)[id] || {};
+      for(const g of ['ba', 'bei']){
+        const keys = Object.keys(data[g] || {}), before = Object.keys(old[g] || {});
+        if(keys.some(k => ['0','1','2','3','4'].indexOf(k) < 0)) deny();
+        if(!pro && keys.some(k => k !== '0' && before.indexOf(k) < 0)) deny();
+      }
+      return;
+    }
+    if(c === 'shared_babanks'){
+      if(!user || data.owner !== user.uid) deny();
+      const old = col(pid, c)[id]; if(old && (old.owner !== user.uid || old.slot !== data.slot || old.game !== data.game)) deny();
+      const p = col(pid, 'site_plans')[user.uid], pro = !!(p && p.expiresAt > NOW());
+      if(Object.keys(data).sort().join() !== ['game','ids','name','owner','slot','updatedAt'].join()) deny();
+      if(['ba','bei'].indexOf(data.game) < 0 || !(data.slot >= 0 && data.slot <= 4)) deny();
+      if(!(data.ids.length >= 10 && data.ids.length <= (pro ? 80 : 50)) || !data.ids.every(Number.isInteger)) deny();
+      if(!pro && data.slot > 0) deny();
+      if(!(data.name.length >= 1 && data.name.length <= 40)) deny();
+      return;
+    }
     if(c === 'shared_dragon'){
       if(!user || data.owner !== user.uid) deny();
       const old = col(pid, c)[id]; if(old && old.owner !== user.uid) deny();

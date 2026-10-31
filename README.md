@@ -113,7 +113,8 @@
 - 成績：`class_scores` 的 `game='ba'`／`'bei'`，`k='lv1'|'lv2'|'lv3'`（第幾關；把有 3 關、被有 4 關，遊戲端被會送 `lv4`；成績冊 `setLabel` 依遊戲認 lv1～lv3（把）／lv1～lv4（被），認不得的代號才顯示「已刪除」。遊戲以後新增關卡時，這裡要一起改），`best`＝該關最高分，`extra = {ok: 答對題數, q: 題數, f: 第一次就對的題數}`。成績冊沿用既有表格，「詳細」欄顯示「答對 ok / q 題」。
 - 遊戲端（`practica-de-ba-oracion`、`practica-de-bei-oracion` 的 `index.html`，「班級模式」區塊）：連結帶 `?class=` 才啟動；成績存到中央專案、不寫原本的公開排行榜；老師開了「班級排行榜」就在結果頁顯示。
 - 遊戲首頁（練習連結才有，班級連結與 `?preview` 不顯示）有「老師管理中心」按鈕，連到 `#/home`。
-- 還沒做：自訂句庫、題數與題型比例、每題對錯明細（`class_plays`）、學習單。
+- 還沒做：題數與題型比例、每題對錯明細（`class_plays`）、學習單；自訂句庫「完全自己寫句子」「上傳自己的圖」「積木組句」（之後做）。
+- **自訂句庫（7-47）**：只從遊戲現有句子挑，句庫只存句子編號。資料：`teacher_babanks/{uid}` = `{ ba:{'0'..'4':sid}, bei:{…}, updatedAt }`、`shared_babanks/{sid}` = `{ owner, game, slot, name, ids[], updatedAt }`（學生匿名可讀、本人才能寫；規則在 game-kit `subscription-48d3c.rules.txt`，**要整份貼進 Firebase**）。額度：把、被各自算，免費 1 個／每庫 10～50 句，訂閱 5 個／10～80 句。老師端：遊戲頁「自訂句庫」分頁（`app.js` 的 `baBankCardHtml`／`babEditorHtml`，編輯頁分頁「設定｜挑句子｜句庫內的句子」，只顯示文字、不顯示圖）；句子清單來自遊戲 repo 的 `sentences.json`（`tools/make_sentences.py` 從 `index.html` 的 `DATA` 產生，遊戲測試會檢查有沒有過期；**遊戲句子有增減時要重新執行**）。連結：試玩 `?bank=<句庫碼>&preview=1`（不記成績）；班級連結 `?class=<班級碼>&bank=<句庫碼>`，成績 `class_scores.k` ＝句庫碼，成績冊 `setLabel` 顯示「📚 句庫名」。遊戲端句庫模式見兩個遊戲 README。
 - 測試：`node tests/test_babei.js`（老師中心）、`node tests/test_babei_games.js`（兩個遊戲，要放在旁邊的資料夾）。
 
 ## 檔案

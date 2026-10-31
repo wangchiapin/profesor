@@ -64,7 +64,7 @@ async function loadAccount(user){
   const d = p.exists ? p.data() : {};
   const plan = { plan: d.plan || 'free', expiresAt: tsMs(d.expiresAt) };
   plan.active = planActive(plan);
-  const acct = { admin: !!(user.email === ADMIN_EMAIL && user.emailVerified), maint: {}, plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true };
+  const acct = { admin: !!(user.email === ADMIN_EMAIL && user.emailVerified), maint: {}, plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, babanks: { ba: [], bei: [] }, babslots: { ba: {}, bei: {} }, baReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true };
   try{
     const ix = await db.collection('teacher_classes').doc(user.uid).get();
     acct.cslots = ix.exists ? (ix.data().slots || {}) : {};
@@ -95,6 +95,20 @@ async function loadAccount(user){
     }));
     acct.banks.sort((a, b) => a.slot - b.slot);
   }catch(e){ console.warn('banks unavailable', e); acct.extrasReady = false; }
+  // 把／被：自訂句庫（teacher_babanks/{uid} = { ba:{ '0'..'4': sid }, bei:{…} }；shared_babanks/{sid} = { owner, game, slot, name, ids[] }）
+  try{
+    const ax = await db.collection('teacher_babanks').doc(user.uid).get();
+    const ad = ax.exists ? ax.data() : {};
+    for(const g of ['ba', 'bei']){
+      const sl = (ad[g] && typeof ad[g] === 'object') ? ad[g] : {};
+      acct.babslots[g] = sl;
+      await Promise.all(Object.keys(sl).sort().map(async k => {
+        try{ const s = await db.collection('shared_babanks').doc(sl[k]).get(); if(s.exists){ const d = s.data(); acct.babanks[g].push({ slot: +k, sid: s.id, name: d.name || '', ids: Array.isArray(d.ids) ? d.ids : [] }); } }
+        catch(e){ console.warn('babank read failed', g, k, e); }
+      }));
+      acct.babanks[g].sort((a, b) => a.slot - b.slot);
+    }
+  }catch(e){ console.warn('babanks unavailable', e); acct.baReady = false; }
   try{
     const cx = await db.collection('teacher_configs').doc(user.uid).get();
     acct.configs = cx.exists ? (cx.data().items || []) : [];
@@ -318,6 +332,37 @@ async function deleteCorreBank(bslots, slot, sid){
   await b.commit();
   return slots;
 }
+// ---- 把／被：自訂句庫（只存句子編號；句庫碼建立後不換，改了句子已發出的連結會跟著變）----
+async function saveBaBank(game, bslots, slot, sid, data){
+  const ts = serverTs(), b = db.batch();
+  let slots = bslots;
+  if(!sid){
+    sid = newId(14); slots = Object.assign({}, bslots, { [game]: Object.assign({}, bslots[game], { [String(slot)]: sid }) });
+    b.set(db.collection('teacher_babanks').doc(uid()), Object.assign({}, slots, { updatedAt: ts }));
+  }
+  b.set(db.collection('shared_babanks').doc(sid), { owner: uid(), game, slot, name: data.name, ids: data.ids, updatedAt: ts });
+  await b.commit();
+  return { sid, slots };
+}
+async function deleteBaBank(game, bslots, slot, sid){
+  const g = Object.assign({}, bslots[game]); delete g[String(slot)];
+  const slots = Object.assign({}, bslots, { [game]: g });
+  const b = db.batch();
+  b.delete(db.collection('shared_babanks').doc(sid));
+  b.set(db.collection('teacher_babanks').doc(uid()), Object.assign({}, slots, { updatedAt: serverTs() }));
+  await b.commit();
+  return slots;
+}
+// 句子清單檔（遊戲 repo 的 sentences.json，由 tools/make_sentences.py 從遊戲產生）
+const _sent = {};
+function loadSentences(game){
+  if(!_sent[game]) _sent[game] = fetch(GAME_URL[game] + 'sentences.json', { cache: 'no-cache' })
+    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(j => { if(!j || !Array.isArray(j.sentences)) throw new Error('bad json'); return j.sentences; })
+    .catch(e => { delete _sent[game]; throw e; });
+  return _sent[game];
+}
+function linkBaBankPractice(game, sid){ return GAME_URL[game] + '?bank=' + sid + '&preview=1'; }
 function linkCorrePractice(sid){ return GAME_URL.corre + '?bank=' + sid; }
 
 // ---- 學生連結 ----
@@ -358,5 +403,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, saveBaBank, deleteBaBank, loadSentences, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();
