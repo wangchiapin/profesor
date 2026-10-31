@@ -63,6 +63,13 @@ const dbOf = (page, c) => page.evaluate(c => window.__DB[c] || {}, c);
       ok(Object.keys(await dbOf(page, g + 'Leaderboard')).length === 1, '公開排行榜寫了一筆');
       ok(Object.keys(await dbOf(page, 'class_scores')).length === 0, '沒有寫班級成績');
       ok(!!(await page.$('button[onclick="openLB()"]')), '有排行榜按鈕');
+      await page.evaluate(() => go('levels'));
+      ok(await page.$eval('#teacherLink', e => e.getAttribute('href')).catch(() => '') === 'https://wangchiapin.github.io/profesor/#/home', '首頁有「老師管理中心」按鈕，連到老師中心首頁');
+      const lab = async (lang, zh) => page.evaluate(([l, z]) => { cfg.lang = l; cfg.zh = z; render(); const e = document.getElementById('teacherLink'); return e ? e.textContent.trim() : ''; }, [lang, zh]);
+      ok(await lab('zh', 'tc') === '老師管理中心', '按鈕文字：繁體');
+      ok(await lab('zh', 'sc') === '老师管理中心', '按鈕文字：簡體');
+      { const es = await lab('es', 'tc'); ok(es.includes('老師管理中心') && es.includes('Centro para profesores'), '按鈕文字：中文＋西文', es); }
+      { const en = await lab('en', 'tc'); ok(en.includes('老師管理中心') && en.includes('Teacher center'), '按鈕文字：中文＋英文', en); }
       ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
     console.log('\n[' + g + '-C] ?class=…：成績回傳老師（開不開放由老師中心開關決定，遊戲本身不再擋）');
@@ -79,6 +86,7 @@ const dbOf = (page, c) => page.evaluate(c => window.__DB[c] || {}, c);
       const t = await text(page);
       ok(t.includes('成績已回傳給老師'), '結果頁：成績已回傳'); ok(t.includes('班級排行榜') && t.includes('Ana'), '結果頁：班級排行榜（老師有開）');
       ok(!(await page.$('button[onclick="openLB()"]')), '結果頁沒有公開排行榜按鈕');
+      ok(!(await page.$('#teacherLink')), '班級連結：學生看不到老師入口');
       const best1 = d.best;
       await play(page, 1, 3); await page.waitForTimeout(500);
       const d2 = (await dbOf(page, 'class_scores'))[keys[0]];
@@ -96,6 +104,8 @@ const dbOf = (page, c) => page.evaluate(c => window.__DB[c] || {}, c);
       ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
     { const { page, ctx } = await open(browser, base, '?class=' + CID + '&preview=1', true, 'on');
       ok(await page.evaluate(() => !document.getElementById('clsFatal')), '預覽（?preview）不受維修影響'); await ctx.close(); }
+    { const { page, ctx } = await open(browser, base, '?preview=1');
+      ok(!(await page.$('#teacherLink')), '預覽（?preview）：沒有老師入口'); await ctx.close(); }
 
     console.log('\n[' + g + '-D] 班級碼不存在：連結失效');
     { const { page, errors, ctx } = await open(browser, base, '?class=nope0000nope', false);

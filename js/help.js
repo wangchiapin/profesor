@@ -19,7 +19,7 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "使用步驟（四款遊戲都一樣）",
+    "h": "使用步驟（所有遊戲都一樣）",
     "steps": [
      [
       "建立",
@@ -141,7 +141,7 @@ window.HELP = {
     "items": [
      "建立班級（最多 3 班），成績自動回傳到成績冊",
      "比比看常錯統計、匯出 CSV",
-     "四款遊戲的學習單（列印／PDF，在各遊戲頁的「學習單」分頁；語言、拼音／注音、字體大小的設定四款都一樣）"
+     "各遊戲的學習單（列印／PDF，在各遊戲頁的「學習單」分頁；語言、拼音／注音、字體大小的設定在各遊戲都一樣）"
     ]
    }
   ]
@@ -164,7 +164,7 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "使用步骤（四款游戏都一样）",
+    "h": "使用步骤（所有游戏都一样）",
     "steps": [
      [
       "创建",
@@ -286,7 +286,7 @@ window.HELP = {
     "items": [
      "创建班级（最多 3 班），成绩自动回传到成绩册",
      "比比看常错统计、导出 CSV",
-     "四款游戏的学习单（打印／PDF，在各游戏页的“学习单”分页；语言、拼音／注音、字体大小的设置四款都一样）"
+     "各游戏的学习单（打印／PDF，在各游戏页的“学习单”分页；语言、拼音／注音、字体大小的设置在各游戏都一样）"
     ]
    }
   ]
@@ -309,7 +309,7 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "Cómo se usa (igual en los cuatro juegos)",
+    "h": "Cómo se usa (igual en todos los juegos)",
     "steps": [
      [
       "Crear",
@@ -431,7 +431,7 @@ window.HELP = {
     "items": [
      "Crear clases (hasta 3); las notas llegan solas al libro de notas",
      "Errores frecuentes en Compara y Adivina y exportar CSV",
-     "Hojas de trabajo de los cuatro juegos (imprimir / PDF, en la pestaña «Fichas» de cada juego; idioma, pinyin / zhuyin y tamaño de letra se eligen igual en los cuatro)"
+     "Hojas de trabajo de cada juego (imprimir / PDF, en la pestaña «Fichas» de cada juego; idioma, pinyin / zhuyin y tamaño de letra se eligen igual en todos)"
     ]
    }
   ]
@@ -454,7 +454,7 @@ window.HELP = {
   "sections": [
    {
     "id": "hStep",
-    "h": "How it works (same for all four games)",
+    "h": "How it works (same for all games)",
     "steps": [
      [
       "Create",
@@ -576,7 +576,7 @@ window.HELP = {
     "items": [
      "Classes (up to 3), with scores sent automatically to the gradebook",
      "Common mistakes in Compare & Guess, and CSV export",
-     "Worksheets for all four games (print / PDF, in each game’s “Worksheets” tab; language, pinyin / zhuyin and letter size work the same in all four)"
+     "Worksheets for each game (print / PDF, in each game’s “Worksheets” tab; language, pinyin / zhuyin and letter size work the same in all games)"
     ]
    }
   ]

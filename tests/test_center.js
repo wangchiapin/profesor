@@ -127,7 +127,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('.badge'); await page.waitForSelector('.badge');
     const t = await text(page);
     ok(t.includes('訂閱') && t.includes('到期日'), '顯示訂閱與到期日');
-    ok(/班級（四款遊戲共用）\s*2 \/ 3/.test(t), '班級用量 2 / 3', t);
+    ok(/班級（所有遊戲共用）\s*2 \/ 3/.test(t), '班級用量 2 / 3', t);
     ok(/句庫\s*1 \/ 5/.test(t) && /自訂設定\s*2 \/ 15/.test(t), '句庫 1 / 5、設定組 2 / 15');
     ok(!t.includes('建立班級、成績簿、列印需要訂閱'), '訂閱中沒有提示');
     await shot(page, 'b1_home');
