@@ -68,7 +68,7 @@ async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc' } = {}){
     if(u.includes('cdn.jsdelivr.net/npm/opencc-js')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.opencc });
     if(u.includes('cdn.jsdelivr.net/npm/pinyin-pro')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.pinyin });
     if(u === 'https://wangchiapin.github.io/corre/manager/gt-readings.json'){ if(global.GT_FAIL) return r.fulfill({ status: 500, body: '' }); const f = path.join(CORRE_DIR, 'manager', 'gt-readings.json'); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' }); }
-    { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/practica-de-(ba|bei)-oracion\/(sentences(?:-tk)?\.json)/);
+    { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/practica-de-(ba|bei)-oracion\/(sentences(?:-tk)?\.json|blocks\.json)/);
       if(m){ if(global.SENT_FAIL) return r.fulfill({ status: 500, body: '' }); const f = path.join(ROOT, '..', 'practica-de-' + m[1] + '-oracion', m[2]); return r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }); } }
     { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/corre\/bank\/([A-Za-z0-9]+\.json)$/);
       if(m){ const f = path.join(CORRE_DIR, 'bank', m[1]); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' }); } }
@@ -147,7 +147,7 @@ server.listen(0, 'localhost', async () => {
     ok(!!(await page.$('[data-act=babedit]')), '有「新增句庫」按鈕');
     await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
     const tabs = await page.$$eval('.etabs .pill', els => els.map(e => e.textContent.trim()));
-    ok(tabs.join('|') === '回上一頁|設定|挑句子|自己寫句子|句庫內的句子', '編輯頁分頁：設定｜挑句子｜自己寫句子｜句庫內的句子', tabs);
+    ok(tabs.join('|') === '回上一頁|設定|挑句子|自己寫句子|積木組句|句庫內的句子', '編輯頁分頁：設定｜挑句子｜自己寫句子｜積木組句｜句庫內的句子', tabs);
     ok((await text(page, '#babCard')).includes('已選 0 句（最少 10 句、最多 80 句）'), '設定頁顯示張數與上限（訂閱 80）');
     await page.fill('#babName', '第三週複習');
     // 先存 3 句 → 不夠 10 句
@@ -251,7 +251,7 @@ server.listen(0, 'localhost', async () => {
     await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
     await page.click('[data-act=edtab][data-k=write]'); await page.waitForSelector('#babText');
     const tabs = await page.$$eval('.etabs .pill', els => els.map(e => e.textContent.trim()));
-    ok(tabs.join('|') === '回上一頁|設定|挑句子|自己寫句子|句庫內的句子', '編輯頁四個分頁（多了「自己寫句子」）', tabs);
+    ok(tabs.join('|') === '回上一頁|設定|挑句子|自己寫句子|積木組句|句庫內的句子', '編輯頁五個分頁（把：多了「自己寫句子」「積木組句」）', tabs);
     const gen = async txt => { await page.fill('#babText', txt); await page.click('[data-act=babgen]'); await page.waitForTimeout(400); return text(page, '#babCard'); };
     let t = await gen('我 放在 桌子上｜Puse en la mesa.');
     ok(t.includes('第 1 行：句子裡要有「把」'), '沒有「把」：擋住並指出第幾行', t.slice(0, 120));
@@ -463,6 +463,63 @@ server.listen(0, 'localhost', async () => {
     ok(await page.$eval('[data-act=bawmode][data-k=n20]', e => e.classList.contains('on')), '隨機 20 句、可重抽');
     await page.click('[data-act=bawscript][data-k=simp]'); await page.click('[data-act=bawmode][data-k=pick]');
     ok((await text(page, '#bawCard')).includes('书'), '簡體：挑句清單顯示簡體字');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[L] 積木組句（把：選人物、物品、地點）');
+  { const { page, errors, ctx } = await open(browser, { seedOpt: {}, q: '?dev=ba,bei', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    const tabs = await page.$$eval('[data-act=edtab][data-e=bab]', b => b.map(x => x.dataset.k).join());
+    ok(tabs === 'set,pick,write,blk,list', '把的編輯頁多了「積木組句」分頁（在自己寫句子之後）', tabs);
+    await page.click('[data-act=edtab][data-k=blk]'); await page.waitForSelector('select[data-f=who]');
+    ok((await page.$$eval('select[data-f=who] option', o => o.length)) === 15, '人物選單：15 位');
+    ok((await page.$$eval('select[data-f=ob] option', o => o.length)) === 57, '物品選單：57 種');
+    let t = await text(page, '.bcard');
+    ok(t.includes('我把鉛筆放在桌子上') && t.includes('Puse el lápiz sobre la mesa.') && t.includes('I put the pencil on the table.'), '預設組出：我把鉛筆放在桌子上＋西英文', t);
+    await page.selectOption('select[data-f=who]', 'mom'); await page.selectOption('select[data-f=ob]', 'milk');
+    ok((await page.$$eval('select[data-f=pl] option', o => o.map(x => x.value).join())) === 'table,counter,fridge,bag,basket', '選了牛奶：地點只列合理的（桌子、流理台、冰箱、袋子、籃子）');
+    await page.selectOption('select[data-f=pl]', 'fridge');
+    t = await text(page, '.bcard'); ok(t.includes('媽媽把牛奶放進冰箱裡') && t.includes('Mamá metió la leche en el refrigerador.') && t.includes('Mom put the milk in the fridge.'), '媽媽把牛奶放進冰箱裡');
+    await page.click('[data-act=babblkadd]'); await page.waitForSelector('.brow.static');
+    ok((await page.$$('.brow.static')).length === 1 && (await text(page, '.editor')).includes('這個句庫的積木句子：1 句'), '加進句庫：下面出現一句');
+    await page.click('[data-act=babblkadd]');
+    ok((await text(page, '.editor')).includes('已經在句庫裡'), '同一句不能重複加');
+    await page.selectOption('select[data-f=ob]', 'bike'); await page.selectOption('select[data-f=who]', 'dad');
+    ok((await page.$$eval('select[data-f=pl] option', o => o.map(x => x.value).join())) === 'besidedoor,porch', '腳踏車只能停在門旁邊、門口');
+    await page.click('[data-act=babblkadd]');
+    await page.selectOption('select[data-f=ob]', 'poster'); await page.selectOption('select[data-f=pl]', 'door');
+    t = await text(page, '.bcard'); ok(t.includes('貼在門上') && t.includes('pegó el póster en la puerta'), '海報＋門：貼在門上（動詞隨組合改變）', t);
+    await page.selectOption('select[data-f=ob]', 'coat'); await page.selectOption('select[data-f=pl]', 'door'); await page.selectOption('select[data-f=who]', 'me');
+    t = await text(page, '.bcard'); ok(t.includes('我把外套掛在門後面') && t.includes('Colgué el abrigo detrás de la puerta.'), '外套＋門：掛在門後面、第一人稱動詞');
+    await page.click('[data-act=babblkrand]'); await page.waitForSelector('.bcard .bsent');
+    ok((await text(page, '.bcard')).length > 10, '隨機一句：能組出一句');
+    // 存檔：先補到 10 句（挑 8 句遊戲句子）
+    await page.click('[data-act=edtab][data-k=pick]'); await page.waitForSelector('#babList .brow'); for(let i = 0; i < 9; i++) await page.click('#babList .brow:nth-child(' + (i + 2) + ')');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow', { timeout: 4000 }).catch(async () => { console.log('SAVE MSG:', (await text(page, '#babCard')).slice(0, 200)); });
+    const d = await db(page), b = Object.values(d.shared_babanks)[0];
+    ok(b && b.custom.length === 2 && b.custom[0].bl === 'mom.milk.fridge' && b.custom[1].bl === 'dad.bike.besidedoor', '存檔：shared_babanks 的 custom 帶 bl 配方', b && b.custom);
+    ok(b.custom.every(c => Array.isArray(c.tk) && c.tk.length === 5 && c.tk[1].startsWith('把|') && !('im' in c)), '積木句子 5 個詞、第 2 個是「把」、不佔圖片位置');
+    ok(!Object.keys(d).some(k => k.startsWith('shared_babimgs') && Object.keys(d[k] || {}).length), '積木句子不寫圖片文件');
+    // 再編輯：配方讀得回來、清單有 🧱 標籤、改文字重新產生後配方還在
+    await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=list]');
+    t = await text(page, '.editor'); ok(t.includes('🧱') && t.includes('媽媽把牛奶放進冰箱裡'), '再編輯：清單裡積木句子有 🧱 標籤');
+    await page.click('[data-act=edtab][data-k=write]'); await page.waitForSelector('#babText');
+    await page.click('[data-act=babgen]'); await page.waitForTimeout(500);
+    await page.click('[data-act=edtab][data-k=blk]'); await page.waitForSelector('select[data-f=who]');
+    ok((await text(page, '.editor')).includes('這個句庫的積木句子：2 句'), '按「產生句子」後：積木句子的配方沒掉', (await text(page, '.editor')).slice(0, 100));
+    await page.click('[data-act=babcdel][data-k="0"]'); await page.waitForTimeout(100);
+    ok((await text(page, '.editor')).includes('這個句庫的積木句子：1 句'), '可以刪掉積木句子');
+    ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, q: '?dev=ba', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=blk]'); await page.waitForSelector('select[data-f=who]');
+    ok((await text(page, '.editor')).includes('🔒'), '免費版：加進句庫按鈕標示鎖');
+    await page.click('[data-act=babblkadd]'); await page.waitForTimeout(200);
+    ok(!(await page.$('.brow.static')), '免費版按「加進句庫」：沒有加進去（跳建議訂閱）');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: {}, q: '?dev=ba,bei', hash: '#/game/bei/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    ok(!(await page.$('[data-act=edtab][data-k=blk]')), '被：沒有「積木組句」分頁（先只做把）');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[H] 句庫設定：題數與題型比例（訂閱老師可選、免費版鎖住）');

@@ -33,7 +33,7 @@ const S = {
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
-  babEdit: null, babMsg: '', baw: {}, babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
+  babEdit: null, babMsg: '', babBlk: null, baw: {}, babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
   bankMsg: '', cws: null                                           // 跑吧句庫卡片的錯誤訊息、跑吧學習單選項
 };
 
@@ -755,9 +755,10 @@ const baTot = dr => dr.ids.length + dr.custom.length;
 function baParseEntry(c){   // 資料庫 → 草稿（詞字串格式同遊戲：繁|簡|拼音|注音，簡體空白＝同繁體）
   const tk = (c.tk || []).map(x => { const [tc, sc, py, zy] = String(x).split('|'); return { tc, sc: sc || tc, py: py || '', zy: zy || '', py0: py || '' }; });
   const im = /^[12][a-z0-9]{3,12}$/.test(String(c.im || '')) ? String(c.im) : '';
-  return { tk, es: c.es || '', en: c.en || '', im: im.slice(1), n: im ? +im.charAt(0) : 0 };
+  const bl = /^[a-z0-9]{1,12}(\.[a-z0-9]{1,12}){2}$/.test(String(c.bl || '')) ? String(c.bl) : '';
+  return { tk, es: c.es || '', en: c.en || '', im: im.slice(1), n: im ? +im.charAt(0) : 0, bl };
 }
-const baEncEntry = c => ({ tk: c.tk.map(t => [t.tc, t.sc === t.tc ? '' : t.sc, String(t.py).replace(/[|<>&"']/g, ''), String(t.zy).replace(/[|<>&"']/g, '')].join('|')), es: c.es, en: c.en || '' });
+const baEncEntry = c => { const o = { tk: c.tk.map(t => [t.tc, t.sc === t.tc ? '' : t.sc, String(t.py).replace(/[|<>&"']/g, ''), String(t.zy).replace(/[|<>&"']/g, '')].join('|')), es: c.es, en: c.en || '' }; if(c.bl) o.bl = c.bl; return o; };
 const baLineOf = c => c.tk.map(t => t.tc).join(' ') + '｜' + c.es + (c.en ? '｜' + c.en : '');
 const baSimp = () => I18N.getLang() === 'sc';
 const BA_MIXES = ['orig', 'even', 'A', 'L', 'P'];
@@ -794,6 +795,62 @@ function babCfgHtml(dr){
   return '<div class="field"><label>' + esc(T('baCfgN')) + lock + '</label><div class="row">' + row('n', [10, 20, 30], v => v + ' ' + T('baCfgUnit')) + '</div></div>' +
     '<div class="field"><label>' + esc(T('baCfgMix')) + lock + '</label><div class="row">' + row('mix', BA_MIXES, v => T({ orig: 'baMixOrig', even: 'baMixEven', A: 'baMixA', L: 'baMixL', P: 'baMixP' }[v])) + '</div></div>' +
     '<p class="hint">' + esc(T('baCfgHint')) + '</p>';
+}
+// ---- 把：積木組句（人物＋物品＋地點，圖由遊戲現場畫；只存「人物.物品.地點」配方）----
+function baBlocks(){
+  const st = S.babBlk;
+  if(st && st.d) return st.d;
+  if(!st){
+    S.babBlk = { loading: true };
+    DATA.loadBlocks('ba').then(d => { S.babBlk = { d }; if(S.babEdit) render(); })
+      .catch(e => { console.warn('blocks', e); S.babBlk = { fail: true }; if(S.babEdit) render(); });
+  }
+  return null;
+}
+function blkSel(E, d){
+  const b = E.blk || (E.blk = { who: 'me', ob: d.ob[0].k, pl: '' });
+  const ob = d.ob.find(x => x.k === b.ob) || d.ob[0]; b.ob = ob.k;
+  if(!ob.to[b.pl]) b.pl = d.pl.map(x => x.k).find(k => ob.to[k]) || '';
+  if(!d.who.some(w => w.k === b.who)) b.who = 'me';
+  return b;
+}
+// 組出一句：{ tk（字串陣列）, es, en, bl }
+function blkCompose(d, b){
+  const who = d.who.find(x => x.k === b.who), ob = d.ob.find(x => x.k === b.ob), pl = d.pl.find(x => x.k === b.pl);
+  if(!who || !ob || !pl || !ob.to[pl.k]) return null;
+  const vk = ob.to[pl.k], vb = d.vb[vk], pp = pl.v ? pl.v[vk === 'stick' ? 'stick' : 'hang'] : pl;
+  if(!vb || !pp) return null;
+  const first = who.k === 'me';
+  const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+  const es = cap([first ? '' : who.es, first ? vb.es1 : vb.es, ob.es, pp.es].filter(Boolean).join(' ')) + '.';
+  const en = who.en + ' ' + vb.en + ' ' + ob.en + ' ' + pp.en + '.';
+  return { tk: [who.tk, d.ba, ob.tk, vb.tk, pp.tk], es, en, bl: [who.k, ob.k, pl.k].join('.') };
+}
+function blkEntry(r){   // 組好的一句 → 句庫裡的一筆（跟「自己寫句子」同格式）
+  return { tk: r.tk.map(x => { const [tc, sc, py, zy] = x.split('|'); return { tc, sc: sc || tc, py: py || '', zy: zy || '', py0: py || '' }; }), es: r.es, en: r.en, im: '', n: 0, bl: r.bl };
+}
+function babBlkHtml(E){
+  const d = baBlocks();
+  if(!d){
+    const st = S.babBlk || {};
+    return st.fail ? '<div class="err">' + esc(T('baBlkFail')) + '</div><div class="row"><button class="pill sm" data-act="babblkretry">' + esc(T('retry')) + '</button></div>' : '<p class="hint">' + esc(T('baLoadingSent')) + '</p>';
+  }
+  const b = blkSel(E, d), dr = E.dr, lock = S.a.plan.active ? '' : ' 🔒', sc = baSimp();
+  const zh = tk => { const a = String(tk).split('|'); return sc ? (a[1] || a[0]) : a[0]; };
+  const lab = (tk, es) => zh(tk) + ' · ' + es;
+  const ob = d.ob.find(x => x.k === b.ob);
+  const opt = (v, cur, text) => '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + esc(text) + '</option>';
+  const r = blkCompose(d, b);
+  const mine = dr.custom.map((c, i) => ({ c, i })).filter(x => x.c.bl);
+  let h = '<p class="hint">' + esc(T('baBlkHint')) + '</p>' +
+    '<div class="field"><label>' + esc(T('baBlkWho')) + '</label><select data-sel="babblk" data-f="who">' + d.who.map(w => opt(w.k, b.who, zh(w.tk) + (w.k === 'tchm' ? ' ♂' : w.k === 'tchf' ? ' ♀' : '') + ' · ' + (w.es || 'Yo'))).join('') + '</select></div>' +
+    '<div class="field"><label>' + esc(T('baBlkOb')) + '</label><select data-sel="babblk" data-f="ob">' + d.ob.map(o => opt(o.k, b.ob, lab(o.tk, o.es.replace(/^(el|la|los|las) /, '')))).join('') + '</select></div>' +
+    '<div class="field"><label>' + esc(T('baBlkPl')) + '</label><select data-sel="babblk" data-f="pl">' + d.pl.filter(p => ob.to[p.k]).map(p => { const pp = p.v ? p.v[ob.to[p.k] === 'stick' ? 'stick' : 'hang'] : p; return opt(p.k, b.pl, lab(pp.tk, pp.es)); }).join('') + '</select></div>';
+  if(r) h += '<div class="bcard"><div class="bsent"><b>' + esc(r.tk.map(zh).join('')) + '</b></div><div class="bes">' + esc(r.es) + '<br>' + esc(r.en) + '</div></div>';
+  h += '<div class="row"><button class="pill fill sm" data-act="babblkadd">＋ ' + esc(T('baBlkAdd')) + lock + '</button><button class="pill sm" data-act="babblkrand">🎲 ' + esc(T('baBlkRand')) + '</button></div>';
+  if(mine.length) h += '<p class="hint">' + esc(T('baBlkMine', { n: mine.length })) + '</p>' + mine.map(x =>
+    '<div class="brow on static"><span class="bt"><b>' + esc(x.c.tk.map(t => sc ? t.sc : t.tc).join('')) + '</b><small>' + esc(x.c.es) + '</small></span><span class="bl">🧱</span><button class="x" data-act="babcdel" data-k="' + x.i + '" aria-label="' + esc(T('del')) + '">✕</button></div>').join('');
+  return h;
 }
 function babWriteCardHtml(c, i){
   return '<div class="bcard"><div class="bch"><span class="mut">' + (i + 1) + '</span><button class="x" data-act="babcdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></div><div class="btoks">' +
@@ -843,11 +900,13 @@ function babPickListHtml(E, sent){
 function babEditorHtml(){
   const E = S.babEdit, dr = E.dr, tab = E.tab || 'set', g = E.g, max = baSentMax();
   let h = '<div class="gtabs etabs"><button class="pill sm" data-act="babcancel">' + esc(CORRE.tr('back')) + '</button>' +
-    [['set', 'baEdSet'], ['pick', 'baEdPick'], ['write', 'baEdWrite'], ['list', 'baEdList']].map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="bab" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
+    [['set', 'baEdSet'], ['pick', 'baEdPick'], ['write', 'baEdWrite']].concat(g === 'ba' ? [['blk', 'baEdBlk']] : [], [['list', 'baEdList']]).map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="bab" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
   const cnt = '<p class="hint babcount ' + (baTot(dr) < BA_MIN || baTot(dr) > max ? 'bad' : '') + '">' + esc(T('baCount', { n: baTot(dr), min: BA_MIN, max })) + '</p>';
   const sent = (tab === 'pick' || tab === 'list') ? baSentences(g) : null;
   if(tab === 'set'){
     h += '<div class="field"><label>' + esc(T('baNameLabel')) + '</label><input type="text" id="babName" maxlength="20" placeholder="' + esc(T('baNamePh')) + '" value="' + esc(dr.name) + '"></div>' + cnt + '<p class="hint">' + esc(T('baSetHint')) + '</p>' + babCfgHtml(dr);
+  }else if(tab === 'blk' && g === 'ba'){
+    h += cnt + babBlkHtml(E);
   }else if(tab === 'write'){
     h += cnt + '<p class="hint">' + esc(T('baWriteHint')) + '</p><div class="field"><textarea id="babText" rows="6" placeholder="' + esc(T('baWriteEx')) + '">' + esc(dr.text) + '</textarea></div>' +
       '<div class="row"><button class="pill sm" data-act="babgen">' + esc(T('baGen')) + '</button></div>' +
@@ -867,7 +926,7 @@ function babEditorHtml(){
   }else{
     const byId = S.babSent[g].byId;
     h += cnt + (!dr.ids.length && !dr.custom.length ? '<p class="hint">' + esc(T('baListEmpty')) + '</p>' : '') + dr.custom.map((c, i) =>
-      '<div class="brow on static"><span class="bt"><b>' + esc(c.tk.map(t => baSimp() ? t.sc : t.tc).join('')) + '</b><small>' + esc(c.es) + '</small></span><span class="bl">' + esc(T('baMine')) + '</span><button class="x" data-act="babcdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></div>').join('') +
+      '<div class="brow on static"><span class="bt"><b>' + esc(c.tk.map(t => baSimp() ? t.sc : t.tc).join('')) + '</b><small>' + esc(c.es) + '</small></span><span class="bl">' + esc(T(c.bl ? 'baBlkTag' : 'baMine')) + '</span><button class="x" data-act="babcdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></div>').join('') +
       (dr.ids.length ? dr.ids.map(id => { const x = byId.get(id); return x ?
       '<div class="brow on static"><span class="bt"><b>' + esc(baSentText(x)) + '</b><small>' + esc(baSentTr(x)) + '</small></span><span class="bl">' + esc(T('levelN', { n: x.lv })) + '</span><button class="x" data-act="babrm" data-k="' + id + '" aria-label="' + esc(T('del')) + '">✕</button></div>' : ''; }).join('') : '');
   }
@@ -1710,6 +1769,21 @@ const actions = {
     const E = S.babEdit, dr = E.dr, list = S.babSent[E.g].list, rm = new Set(list.filter(x => String(x.lv) === dr.lv).map(x => x.id));
     dr.ids = dr.ids.filter(id => !rm.has(id)); render();
   },
+  babblkretry(){ S.babBlk = null; baBlocks(); render(); },
+  babblkadd(){
+    if(!S.a.plan.active){ needSub(); return; }
+    const E = S.babEdit, d = baBlocks(); if(!E || !d) return;
+    const dr = E.dr, max = baSentMax(), r = blkCompose(d, blkSel(E, d)); if(!r) return;
+    if(dr.dirty){ S.babMsg = T('baDirty'); render(); return; }
+    if(dr.custom.some(c => c.bl === r.bl)){ S.babMsg = T('baBlkDup'); render(); return; }
+    if(baTot(dr) >= max){ S.babMsg = T('baErrMax', { max, n: baTot(dr) + 1 }); render(); return; }
+    dr.custom.push(blkEntry(r)); dr.text = dr.custom.map(baLineOf).join('\n'); S.babMsg = ''; render();
+  },
+  babblkrand(){
+    const E = S.babEdit, d = baBlocks(); if(!E || !d) return;
+    const pick = a => a[Math.floor(Math.random() * a.length)], b = blkSel(E, d);
+    b.who = pick(d.who).k; const ob = pick(d.ob); b.ob = ob.k; b.pl = pick(Object.keys(ob.to)); render();
+  },
   babcdel(el){ const dr = S.babEdit.dr; const gone = dr.custom.splice(+el.dataset.k, 1); if(gone[0] && gone[0].im) dr.imgDirty = true; dr.text = dr.custom.map(baLineOf).join('\n'); render(); },
   babgen(){ return run(async () => {
     const E = S.babEdit; if(!E) return;
@@ -1733,7 +1807,7 @@ const actions = {
     const prev = new Map(dr.custom.map(c => [c.tk.map(t => t.tc).join(' '), c]));
     dr.custom = parsed.map(p => {
       const old = prev.get(p.key);
-      if(old){ prev.delete(p.key); return { tk: old.tk, es: p.es, en: p.en, im: old.im, n: old.n }; }
+      if(old){ prev.delete(p.key); return { tk: old.tk, es: p.es, en: p.en, im: old.im, n: old.n, bl: old.bl }; }
       const m = CORRE.makeTokens(p.key), py = GTR.apply(m.trad, m.pinyin);
       return { tk: m.trad.map((tc, j) => ({ tc, sc: m.simp[j], py: py[j], zy: CORRE.ZY.conv(py[j]), py0: py[j] })), es: p.es, en: p.en };
     });
@@ -2037,6 +2111,7 @@ document.addEventListener('change', e => {
     } }
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
   if(s.dataset.sel === 'basrc') S.baSrc[S.g] = s.value;
+  if(s.dataset.sel === 'babblk' && S.babEdit && S.babEdit.blk){ S.babEdit.blk[s.dataset.f] = s.value; render(); return; }
   if(s.dataset.sel === 'colprac') S.colPrac = s.value;
   if(s.dataset.sel === 'bbkprac') S.bbkPrac = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
