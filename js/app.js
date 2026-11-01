@@ -33,7 +33,7 @@ const S = {
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
-  babEdit: null, babMsg: '', babBlk: null, baw: {}, babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
+  babEdit: null, babMsg: '', babBlk: {}, baw: {}, babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
   bankMsg: '', cws: null                                           // 跑吧句庫卡片的錯誤訊息、跑吧學習單選項
 };
 
@@ -755,7 +755,7 @@ const baTot = dr => dr.ids.length + dr.custom.length;
 function baParseEntry(c){   // 資料庫 → 草稿（詞字串格式同遊戲：繁|簡|拼音|注音，簡體空白＝同繁體）
   const tk = (c.tk || []).map(x => { const [tc, sc, py, zy] = String(x).split('|'); return { tc, sc: sc || tc, py: py || '', zy: zy || '', py0: py || '' }; });
   const im = /^[12][a-z0-9]{3,12}$/.test(String(c.im || '')) ? String(c.im) : '';
-  const bl = /^[a-z0-9]{1,12}(\.[a-z0-9]{1,12}){2}$/.test(String(c.bl || '')) ? String(c.bl) : '';
+  const bl = /^([a-z0-9]{1,12}(\.[a-z0-9]{1,12}){2}|[a-z0-9_]{1,24}\.[a-z0-9]{1,12})$/.test(String(c.bl || '')) ? String(c.bl) : '';
   return { tk, es: c.es || '', en: c.en || '', im: im.slice(1), n: im ? +im.charAt(0) : 0, bl };
 }
 const baEncEntry = c => { const o = { tk: c.tk.map(t => [t.tc, t.sc === t.tc ? '' : t.sc, String(t.py).replace(/[|<>&"']/g, ''), String(t.zy).replace(/[|<>&"']/g, '')].join('|')), es: c.es, en: c.en || '' }; if(c.bl) o.bl = c.bl; return o; };
@@ -797,17 +797,24 @@ function babCfgHtml(dr){
     '<p class="hint">' + esc(T('baCfgHint')) + '</p>';
 }
 // ---- 把：積木組句（人物＋物品＋地點，圖由遊戲現場畫；只存「人物.物品.地點」配方）----
-function baBlocks(){
-  const st = S.babBlk;
+function baBlocks(g){
+  const st = S.babBlk[g];
   if(st && st.d) return st.d;
   if(!st){
-    S.babBlk = { loading: true };
-    DATA.loadBlocks('ba').then(d => { S.babBlk = { d }; if(S.babEdit) render(); })
-      .catch(e => { console.warn('blocks', e); S.babBlk = { fail: true }; if(S.babEdit) render(); });
+    S.babBlk[g] = { loading: true };
+    DATA.loadBlocks(g).then(d => { S.babBlk[g] = { d }; if(S.babEdit) render(); })
+      .catch(e => { console.warn('blocks', e); S.babBlk[g] = { fail: true }; if(S.babEdit) render(); });
   }
   return null;
 }
 function blkSel(E, d){
+  if(E.g === 'bei'){   // 被：動作 → 物品（＝一個事件）＋（誰，可不指定）
+    const b = E.blk || (E.blk = { who: '', vb: d.ev[0].vb, ev: d.ev[0].k });
+    if(b.who && !d.who.some(w => w.k === b.who)) b.who = '';
+    if(!d.ev.some(e => e.vb === b.vb)) b.vb = d.ev[0].vb;
+    if(!d.ev.some(e => e.k === b.ev && e.vb === b.vb)) b.ev = d.ev.find(e => e.vb === b.vb).k;
+    return b;
+  }
   const b = E.blk || (E.blk = { who: 'me', ob: d.ob[0].k, pl: '' });
   const ob = d.ob.find(x => x.k === b.ob) || d.ob[0]; b.ob = ob.k;
   if(!ob.to[b.pl]) b.pl = d.pl.map(x => x.k).find(k => ob.to[k]) || '';
@@ -816,6 +823,12 @@ function blkSel(E, d){
 }
 // 組出一句：{ tk（字串陣列）, es, en, bl }
 function blkCompose(d, b){
+  if(d.g === 'bei'){   // 物品 被 (誰) 動作 了；沒指定誰時，圖用遊戲原本那句的人物
+    const ev = d.ev.find(e => e.k === b.ev), who = b.who ? d.who.find(x => x.k === b.who) : null;
+    if(!ev || (b.who && !who)) return null;
+    const tk = [ev.tk, d.bei].concat(who ? [who.tk] : [], [ev.vb, d.le]);
+    return { tk, es: ev.es + (who ? ' por ' + who.es : '') + '.', en: ev.en + (who ? ' by ' + who.en : '') + '.', bl: ev.k + '.' + (who ? who.k : ev.dw), key: tk.map(x => x.split('|')[0]).join('') };
+  }
   const who = d.who.find(x => x.k === b.who), ob = d.ob.find(x => x.k === b.ob), pl = d.pl.find(x => x.k === b.pl);
   if(!who || !ob || !pl || !ob.to[pl.k]) return null;
   const vk = ob.to[pl.k], vb = d.vb[vk], pp = pl.v ? pl.v[vk === 'stick' ? 'stick' : 'hang'] : pl;
@@ -830,22 +843,32 @@ function blkEntry(r){   // 組好的一句 → 句庫裡的一筆（跟「自己
   return { tk: r.tk.map(x => { const [tc, sc, py, zy] = x.split('|'); return { tc, sc: sc || tc, py: py || '', zy: zy || '', py0: py || '' }; }), es: r.es, en: r.en, im: '', n: 0, bl: r.bl };
 }
 function babBlkHtml(E){
-  const d = baBlocks();
+  const d = baBlocks(E.g);
   if(!d){
-    const st = S.babBlk || {};
+    const st = S.babBlk[E.g] || {};
     return st.fail ? '<div class="err">' + esc(T('baBlkFail')) + '</div><div class="row"><button class="pill sm" data-act="babblkretry">' + esc(T('retry')) + '</button></div>' : '<p class="hint">' + esc(T('baLoadingSent')) + '</p>';
   }
   const b = blkSel(E, d), dr = E.dr, lock = S.a.plan.active ? '' : ' 🔒', sc = baSimp();
   const zh = tk => { const a = String(tk).split('|'); return sc ? (a[1] || a[0]) : a[0]; };
   const lab = (tk, es) => zh(tk) + ' · ' + es;
-  const ob = d.ob.find(x => x.k === b.ob);
   const opt = (v, cur, text) => '<option value="' + v + '"' + (v === cur ? ' selected' : '') + '>' + esc(text) + '</option>';
   const r = blkCompose(d, b);
   const mine = dr.custom.map((c, i) => ({ c, i })).filter(x => x.c.bl);
-  let h = '<p class="hint">' + esc(T('baBlkHint')) + '</p>' +
-    '<div class="field"><label>' + esc(T('baBlkWho')) + '</label><select data-sel="babblk" data-f="who">' + d.who.map(w => opt(w.k, b.who, zh(w.tk) + (w.k === 'tchm' ? ' ♂' : w.k === 'tchf' ? ' ♀' : '') + ' · ' + (w.es || 'Yo'))).join('') + '</select></div>' +
+  const whoLab = w => zh(w.tk) + (w.k === 'tchm' ? ' ♂' : w.k === 'tchf' ? ' ♀' : '') + ' · ' + (w.es || 'Yo');
+  let h;
+  if(E.g === 'bei'){
+    const vbs = d.ev.map(e => e.vb).filter((v, i, a) => a.indexOf(v) === i);
+    h = '<p class="hint">' + esc(T('baBlkHintBei')) + '</p>' +
+      '<div class="field"><label>' + esc(T('baBlkVb')) + '</label><select data-sel="babblk" data-f="vb">' + vbs.map(v => opt(v, b.vb, zh(v))).join('') + '</select></div>' +
+      '<div class="field"><label>' + esc(T('baBlkOb')) + '</label><select data-sel="babblk" data-f="ev">' + d.ev.filter(e => e.vb === b.vb).map(e => opt(e.k, b.ev, lab(e.tk, e.es))).join('') + '</select></div>' +
+      '<div class="field"><label>' + esc(T('baBlkWho')) + '</label><select data-sel="babblk" data-f="who">' + opt('', b.who, T('baBlkNone')) + d.who.map(w => opt(w.k, b.who, whoLab(w))).join('') + '</select></div>';
+  }else{
+  const ob = d.ob.find(x => x.k === b.ob);
+  h = '<p class="hint">' + esc(T('baBlkHint')) + '</p>' +
+    '<div class="field"><label>' + esc(T('baBlkWho')) + '</label><select data-sel="babblk" data-f="who">' + d.who.map(w => opt(w.k, b.who, whoLab(w))).join('') + '</select></div>' +
     '<div class="field"><label>' + esc(T('baBlkOb')) + '</label><select data-sel="babblk" data-f="ob">' + d.ob.map(o => opt(o.k, b.ob, lab(o.tk, o.es.replace(/^(el|la|los|las) /, '')))).join('') + '</select></div>' +
     '<div class="field"><label>' + esc(T('baBlkPl')) + '</label><select data-sel="babblk" data-f="pl">' + d.pl.filter(p => ob.to[p.k]).map(p => { const pp = p.v ? p.v[ob.to[p.k] === 'stick' ? 'stick' : 'hang'] : p; return opt(p.k, b.pl, lab(pp.tk, pp.es)); }).join('') + '</select></div>';
+  }
   if(r) h += '<div class="bcard"><div class="bsent"><b>' + esc(r.tk.map(zh).join('')) + '</b></div><div class="bes">' + esc(r.es) + '<br>' + esc(r.en) + '</div></div>';
   h += '<div class="row"><button class="pill fill sm" data-act="babblkadd">＋ ' + esc(T('baBlkAdd')) + lock + '</button><button class="pill sm" data-act="babblkrand">🎲 ' + esc(T('baBlkRand')) + '</button></div>';
   if(mine.length) h += '<p class="hint">' + esc(T('baBlkMine', { n: mine.length })) + '</p>' + mine.map(x =>
@@ -900,12 +923,12 @@ function babPickListHtml(E, sent){
 function babEditorHtml(){
   const E = S.babEdit, dr = E.dr, tab = E.tab || 'set', g = E.g, max = baSentMax();
   let h = '<div class="gtabs etabs"><button class="pill sm" data-act="babcancel">' + esc(CORRE.tr('back')) + '</button>' +
-    [['set', 'baEdSet'], ['pick', 'baEdPick'], ['write', 'baEdWrite']].concat(g === 'ba' ? [['blk', 'baEdBlk']] : [], [['list', 'baEdList']]).map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="bab" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
+    [['set', 'baEdSet'], ['pick', 'baEdPick'], ['write', 'baEdWrite']].concat([['blk', 'baEdBlk']], [['list', 'baEdList']]).map(x => '<button class="pill sm ' + (tab === x[0] ? 'on' : '') + '" data-act="edtab" data-e="bab" data-k="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div><div class="editor">';
   const cnt = '<p class="hint babcount ' + (baTot(dr) < BA_MIN || baTot(dr) > max ? 'bad' : '') + '">' + esc(T('baCount', { n: baTot(dr), min: BA_MIN, max })) + '</p>';
   const sent = (tab === 'pick' || tab === 'list') ? baSentences(g) : null;
   if(tab === 'set'){
     h += '<div class="field"><label>' + esc(T('baNameLabel')) + '</label><input type="text" id="babName" maxlength="20" placeholder="' + esc(T('baNamePh')) + '" value="' + esc(dr.name) + '"></div>' + cnt + '<p class="hint">' + esc(T('baSetHint')) + '</p>' + babCfgHtml(dr);
-  }else if(tab === 'blk' && g === 'ba'){
+  }else if(tab === 'blk'){
     h += cnt + babBlkHtml(E);
   }else if(tab === 'write'){
     h += cnt + '<p class="hint">' + esc(T('baWriteHint')) + '</p><div class="field"><textarea id="babText" rows="6" placeholder="' + esc(T('baWriteEx')) + '">' + esc(dr.text) + '</textarea></div>' +
@@ -1769,19 +1792,20 @@ const actions = {
     const E = S.babEdit, dr = E.dr, list = S.babSent[E.g].list, rm = new Set(list.filter(x => String(x.lv) === dr.lv).map(x => x.id));
     dr.ids = dr.ids.filter(id => !rm.has(id)); render();
   },
-  babblkretry(){ S.babBlk = null; baBlocks(); render(); },
+  babblkretry(){ const g = S.babEdit && S.babEdit.g; if(!g) return; delete S.babBlk[g]; baBlocks(g); render(); },
   babblkadd(){
     if(!S.a.plan.active){ needSub(); return; }
-    const E = S.babEdit, d = baBlocks(); if(!E || !d) return;
+    const E = S.babEdit, d = E && baBlocks(E.g); if(!E || !d) return;
     const dr = E.dr, max = baSentMax(), r = blkCompose(d, blkSel(E, d)); if(!r) return;
     if(dr.dirty){ S.babMsg = T('baDirty'); render(); return; }
-    if(dr.custom.some(c => c.bl === r.bl)){ S.babMsg = T('baBlkDup'); render(); return; }
+    if(dr.custom.some(c => c.bl && (r.key ? c.tk.map(t => t.tc).join('') === r.key : c.bl === r.bl))){ S.babMsg = T('baBlkDup'); render(); return; }
     if(baTot(dr) >= max){ S.babMsg = T('baErrMax', { max, n: baTot(dr) + 1 }); render(); return; }
     dr.custom.push(blkEntry(r)); dr.text = dr.custom.map(baLineOf).join('\n'); S.babMsg = ''; render();
   },
   babblkrand(){
-    const E = S.babEdit, d = baBlocks(); if(!E || !d) return;
+    const E = S.babEdit, d = E && baBlocks(E.g); if(!E || !d) return;
     const pick = a => a[Math.floor(Math.random() * a.length)], b = blkSel(E, d);
+    if(E.g === 'bei'){ const ev = pick(d.ev); b.vb = ev.vb; b.ev = ev.k; b.who = pick([{ k: '' }].concat(d.who)).k; render(); return; }
     b.who = pick(d.who).k; const ob = pick(d.ob); b.ob = ob.k; b.pl = pick(Object.keys(ob.to)); render();
   },
   babcdel(el){ const dr = S.babEdit.dr; const gone = dr.custom.splice(+el.dataset.k, 1); if(gone[0] && gone[0].im) dr.imgDirty = true; dr.text = dr.custom.map(baLineOf).join('\n'); render(); },

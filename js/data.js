@@ -391,14 +391,19 @@ function loadSentenceTokens(game){
     .catch(e => { delete _sentTk[game]; throw e; });
   return _sentTk[game];
 }
-// 積木組句的人物／物品／地點（把）：blocks.json
-let _blk = null;
+// 積木組句的選項：blocks.json（把＝人物／物品／地點；被＝事件／人物）
+const _blk = {};
 function loadBlocks(game){
-  if(!_blk) _blk = fetch(GAME_URL[game] + 'blocks.json', { cache: 'no-cache' })
+  if(!_blk[game]) _blk[game] = fetch(GAME_URL[game] + 'blocks.json', { cache: 'no-cache' })
     .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .then(j => { if(!j || !Array.isArray(j.ob) || !Array.isArray(j.pl) || !Array.isArray(j.who) || !j.vb || !j.ba) throw new Error('bad json'); return j; })
-    .catch(e => { _blk = null; throw e; });
-  return _blk;
+    .then(j => {
+      const okBa = j && Array.isArray(j.ob) && Array.isArray(j.pl) && Array.isArray(j.who) && j.vb && j.ba;
+      const okBei = j && j.g === 'bei' && Array.isArray(j.ev) && j.ev.length && Array.isArray(j.who) && j.bei && j.le;
+      if(!(game === 'bei' ? okBei : okBa)) throw new Error('bad json');
+      return j;
+    })
+    .catch(e => { delete _blk[game]; throw e; });
+  return _blk[game];
 }
 function linkBaBankPractice(game, sid){ return GAME_URL[game] + '?bank=' + sid + '&preview=1'; }
 function linkCorrePractice(sid){ return GAME_URL.corre + '?bank=' + sid; }
