@@ -813,6 +813,7 @@ function blkSel(E, d){
     if(b.who && !d.who.some(w => w.k === b.who)) b.who = '';
     if(!d.ev.some(e => e.vb === b.vb)) b.vb = d.ev[0].vb;
     if(!d.ev.some(e => e.k === b.ev && e.vb === b.vb)) b.ev = d.ev.find(e => e.vb === b.vb).k;
+    if(d.ev.find(e => e.k === b.ev).nw) b.who = '';   // 這個事件的說法不能接「被誰」（例：弄丟）
     return b;
   }
   const b = E.blk || (E.blk = { who: 'me', ob: d.ob[0].k, pl: '' });
@@ -861,7 +862,7 @@ function babBlkHtml(E){
     h = '<p class="hint">' + esc(T('baBlkHintBei')) + '</p>' +
       '<div class="field"><label>' + esc(T('baBlkVb')) + '</label><select data-sel="babblk" data-f="vb">' + vbs.map(v => opt(v, b.vb, zh(v))).join('') + '</select></div>' +
       '<div class="field"><label>' + esc(T('baBlkOb')) + '</label><select data-sel="babblk" data-f="ev">' + d.ev.filter(e => e.vb === b.vb).map(e => opt(e.k, b.ev, lab(e.tk, e.es))).join('') + '</select></div>' +
-      '<div class="field"><label>' + esc(T('baBlkWho')) + '</label><select data-sel="babblk" data-f="who">' + opt('', b.who, T('baBlkNone')) + d.who.map(w => opt(w.k, b.who, whoLab(w))).join('') + '</select></div>';
+      '<div class="field"><label>' + esc(T('baBlkWho')) + '</label><select data-sel="babblk" data-f="who"' + (d.ev.find(e => e.k === b.ev).nw ? ' disabled' : '') + '>' + opt('', b.who, T('baBlkNone')) + d.who.map(w => opt(w.k, b.who, whoLab(w))).join('') + '</select></div>';
   }else{
   const ob = d.ob.find(x => x.k === b.ob);
   h = '<p class="hint">' + esc(T('baBlkHint')) + '</p>' +
@@ -1805,7 +1806,7 @@ const actions = {
   babblkrand(){
     const E = S.babEdit, d = E && baBlocks(E.g); if(!E || !d) return;
     const pick = a => a[Math.floor(Math.random() * a.length)], b = blkSel(E, d);
-    if(E.g === 'bei'){ const ev = pick(d.ev); b.vb = ev.vb; b.ev = ev.k; b.who = pick([{ k: '' }].concat(d.who)).k; render(); return; }
+    if(E.g === 'bei'){ const ev = pick(d.ev); b.vb = ev.vb; b.ev = ev.k; b.who = ev.nw ? '' : pick([{ k: '' }].concat(d.who)).k; render(); return; }
     b.who = pick(d.who).k; const ob = pick(d.ob); b.ob = ob.k; b.pl = pick(Object.keys(ob.to)); render();
   },
   babcdel(el){ const dr = S.babEdit.dr; const gone = dr.custom.splice(+el.dataset.k, 1); if(gone[0] && gone[0].im) dr.imgDirty = true; dr.text = dr.custom.map(baLineOf).join('\n'); render(); },

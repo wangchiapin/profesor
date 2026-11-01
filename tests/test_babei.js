@@ -535,6 +535,10 @@ server.listen(0, 'localhost', async () => {
     ok((await page.$$eval('select[data-f=ev] option', o => o.length)) >= 1, '換動作後，物品選單跟著換');
     await page.selectOption('select[data-f=vb]', { label: '賣掉' }); t = await text(page, '.bcard');
     ok(t.includes('被') && t.includes('賣掉'), '動作換成賣掉', t);
+    await page.selectOption('select[data-f=vb]', { label: '弄丟' });
+    t = await text(page, '.bcard'); ok(t.includes('錢包被弄丟了') && t.includes('Se perdió la cartera.') && t.includes('The wallet got lost.') && !t.includes('por mí'), '弄丟：西文用 Se perdió…，不接「por 誰」', t);
+    ok(await page.$eval('select[data-f=who]', e => e.disabled), '弄丟：人物選單鎖住（不能指定誰）');
+    await page.selectOption('select[data-f=vb]', { label: '賣掉' });
     await page.selectOption('select[data-f=ev]', 'd_phone_sell'); await page.selectOption('select[data-f=who]', '');
     t = await text(page, '.bcard'); ok(t.includes('舊手機被賣掉了') && t.includes('El celular viejo fue vendido.'), '舊手機被賣掉了（處理掉類）', t);
     await page.click('[data-act=babblkadd]'); await page.waitForSelector('.brow.static');
