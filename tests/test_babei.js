@@ -22,7 +22,7 @@ const T = 'subscription-48d3c', CID = 'class0000aaaa';
 const TEACH = { uid: 'u1', email: 'teacher@example.com', displayName: 'T', isAnonymous: false };
 const hx = n => ('0000000000000000' + n.toString(16)).slice(-16);
 const day = 86400000;
-function seed({ pro = true, plays = false } = {}){
+function seed({ pro = true, plays = false, bank = false } = {}){
   const s = { [T]: {
     classes: { [CID]: { owner: 'u1', slot: 0, name: '週三班', showBoard: false, updatedAt: 1 } },
     teacher_classes: { u1: { slots: { '0': CID }, updatedAt: 1 } },
@@ -32,6 +32,10 @@ function seed({ pro = true, plays = false } = {}){
       [CID + '_bei_lv1_' + hx(3)]: { cid: CID, owner: 'u1', game: 'bei', k: 'lv1', h: hx(3), nick: 'Cami', best: 80, plays: 2, lastAt: Date.now() - day, extra: { ok: 8, q: 10 } }
     },
     class_plays: {}, site_members: {}, site_plans: {} } };
+  if(bank){   // 一個把的句庫：10 句遊戲句子＋1 句自己寫的
+    s[T].teacher_babanks = { u1: { ba: { '0': 'bankSID00001' } } };
+    s[T].shared_babanks = { bankSID00001: { owner: 'u1', game: 'ba', slot: 0, name: '第三週複習', ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], custom: [{ tk: ['我||wǒ|ㄨㄛˇ', '把||bǎ|ㄅㄚˇ', '花||huā|ㄏㄨㄚ', '放在||fàng zài|ㄈㄤˋ ㄗㄞˋ', '桌上||zhuō shàng|ㄓㄨㄛ ㄕㄤˋ'], es: 'Puse la flor sobre la mesa.', en: '' }], updatedAt: 1 } };
+  }
   if(pro) s[T].site_plans.u1 = { plan: 'year', expiresAt: Date.now() + 30 * day };
   if(plays){   // 把的逐題紀錄：Ana 玩 2 輪、Beto 1 輪；被：Cami 1 輪
     const q = (s, t, f, w) => ({ s, t, f, ok: 1, w });
@@ -64,8 +68,8 @@ async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc' } = {}){
     if(u.includes('cdn.jsdelivr.net/npm/opencc-js')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.opencc });
     if(u.includes('cdn.jsdelivr.net/npm/pinyin-pro')) return r.fulfill({ status: 200, contentType: 'application/javascript', body: LIBS.pinyin });
     if(u === 'https://wangchiapin.github.io/corre/manager/gt-readings.json'){ if(global.GT_FAIL) return r.fulfill({ status: 500, body: '' }); const f = path.join(CORRE_DIR, 'manager', 'gt-readings.json'); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' }); }
-    { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/practica-de-(ba|bei)-oracion\/sentences\.json/);
-      if(m){ if(global.SENT_FAIL) return r.fulfill({ status: 500, body: '' }); const f = path.join(ROOT, '..', 'practica-de-' + m[1] + '-oracion', 'sentences.json'); return r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }); } }
+    { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/practica-de-(ba|bei)-oracion\/(sentences(?:-tk)?\.json)/);
+      if(m){ if(global.SENT_FAIL) return r.fulfill({ status: 500, body: '' }); const f = path.join(ROOT, '..', 'practica-de-' + m[1] + '-oracion', m[2]); return r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }); } }
     { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/corre\/bank\/([A-Za-z0-9]+\.json)$/);
       if(m){ const f = path.join(CORRE_DIR, 'bank', m[1]); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' }); } }
     return r.abort();
@@ -111,7 +115,7 @@ server.listen(0, 'localhost', async () => {
       const cl = await page.$eval('#linksCard .url', e => e.textContent);
       ok(cl === prac + '?class=' + CID, g + ' 班級連結', cl);
       await go(page, '#/game/' + g + '/content'); ok((await text(page)).includes('自訂句庫') && !(await text(page)).includes('即將開放'), g + ' 句庫頁：自訂句庫（不再是即將開放）');
-      await go(page, '#/game/' + g + '/sheet'); ok((await text(page)).includes('即將開放'), g + ' 學習單頁：即將開放');
+      await go(page, '#/game/' + g + '/sheet'); ok(!(await text(page)).includes('即將開放') && (await text(page)).includes('學習單') || (await page.$('#bawCard')) !== null, g + ' 學習單頁：不再是即將開放');
       await go(page, '#/game/' + g + '/help'); ok((await text(page)).length > 20, g + ' 說明頁能開');
     }
     await go(page, '#/game/ba/scores'); await page.waitForSelector('#bookCard table');
@@ -407,6 +411,58 @@ server.listen(0, 'localhost', async () => {
   { const { page, errors, ctx } = await open(browser, { q: '?dev=ba' });
     await go(page, '#/game/ba/scores'); await page.waitForSelector('#bookCard table');
     ok((await text(page, '#bookCard')).includes('還沒有逐題紀錄'), '沒有逐題紀錄時顯示說明（只有訂閱老師的班級連結才記）');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[K] 把／被學習單（PDF，訂閱限定）');
+  for(const g of ['ba', 'bei']){
+    const { page, errors, ctx } = await open(browser, { seedOpt: { bank: g === 'ba' }, q: '?dev=ba,bei', hash: '#/game/' + g + '/sheet' });
+    await page.waitForSelector('#bawCard');
+    ok(!!(await page.$('select[data-sel=bawsrc]')) && !(await text(page, '#bawCard')).includes('🔒'), g + '：訂閱老師看到來源選單、沒有鎖');
+    ok((await page.$$eval('select[data-sel=bawsrc] option', o => o.length)) === (g === 'ba' ? 1 + 1 + 3 + 1 : 1 + 1 + 4), g + '：來源選項（請選擇＋全部＋各關' + (g === 'ba' ? '＋我的句庫' : '') + '）');
+    ok(await page.$eval('[data-act=bawprev]', b => b.disabled), g + '：還沒選來源，預覽鈕不能按');
+    await page.selectOption('select[data-sel=bawsrc]', g === 'ba' ? 'B:bankSID00001' : 'L:1'); await page.waitForSelector('[data-act=bawmode]');
+    const cnt = await text(page, '#bawCard');
+    ok(g === 'ba' ? cnt.includes('11') : true, g + '：選了來源，顯示句數', cnt.slice(0, 120));
+    ok(await page.$eval('[data-act=bawtype][data-k=read]', e => e.classList.contains('on')) && await page.$eval('[data-act=bawtype][data-k=order]', e => e.classList.contains('on')) && !(await page.$eval('[data-act=bawtype][data-k=fill]', e => e.classList.contains('on'))), g + '：預設勾「句子總表」「排列句子」');
+    ok(!(await page.$('[data-act=bawtype][data-k=match]')) && !(await page.$('[data-act=bawtype][data-k=dict]')), g + '：沒有連連看、聽寫');
+    await page.click('[data-act=bawtype][data-k=fill]'); await page.waitForSelector('[data-act=bawfm]');
+    const ch = g === 'ba' ? '把' : '被';
+    ok((await text(page, '#bawCard')).includes('挖掉「' + ch + '」') && await page.$eval('[data-act=bawfm][data-k=ch]', e => e.classList.contains('on')), g + '：填空預設挖掉「' + ch + '」');
+    await page.click('[data-act=bawfm][data-k=pick]'); await page.waitForSelector('[data-act=bawblank]');
+    ok((await page.$$('[data-act=bawblank]')).length >= 10, g + '：自己挑挖空詞');
+    await page.click('[data-act=bawfm][data-k=ch]');
+    await page.click('[data-act=bawtype][data-k=trans]');
+    await page.click('[data-act=bawprev]'); await page.waitForSelector('.cws-prev img', { timeout: 60000 });
+    const pages = (await page.$$('.cws-prev img')).length;
+    ok(pages >= 2, g + '：預覽出現學習單頁面（含答案頁）', pages);
+    if(process.env.SHOTDIR){ const us = await page.$$eval('.cws-prev img', im => im.map(i => i.src)); us.forEach((u, i) => fs.writeFileSync(path.join(process.env.SHOTDIR, 'ws-' + g + '-' + (i + 1) + '.jpg'), Buffer.from(u.split(',')[1], 'base64'))); }
+    // 圖片不是空白：解碼後有深色像素
+    const dark = await page.$eval('.cws-prev img', img => new Promise(res => { const i = new Image(); i.onload = () => { const c = document.createElement('canvas'); c.width = 300; c.height = 420; const x = c.getContext('2d'); x.drawImage(i, 0, 0, 300, 420); const d = x.getImageData(0, 0, 300, 420).data; let n = 0; for(let k = 0; k < d.length; k += 4) if(d[k] < 100) n++; res(n); }; i.src = img.src; }));
+    ok(dark > 300, g + '：第一頁有內容（不是空白）', dark);
+    await page.evaluate(() => { const o = HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click = function(){ window.__dlName = this.download; return o.call(this); }; });
+    const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 60000 }), page.click('[data-act=bawmake]')]);
+    const pdf = fs.readFileSync(await dl.path());
+    ok(pdf.slice(0, 5).toString() === '%PDF-' && pdf.length > 20000, g + '：輸出 PDF', pdf.length);
+    const dn = await page.evaluate(() => window.__dlName);
+    ok(dn === (g === 'ba' ? 'worksheet-第三週複習.pdf' : 'worksheet-被字句練習_·_第_1_關.pdf'), g + '：檔名 ' + dn);
+    ok(await noOverflow(page), g + '：沒有橫向捲動'); ok(errors.length === 0, g + '：沒有頁面錯誤', errors); await ctx.close();
+  }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, q: '?dev=ba', hash: '#/game/ba/sheet' });
+    await page.waitForSelector('#bawCard');
+    ok((await text(page, '#bawCard')).includes('🔒') && !(await page.$('select[data-sel=bawsrc]')), '免費老師：學習單鎖住、看不到來源選單');
+    await page.click('[data-act=needsub]'); await page.waitForTimeout(200);
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { bank: true }, q: '?dev=ba', hash: '#/game/ba/sheet' });
+    await page.waitForSelector('#bawCard'); await page.selectOption('select[data-sel=bawsrc]', 'L:0'); await page.waitForSelector('[data-act=bawmode]');
+    ok((await text(page, '#bawCard')).includes('449'), '內建句子（全部）：449 句');
+    ok(!(await page.$('[data-act=bawmode][data-k=all]')) && (await page.$$eval('[data-act=bawmode]', b => b.map(x => x.dataset.k))).join() === 'n10,n20,n30,pick', '句子太多：只有 10／20／30 句、自己挑');
+    await page.click('[data-act=bawmode][data-k=pick]'); await page.waitForSelector('[data-act=bawpick]');
+    for(let i = 0; i < 3; i++) await page.click('[data-act=bawpick][data-i="' + i + '"]');
+    ok((await text(page, '#bawCard')).includes('3'), '自己挑：挑了 3 句');
+    await page.click('[data-act=bawmode][data-k=n20]'); await page.click('[data-act=bawredraw]');
+    ok(await page.$eval('[data-act=bawmode][data-k=n20]', e => e.classList.contains('on')), '隨機 20 句、可重抽');
+    await page.click('[data-act=bawscript][data-k=simp]'); await page.click('[data-act=bawmode][data-k=pick]');
+    ok((await text(page, '#bawCard')).includes('书'), '簡體：挑句清單顯示簡體字');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[H] 句庫設定：題數與題型比例（訂閱老師可選、免費版鎖住）');

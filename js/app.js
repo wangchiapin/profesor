@@ -33,7 +33,7 @@ const S = {
   bbkEdit: null, bbkMsg: '',                                       // bbkEdit = { i（-1 = 新增）, dr 草稿 }
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
-  babEdit: null, babMsg: '', babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
+  babEdit: null, babMsg: '', baw: {}, babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
   bankMsg: '', cws: null                                           // 跑吧句庫卡片的錯誤訊息、跑吧學習單選項
 };
 
@@ -897,7 +897,7 @@ function gameHtml(){
   if(S.gt === 'ranges') return h + (g === 'dragon' ? dragonRangesHtml() : '');
   if(S.gt === 'links') return h + gameLinksHtml(g);
   if(S.gt === 'scores') return h + gameScoresHtml();
-  if(S.gt === 'sheet') return h + (isBaBei(g) ? baSoonHtml('baSheetSoon') : g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
+  if(S.gt === 'sheet') return h + (isBaBei(g) ? bawFormHtml() : g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
   return h + helpHtml(g);
 }
 // ---- 遊戲設定說明（#/help）：內容在 js/help.js（靜態文字，四種語言）----
@@ -1076,6 +1076,121 @@ function cwsFormHtml(){
     (pool && !anyType ? '<p class="hint">' + esc(T('cwsNoType')) + '</p>' : '') +
     (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
   if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('cwsPrevTitle', { n: W.prev.length })) + '</b><button class="pill xs" data-act="cwsprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' +
+    W.prev.map(u => '<img src="' + u + '" alt="">').join('') + '</div>';
+  return h + '</div>';
+}
+// ---- 列印：把／被學習單（重用跑吧的排版引擎 CORRE.makeWorksheet；句子拼音來自遊戲的 sentences-tk.json）----
+const BAW_MAX = 50;
+function bawDefaults(){
+  return { src: '', pool: null, loading: false, name: '', script: I18N.getLang() === 'sc' ? 'simp' : 'trad',
+    mode: 'n', n: 10, picked: [], blanks: {}, fillMode: 'ch',
+    types: { read: true, order: true, fill: false, trans: false },
+    lang: I18N.getLang() === 'en' ? 'en' : 'es', pinyin: true, zhuyin: false, size: 14, busy: false, msg: '', ok: false, prev: null };
+}
+const bawW = () => (S.baw[S.g] || (S.baw[S.g] = bawDefaults()));
+const bawTouch = () => { const W = bawW(); W.msg = ''; W.prev = null; };
+function bawParseTk(arr){
+  const o = { trad: [], simp: [], pinyin: [] };
+  (arr || []).forEach(x => { const [tc, sc, py] = String(x).split('|'); o.trad.push(tc); o.simp.push(sc || tc); o.pinyin.push(py || ''); });
+  return o;
+}
+function bawChosen(){
+  const W = bawW(), pool = W.pool || [];
+  if(W.mode === 'all') return pool.map((s, i) => i).slice(0, BAW_MAX);
+  if(W.mode === 'n'){
+    const n = Math.min(W.n, pool.length);
+    if(W.picked.length !== n || W.picked.some(i => i >= pool.length)) W.picked = cwsDraw(pool.length, n);
+  }
+  return W.picked.slice().sort((a, b) => a - b).slice(0, BAW_MAX);
+}
+function bawData(){
+  const W = bawW(), ch = BA_CH(S.g);
+  return { name: W.name, script: W.script, sentences: bawChosen().map(i => {
+    const s = W.pool[i];
+    let blank = null;
+    if(W.fillMode === 'pick') blank = W.blanks[i];
+    else if(W.fillMode === 'ch'){ blank = []; s.trad.forEach((w, k) => { if(w === ch) blank.push(k); }); }
+    return Object.assign({}, s, { blank: blank && blank.length ? blank : null });
+  }) };
+}
+async function bawLoadPool(){
+  const g = S.g, W = bawW(), key = W.src;
+  W.pool = null; W.picked = []; W.blanks = {}; W.name = ''; bawTouch();
+  if(!W.src){ render(); return; }
+  W.loading = true; render();
+  try{
+    const [list, tks] = await Promise.all([DATA.loadSentences(g), DATA.loadSentenceTokens(g)]);
+    if(W.src !== key) return;
+    const byId = new Map(list.map(x => [x.id, x]));
+    const fromGame = x => Object.assign(bawParseTk(tks[x.id]), { es: x.es, en: x.en });
+    let pool;
+    if(W.src.slice(0, 2) === 'B:'){
+      const b = S.a.babanks[g].find(x => x.sid === W.src.slice(2));
+      pool = b ? (b.ids || []).map(id => byId.get(id)).filter(x => x && tks[x.id]).map(fromGame).concat((b.custom || []).map(c => Object.assign(bawParseTk(c.tk), { es: c.es || '', en: c.en || '' }))) : [];
+      W.name = b ? (b.name || '') : '';
+    }else{
+      const lv = +W.src.slice(2);
+      pool = list.filter(x => (!lv || x.lv === lv) && tks[x.id]).map(fromGame);
+      W.name = T('bawTitle', { c: BA_CH(g) }) + (lv ? ' · ' + T('levelN', { n: lv }) : '');
+    }
+    W.pool = pool.filter(s => s.trad.length);
+    W.mode = W.pool.length <= 10 ? 'all' : 'n';
+  }catch(e){ console.error(e); W.msg = T('bawFail'); W.ok = false; }
+  W.loading = false; render();
+}
+function bawFormHtml(){
+  const A = S.a, g = S.g, W = bawW();
+  let h = '<div class="card" id="bawCard">';
+  if(!A.plan.active) return h + '<div class="notice">🔒 ' + esc(T('wsLocked')) + ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a></div><div class="row"><button class="pill fill" data-act="needsub">📄 ' + esc(CORRE.tr('pdfMake')) + '</button></div></div>';
+  const pills = (act, cur, list) => list.map(x => '<button class="pill sm ' + (String(cur) === String(x[0]) ? 'on' : '') + '" data-act="' + act + '" data-k="' + x[0] + '">' + esc(x[1]) + '</button>').join('');
+  const chipB = (on, label, act, k) => '<button class="pill sm chip ' + (on ? 'on' : '') + '" data-act="' + act + '" data-k="' + k + '">' + (on ? '✓ ' : '') + esc(label) + '</button>';
+  const pool = W.pool, chosen = pool ? bawChosen() : [];
+  const anyType = Object.keys(W.types).some(k => W.types[k]);
+  const lvs = []; for(let i = 1; i <= baLvCount(g); i++) lvs.push(i);
+  h += '<div class="field"><label>' + esc(T('sourceLabel')) + '</label><select data-sel="bawsrc"><option value="">' + esc(T('bawSrcPick')) + '</option>' +
+    '<option value="L:0"' + (W.src === 'L:0' ? ' selected' : '') + '>' + esc(T('bawSrcAll')) + '</option>' +
+    lvs.map(i => '<option value="L:' + i + '"' + (W.src === 'L:' + i ? ' selected' : '') + '>' + esc(T('bawSrcLv', { n: i })) + '</option>').join('') +
+    A.babanks[g].map(b => '<option value="B:' + b.sid + '"' + (W.src === 'B:' + b.sid ? ' selected' : '') + '>' + esc(T('bawSrcBank', { name: b.name || ('#' + (b.slot + 1)) })) + '</option>').join('') + '</select></div>';
+  if(W.loading) h += '<p class="hint">' + esc(T('cwsLoading')) + '</p>';
+  if(pool){
+    h += '<p class="hint">' + esc(T('cwsCount', { n: pool.length })) + '</p>';
+    h += '<div class="field"><label>' + esc(CORRE.tr('script')) + '</label><div class="row" style="margin-top:0">' + pills('bawscript', W.script, [['trad', CORRE.tr('trad')], ['simp', CORRE.tr('simp')]]) + '</div></div>';
+    const modes = [].concat(pool.length <= BAW_MAX ? [['all', T('cwsAll')]] : [], [10, 20, 30].filter(n => n < pool.length).map(n => ['n' + n, T('cwsNSent', { n })]), [['pick', T('cwsPickOwn')]]);
+    const curMode = W.mode === 'n' ? 'n' + W.n : W.mode;
+    h += '<div class="field"><label>' + esc(T('cwsAmount')) + '</label><div class="row" style="margin-top:0">' + pills('bawmode', curMode, modes) +
+      (W.mode === 'n' ? '<button class="pill sm" data-act="bawredraw">' + esc(T('cwsRedraw')) + '</button>' : '') + '</div>';
+    if(W.mode === 'pick'){
+      const sc = W.script === 'simp';
+      h += '<p class="hint">' + esc(T('cwsPickHint', { n: chosen.length })) + '</p><div class="cws-list">' + pool.map((s, i) => {
+        const on = W.picked.indexOf(i) >= 0;
+        return '<button class="pill sm cws-row ' + (on ? 'on' : '') + '" data-act="bawpick" data-i="' + i + '"><span>' + (on ? '✓ ' : '') + esc((sc ? s.simp : s.trad).join('')) + '</span><small>' + esc((I18N.getLang() === 'en' ? (s.en || s.es) : s.es) || '') + '</small></button>';
+      }).join('') + '</div>';
+    }
+    h += '</div>';
+  }
+  h += '<div class="field"><label>' + esc(CORRE.tr('pdfTypes')) + '</label><div class="row" style="margin-top:0">' +
+    [['read', 'pdfRead'], ['order', 'pdfOrder'], ['fill', 'pdfFill'], ['trans', 'pdfTrans']].map(x => chipB(W.types[x[0]], CORRE.tr(x[1]), 'bawtype', x[0])).join('') + '</div></div>';
+  if(W.types.fill){
+    h += '<div class="field"><label>' + esc(T('cwsFillMode')) + '</label><div class="row" style="margin-top:0">' + pills('bawfm', W.fillMode, [['ch', T('bawFillCh', { c: BA_CH(g) })], ['random', T('cwsFillRand')], ['pick', T('cwsFillPick')]]) + '</div>';
+    if(W.fillMode === 'pick' && pool){
+      const sc = W.script === 'simp';
+      h += '<p class="hint">' + esc(T('cwsFillHint')) + '</p><div class="cws-list">' + chosen.map(i => {
+        const s = pool[i], bl = W.blanks[i] || [];
+        return '<div class="cws-fill"><span class="no">' + (chosen.indexOf(i) + 1) + '.</span>' + (sc ? s.simp : s.trad).map((w, k) =>
+          '<button class="pill xs ' + (bl.indexOf(k) >= 0 ? 'on' : '') + '" data-act="bawblank" data-i="' + i + '" data-w="' + k + '">' + esc(w) + '</button>').join('') + '</div>';
+      }).join('') + '</div>';
+    }
+    h += '</div>';
+  }
+  h += '<div class="field"><label>' + esc(T('bwsLang')) + '</label><div class="row" style="margin-top:0">' + pills('bawlang', W.lang, [['es', '中文＋Español'], ['en', '中文＋English']]) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('bwsPhon')) + '</label><div class="row" style="margin-top:0">' + pills('bawphon', phonOf(W), PHON_LIST()) + '</div></div>' +
+    '<div class="field"><label>' + esc(CORRE.tr('pdfSize')) + '</label><div class="row" style="margin-top:0">' + pills('bawsize', W.size, [[14, '14'], [16, '16'], [21, '21']]) + '</div></div>';
+  const can = pool && chosen.length && anyType && !W.busy;
+  h += '<div class="row"><button class="pill" data-act="bawprev" ' + (can ? '' : 'disabled') + '>' + esc(T('cwsPreview')) + '</button>' +
+    '<button class="pill fill" data-act="bawmake" ' + (can ? '' : 'disabled') + '>📄 ' + esc(W.busy ? CORRE.tr('pdfWorking') : CORRE.tr('pdfMake')) + '</button></div>' +
+    (pool && !anyType ? '<p class="hint">' + esc(T('cwsNoType')) + '</p>' : '') +
+    (W.msg ? '<div class="' + (W.ok ? 'ok' : 'err') + '">' + esc(W.msg) + '</div>' : '');
+  if(W.prev) h += '<div class="cws-prev"><div class="row"><b>' + esc(T('cwsPrevTitle', { n: W.prev.length })) + '</b><button class="pill xs" data-act="bawprevclose">' + esc(T('cwsPrevClose')) + '</button></div>' +
     W.prev.map(u => '<img src="' + u + '" alt="">').join('') + '</div>';
   return h + '</div>';
 }
@@ -1421,6 +1536,51 @@ const actions = {
     else if(k === 'pick'){ W.picked = W.mode === 'pick' ? W.picked : cwsChosen(); W.mode = 'pick'; }
     else{ W.mode = 'n'; W.n = +k.slice(1); W.picked = []; }
     cwsTouch(); render();
+  },
+  // ---- 把／被學習單 ----
+  bawscript(el){ bawW().script = el.dataset.k; bawTouch(); render(); },
+  bawtype(el){ const t = bawW().types; t[el.dataset.k] = !t[el.dataset.k]; bawTouch(); render(); },
+  bawfm(el){ bawW().fillMode = el.dataset.k; bawTouch(); render(); },
+  bawlang(el){ bawW().lang = el.dataset.k; bawTouch(); render(); },
+  bawphon(el){ phonSet(bawW(), el.dataset.k); bawTouch(); render(); },
+  bawsize(el){ bawW().size = +el.dataset.k; bawTouch(); render(); },
+  bawredraw(){ bawW().picked = []; bawTouch(); render(); },
+  bawpick(el){
+    const W = bawW(), i = +el.dataset.i, at = W.picked.indexOf(i);
+    if(at >= 0) W.picked.splice(at, 1); else if(W.picked.length < BAW_MAX) W.picked.push(i);
+    bawTouch(); render();
+  },
+  bawblank(el){
+    const W = bawW(), i = +el.dataset.i, k = +el.dataset.w, a = (W.blanks[i] || []).slice(), at = a.indexOf(k);
+    if(at >= 0) a.splice(at, 1); else a.push(k);
+    W.blanks[i] = a; bawTouch(); render();
+  },
+  bawmode(el){
+    const W = bawW(), k = el.dataset.k;
+    if(k === 'all'){ W.mode = 'all'; }
+    else if(k === 'pick'){ W.picked = W.mode === 'pick' ? W.picked : bawChosen(); W.mode = 'pick'; }
+    else{ W.mode = 'n'; W.n = +k.slice(1); W.picked = []; }
+    bawTouch(); render();
+  },
+  bawprevclose(){ bawW().prev = null; render(); },
+  async bawprev(){
+    const W = bawW(); if(!W.pool || W.busy || !S.a.plan.active) return;
+    W.busy = true; W.msg = ''; render();
+    try{
+      const r = await CORRE.makeWorksheet(bawData(), { footer: BA_CH(S.g) + '字句', lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, size: W.size, preview: true });
+      W.prev = r.previews;
+    }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
+    W.busy = false; render();
+  },
+  async bawmake(){
+    const W = bawW(); if(!W.pool || W.busy || !S.a.plan.active) return;
+    W.busy = true; W.msg = ''; render();
+    try{
+      const r = await CORRE.makeWorksheet(bawData(), { footer: BA_CH(S.g) + '字句', lang: W.lang, pinyin: W.pinyin, zhuyin: W.zhuyin, types: W.types, size: W.size });
+      saveBlob(r.blob, 'worksheet-' + safeName(W.name || S.g) + '.pdf');
+      W.msg = CORRE.tr('pdfDone', { n: r.pages }); W.ok = true;
+    }catch(e){ console.error(e); W.msg = (e && e.message) || String(e); W.ok = false; }
+    W.busy = false; render();
   },
   cwsredraw(){ S.cws.picked = []; cwsTouch(); render(); },
   cwspick(el){
@@ -1887,6 +2047,7 @@ document.addEventListener('change', e => {
     S.bws.sel = s.value; S.bws.msg = ''; S.bws.prev = null;
     const it = s.value[0] !== 'L' && S.a.bbk[+s.value]; if(it && it.n) S.bws.n = [5, 10, 15, 20].indexOf(it.n) >= 0 ? it.n : S.bws.n;   // 題數預設跟範圍一樣
   }
+  if(s.dataset.sel === 'bawsrc'){ bawW().src = s.value; bawLoadPool(); return; }
   if(s.dataset.sel === 'cwssrc'){ S.cws.src = s.value; S.cws.lv = ''; cwsLoadPool(); return; }
   if(s.dataset.sel === 'cwslv'){ S.cws.lv = s.value; cwsLoadPool(); return; }
   render();

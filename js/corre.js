@@ -910,7 +910,7 @@ async function makeWorksheet(data, opt){
   }
   pages.forEach((p, i) => {
     const g = p.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.fillStyle = '#999'; g.font = '500 22px ' + FF; g.textAlign = 'center';
-    g.fillText('每天一分鐘 · 跑吧！漢字 · ' + (i + 1) + ' / ' + pages.length, PDFW / 2, PDFH - 50);
+    g.fillText('每天一分鐘 · ' + (opt.footer || '跑吧！漢字') + ' · ' + (i + 1) + ' / ' + pages.length, PDFW / 2, PDFH - 50);
   });
   if(opt.preview){
     const previews = pages.map(p => { const t = document.createElement('canvas'); t.width = PDFW / 2; t.height = PDFH / 2; t.getContext('2d').drawImage(p, 0, 0, t.width, t.height); return t.toDataURL('image/jpeg', 0.7); });

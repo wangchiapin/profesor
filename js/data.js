@@ -382,6 +382,15 @@ function loadSentences(game){
     .catch(e => { delete _sent[game]; throw e; });
   return _sent[game];
 }
+// 含逐詞拼音／注音的句子（學習單用）：{ id: ['繁|簡|拼音|注音', …] }
+const _sentTk = {};
+function loadSentenceTokens(game){
+  if(!_sentTk[game]) _sentTk[game] = fetch(GAME_URL[game] + 'sentences-tk.json', { cache: 'no-cache' })
+    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(j => { if(!j || !Array.isArray(j.sentences)) throw new Error('bad json'); const m = {}; j.sentences.forEach(x => { m[x.id] = x.tk; }); return m; })
+    .catch(e => { delete _sentTk[game]; throw e; });
+  return _sentTk[game];
+}
 function linkBaBankPractice(game, sid){ return GAME_URL[game] + '?bank=' + sid + '&preview=1'; }
 function linkCorrePractice(sid){ return GAME_URL.corre + '?bank=' + sid; }
 
@@ -423,5 +432,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, loadSentenceTokens, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();
