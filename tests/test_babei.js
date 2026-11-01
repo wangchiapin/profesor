@@ -377,6 +377,31 @@ server.listen(0, 'localhost', async () => {
     ok(!chooser && (await page.$$('.bimg')).length === 0, '免費版按「加圖片」：不會開檔案選擇，跳出建議訂閱');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
+  console.log('\n[H] 句庫設定：題數與題型比例（訂閱老師可選、免費版鎖住）');
+  { const { page, errors, ctx } = await open(browser, { q: '?dev=ba,bei', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    ok((await page.$$('[data-act=babcfg][data-f=n]')).length === 3 && (await page.$$('[data-act=babcfg][data-f=mix]')).length === 5, '設定分頁：3 個題數、5 種比例');
+    ok(await page.$eval('[data-act=babcfg][data-f=n][data-v="10"]', e => e.classList.contains('on')) && await page.$eval('[data-act=babcfg][data-f=mix][data-v=orig]', e => e.classList.contains('on')), '預設：10 題、照原本');
+    await page.click('[data-act=babcfg][data-f=n][data-v="30"]'); await page.click('[data-act=babcfg][data-f=mix][data-v=L]');
+    ok(await page.$eval('[data-act=babcfg][data-f=n][data-v="30"]', e => e.classList.contains('on')) && await page.$eval('[data-act=babcfg][data-f=mix][data-v=L]', e => e.classList.contains('on')), '選 30 題、多聽力');
+    await page.click('[data-act=edtab][data-k=pick]'); await page.waitForSelector('#babList .brow'); for(let i = 0; i < 10; i++) await page.click('#babList .brow:nth-child(' + (i + 2) + ')');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow', { timeout: 4000 }).catch(async () => { console.log('SAVE MSG:', (await text(page, '#babCard')).slice(0, 200)); });
+    let b = Object.values((await db(page)).shared_babanks)[0];
+    ok(b.cfg && b.cfg.n === 30 && b.cfg.mix === 'L', '存檔：shared_babanks 有 cfg {n:30, mix:L}', b.cfg);
+    await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName');
+    ok(await page.$eval('[data-act=babcfg][data-f=n][data-v="30"]', e => e.classList.contains('on')) && await page.$eval('[data-act=babcfg][data-f=mix][data-v=L]', e => e.classList.contains('on')), '再編輯：設定讀回來');
+    await page.click('[data-act=babcfg][data-f=n][data-v="10"]'); await page.click('[data-act=babcfg][data-f=mix][data-v=orig]');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+    b = Object.values((await db(page)).shared_babanks)[0];
+    ok(!('cfg' in b), '改回 10 題、照原本：不存 cfg（文件保持簡單）');
+    ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, q: '?dev=ba', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    ok((await text(page, '#babCard')).includes('🔒'), '免費版：題數、比例標示鎖');
+    await page.click('[data-act=babcfg][data-f=n][data-v="20"]');
+    ok(await page.$eval('[data-act=babcfg][data-f=n][data-v="10"]', e => e.classList.contains('on')), '免費版按 20 題：維持 10 題（跳建議訂閱）');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
   await browser.close(); server.close();
   console.log('\n通過 ' + pass + '　失敗 ' + fail); process.exit(fail ? 1 : 0);
 });

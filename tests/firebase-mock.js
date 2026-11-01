@@ -74,7 +74,8 @@
       if(!user || data.owner !== user.uid) deny();
       const old = col(pid, c)[id]; if(old && (old.owner !== user.uid || old.slot !== data.slot || old.game !== data.game)) deny();
       const p = col(pid, 'site_plans')[user.uid], pro = !!(p && p.expiresAt > NOW());
-      if(Object.keys(data).sort().join() !== ['custom','game','ids','name','owner','slot','updatedAt'].join()) deny();
+      const kk = Object.keys(data).filter(k => k !== 'cfg').sort().join(); if(kk !== ['custom','game','ids','name','owner','slot','updatedAt'].join()) deny();
+      if('cfg' in data){ const cf = data.cfg; if(!cf || Object.keys(cf).sort().join() !== 'mix,n' || [10,20,30].indexOf(cf.n) < 0 || ['orig','even','A','L','P'].indexOf(cf.mix) < 0) deny(); if(!pro && !(cf.n === 10 && cf.mix === 'orig')) deny(); }
       if(['ba','bei'].indexOf(data.game) < 0 || !(data.slot >= 0 && data.slot <= 4)) deny();
       const tot = data.ids.length + data.custom.length;
       if(!(tot >= 10 && tot <= (pro ? 80 : 50)) || !data.ids.every(Number.isInteger)) deny();

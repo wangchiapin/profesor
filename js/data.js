@@ -103,7 +103,7 @@ async function loadAccount(user){
       const sl = (ad[g] && typeof ad[g] === 'object') ? ad[g] : {};
       acct.babslots[g] = sl;
       await Promise.all(Object.keys(sl).sort().map(async k => {
-        try{ const s = await db.collection('shared_babanks').doc(sl[k]).get(); if(s.exists){ const d = s.data(); acct.babanks[g].push({ slot: +k, sid: s.id, name: d.name || '', ids: Array.isArray(d.ids) ? d.ids : [], custom: Array.isArray(d.custom) ? d.custom : [] }); } }
+        try{ const s = await db.collection('shared_babanks').doc(sl[k]).get(); if(s.exists){ const d = s.data(); acct.babanks[g].push({ slot: +k, sid: s.id, name: d.name || '', ids: Array.isArray(d.ids) ? d.ids : [], custom: Array.isArray(d.custom) ? d.custom : [], cfg: (d.cfg && typeof d.cfg === 'object') ? d.cfg : null }); } }
         catch(e){ console.warn('babank read failed', g, k, e); }
       }));
       acct.babanks[g].sort((a, b) => a.slot - b.slot);
@@ -340,7 +340,7 @@ async function saveBaBank(game, bslots, slot, sid, data){
     sid = newId(14); slots = Object.assign({}, bslots, { [game]: Object.assign({}, bslots[game], { [String(slot)]: sid }) });
     b.set(db.collection('teacher_babanks').doc(uid()), Object.assign({}, slots, { updatedAt: ts }));
   }
-  b.set(db.collection('shared_babanks').doc(sid), { owner: uid(), game, slot, name: data.name, ids: data.ids, custom: data.custom || [], updatedAt: ts });
+  b.set(db.collection('shared_babanks').doc(sid), Object.assign({ owner: uid(), game, slot, name: data.name, ids: data.ids, custom: data.custom || [], updatedAt: ts }, data.cfg ? { cfg: data.cfg } : {}));
   // 圖片：shared_babimgs/{句庫碼}_{1|2}，每份最多 10 張；只有圖片有增減（imgDocs 有值）才寫
   if(data.imgDocs){
     [1, 2].forEach(n => {

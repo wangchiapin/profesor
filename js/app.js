@@ -758,6 +758,7 @@ function baParseEntry(c){   // 資料庫 → 草稿（詞字串格式同遊戲�
 const baEncEntry = c => ({ tk: c.tk.map(t => [t.tc, t.sc === t.tc ? '' : t.sc, String(t.py).replace(/[|<>&"']/g, ''), String(t.zy).replace(/[|<>&"']/g, '')].join('|')), es: c.es, en: c.en || '' });
 const baLineOf = c => c.tk.map(t => t.tc).join(' ') + '｜' + c.es + (c.en ? '｜' + c.en : '');
 const baSimp = () => I18N.getLang() === 'sc';
+const BA_MIXES = ['orig', 'even', 'A', 'L', 'P'];
 const BA_IMG_MAX = 20, BA_IMG_PER_DOC = 10, BA_IMG_KB = 50;
 const baImgCount = dr => dr.custom.filter(c => c.im && dr.imgs[c.im]).length;
 function baNewImgKey(){ const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for(let i = 0; i < 8; i++) s += a.charAt(Math.floor(Math.random() * a.length)); return s; }
@@ -784,6 +785,13 @@ function baImgCompress(file){
     };
     im.src = url;
   });
+}
+function babCfgHtml(dr){
+  const lock = S.a.plan.active ? '' : ' 🔒', cf = dr.cfg;
+  const row = (f, vals, lab) => vals.map(v => '<button class="pill sm ' + (String(cf[f]) === String(v) ? 'on' : '') + '" data-act="babcfg" data-f="' + f + '" data-v="' + v + '">' + esc(lab(v)) + '</button>').join('');
+  return '<div class="field"><label>' + esc(T('baCfgN')) + lock + '</label><div class="row">' + row('n', [10, 20, 30], v => v + ' ' + T('baCfgUnit')) + '</div></div>' +
+    '<div class="field"><label>' + esc(T('baCfgMix')) + lock + '</label><div class="row">' + row('mix', BA_MIXES, v => T({ orig: 'baMixOrig', even: 'baMixEven', A: 'baMixA', L: 'baMixL', P: 'baMixP' }[v])) + '</div></div>' +
+    '<p class="hint">' + esc(T('baCfgHint')) + '</p>';
 }
 function babWriteCardHtml(c, i){
   return '<div class="bcard"><div class="bch"><span class="mut">' + (i + 1) + '</span><button class="x" data-act="babcdel" data-k="' + i + '" aria-label="' + esc(T('del')) + '">✕</button></div><div class="btoks">' +
@@ -837,7 +845,7 @@ function babEditorHtml(){
   const cnt = '<p class="hint babcount ' + (baTot(dr) < BA_MIN || baTot(dr) > max ? 'bad' : '') + '">' + esc(T('baCount', { n: baTot(dr), min: BA_MIN, max })) + '</p>';
   const sent = (tab === 'pick' || tab === 'list') ? baSentences(g) : null;
   if(tab === 'set'){
-    h += '<div class="field"><label>' + esc(T('baNameLabel')) + '</label><input type="text" id="babName" maxlength="20" placeholder="' + esc(T('baNamePh')) + '" value="' + esc(dr.name) + '"></div>' + cnt + '<p class="hint">' + esc(T('baSetHint')) + '</p>';
+    h += '<div class="field"><label>' + esc(T('baNameLabel')) + '</label><input type="text" id="babName" maxlength="20" placeholder="' + esc(T('baNamePh')) + '" value="' + esc(dr.name) + '"></div>' + cnt + '<p class="hint">' + esc(T('baSetHint')) + '</p>' + babCfgHtml(dr);
   }else if(tab === 'write'){
     h += cnt + '<p class="hint">' + esc(T('baWriteHint')) + '</p><div class="field"><textarea id="babText" rows="6" placeholder="' + esc(T('baWriteEx')) + '">' + esc(dr.text) + '</textarea></div>' +
       '<div class="row"><button class="pill sm" data-act="babgen">' + esc(T('baGen')) + '</button></div>' +
@@ -1514,7 +1522,7 @@ const actions = {
   babedit(el){
     const g = S.g, i = +el.dataset.k, b = S.a.babanks[g].find(x => x.slot === i);
     if(!b && S.a.babanks[g].length >= baSlotsMax()){ if(!S.a.plan.active) needSub(); return; }
-    S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], custom: b ? (b.custom || []).map(baParseEntry) : [], text: '', dirty: false, lv: 'all', q: '', imgs: {}, imgDirty: false, imgLoad: '', hadN: [] } };
+    S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], custom: b ? (b.custom || []).map(baParseEntry) : [], text: '', dirty: false, lv: 'all', q: '', imgs: {}, imgDirty: false, imgLoad: '', hadN: [], cfg: (b && b.cfg && [10, 20, 30].indexOf(+b.cfg.n) >= 0 && BA_MIXES.indexOf(b.cfg.mix) >= 0) ? { n: +b.cfg.n, mix: b.cfg.mix } : { n: 10, mix: 'orig' } } };
     const dr0 = S.babEdit.dr; dr0.text = dr0.custom.map(baLineOf).join('\n');
     dr0.hadN = Array.from(new Set(dr0.custom.filter(c => c.im).map(c => c.n))).filter(n => n === 1 || n === 2);
     if(dr0.hadN.length){
@@ -1586,6 +1594,10 @@ const actions = {
     });
     inp.click();
   },
+  babcfg(el){
+    if(!S.a.plan.active){ needSub(); return; }
+    const dr = S.babEdit.dr, f = el.dataset.f; dr.cfg[f] = f === 'n' ? +el.dataset.v : el.dataset.v; render();
+  },
   babimgdel(el){
     if(!S.a.plan.active){ needSub(); return; }
     const dr = S.babEdit.dr, c = dr.custom[+el.dataset.k]; if(!c || !c.im) return;
@@ -1611,9 +1623,9 @@ const actions = {
       withImg.forEach(c => { if(!c.n){ c.n = cnt[1] < BA_IMG_PER_DOC ? 1 : 2; cnt[c.n]++; } });
       const imgDocs = [{}, {}]; withImg.forEach(c => { imgDocs[c.n - 1][c.im] = dr.imgs[c.im]; });
       const custom = dr.custom.map(c => { const o = baEncEntry(c); if(c.im && dr.imgs[c.im]) o.im = c.n + c.im; return o; });
-      const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids, custom, imgDocs: dr.imgDirty ? imgDocs : null, hadImgDocs: dr.hadN });
+      const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids, custom, cfg: (A.plan.active && !(dr.cfg.n === 10 && dr.cfg.mix === 'orig')) ? { n: dr.cfg.n, mix: dr.cfg.mix } : null, imgDocs: dr.imgDirty ? imgDocs : null, hadImgDocs: dr.hadN });
       A.babslots = r.slots;
-      const rec = { slot: E.i, sid: r.sid, name, ids, custom };
+      const rec = { slot: E.i, sid: r.sid, name, ids, custom, cfg: (A.plan.active && !(dr.cfg.n === 10 && dr.cfg.mix === 'orig')) ? { n: dr.cfg.n, mix: dr.cfg.mix } : null };
       const at = A.babanks[g].findIndex(x => x.sid === r.sid);
       if(at >= 0) A.babanks[g][at] = rec; else A.babanks[g].push(rec);
       A.babanks[g].sort((a, b) => a.slot - b.slot);
