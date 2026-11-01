@@ -108,6 +108,15 @@
       if(id !== data.cid + '_dragon_' + data.k + '_' + data.h || !/^[a-z0-9]{1,32}$/.test(data.k)) deny();
       return;
     }
+    if(c === 'class_plays' && (data.game === 'ba' || data.game === 'bei')){   // 把／被的逐題紀錄
+      const d = data;
+      if(Object.keys(d).sort().join() !== ['at','cid','game','h','k','nick','owner','qs','score'].join()) deny();
+      const cls = col(pid, 'classes')[d.cid]; if(!cls || cls.owner !== d.owner) deny();
+      const p = col(pid, 'site_plans')[d.owner]; if(!p || !(p.expiresAt > NOW())) deny();
+      if(!user || !/^[a-f0-9]{16}$/.test(d.h) || !(d.nick.length >= 1 && d.nick.length <= 16) || !/^[A-Za-z0-9_-]{1,32}$/.test(d.k)) deny();
+      if(!Number.isInteger(d.score) || d.score < 0 || !Array.isArray(d.qs) || d.qs.length < 1 || d.qs.length > 30) deny();
+      return;
+    }
     if(c !== 'class_plays') return;
     const d = data, keys = Object.keys(d).sort().join();
     if(keys !== ['at','cid','game','h','lv','max','nick','owner','qs','rg','score','th'].sort().join()) deny();

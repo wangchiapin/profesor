@@ -22,7 +22,7 @@ const T = 'subscription-48d3c', CID = 'class0000aaaa';
 const TEACH = { uid: 'u1', email: 'teacher@example.com', displayName: 'T', isAnonymous: false };
 const hx = n => ('0000000000000000' + n.toString(16)).slice(-16);
 const day = 86400000;
-function seed({ pro = true } = {}){
+function seed({ pro = true, plays = false } = {}){
   const s = { [T]: {
     classes: { [CID]: { owner: 'u1', slot: 0, name: '週三班', showBoard: false, updatedAt: 1 } },
     teacher_classes: { u1: { slots: { '0': CID }, updatedAt: 1 } },
@@ -33,6 +33,14 @@ function seed({ pro = true } = {}){
     },
     class_plays: {}, site_members: {}, site_plans: {} } };
   if(pro) s[T].site_plans.u1 = { plan: 'year', expiresAt: Date.now() + 30 * day };
+  if(plays){   // 把的逐題紀錄：Ana 玩 2 輪、Beto 1 輪；被：Cami 1 輪
+    const q = (s, t, f, w) => ({ s, t, f, ok: 1, w });
+    let seq = 0; const mk = (g, nick, i, k, qs) => { s[T].class_plays['p' + g + (seq++)] = { cid: CID, owner: 'u1', game: g, h: hx(Math.floor(i)), nick, at: Date.now() - day * i, k, score: 800, qs }; };
+    mk('ba', 'Ana', 1, 'lv1', [q('我把書放在桌子上', 'A', 0, ['書我把放在桌子上']), q('他把門關上', 'L', 1, []), q('她把杯子打破了', 'P', 1, [])]);
+    mk('ba', 'Ana', 1.5, 'lv1', [q('我把書放在桌子上', 'A', 0, ['書把我放在桌子上', '我書把放在桌子上']), q('他把門關上', 'P', 1, [])]);
+    mk('ba', 'Beto', 2, 'lv2', [q('我把書放在桌子上', 'P', 1, []), q('弟弟把蛋糕吃完', 'L', 0, ['弟弟把蛋糕吃光'])]);
+    mk('bei', 'Cami', 3, 'lv1', [q('杯子被他打破了', 'A', 0, ['杯子他被打破了'])]);
+  }
   return s;
 }
 let BASE;
@@ -375,6 +383,30 @@ server.listen(0, 'localhost', async () => {
     let chooser = false; page.once('filechooser', () => { chooser = true; });
     await page.click('[data-act=babimg][data-k="0"]'); await page.waitForTimeout(400);
     ok(!chooser && (await page.$$('.bimg')).length === 0, '免費版按「加圖片」：不會開檔案選擇，跳出建議訂閱');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[I] 答錯統計與逐題 CSV（把／被）');
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { plays: true }, q: '?dev=ba,bei' });
+    await go(page, '#/game/ba/scores'); await page.waitForSelector('#bookCard table');
+    let t = await text(page, '#bookCard');
+    ok(t.includes('最常答錯的句子') && t.includes('各學生'), '把成績頁：多了「最常答錯的句子」和「各學生」');
+    ok(t.includes('我把書放在桌子上') && t.includes('弟弟把蛋糕吃完') && !t.includes('杯子被他打破了'), '最常錯的句子只含把的');
+    const rows = (await page.$$eval('#bookCard .sec + .tablewrap table tr', trs => trs.map(tr => tr.textContent))).filter(r => /把/.test(r) && !/暱稱|句子/.test(r));
+    ok(rows.length === 2 && rows[0].includes('弟弟把蛋糕吃完') && rows[0].includes('0%') && rows[1].includes('我把書放在桌子上') && rows[1].includes('3') && rows[1].includes('33%'), '最常答錯的排在最上面（弟弟…0%；我把書…出現 3 次、第一次答對 33%）', rows);
+    await page.click('tr[data-act=bstu]'); await page.waitForSelector('[data-act=bstuback]');
+    t = await text(page, '#bookCard');
+    ok(t.includes('答錯的題目') && t.includes('書我把放在桌子上') && t.includes('書把我放在桌子上、我書把放在桌子上'), '點學生：看到他答錯的題目與選了什麼');
+    await page.click('[data-act=bstuback]'); await page.waitForSelector('tr[data-act=bstu]');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('[data-act=csvq]')]);
+    const csv = fs.readFileSync(await dl.path(), 'utf8');
+    ok(csv.includes('time,nick,setting,q,sentence,type,first_try,correct,wrong_choices') && csv.includes('Ana') && csv.includes('Beto') && !csv.includes('Cami') && csv.includes('書把我放在桌子上 / 我書把放在桌子上'), '逐題 CSV：只有把的紀錄、含選錯的內容', csv.slice(0, 300));
+    ok(csv.split('\r\n').length === 1 + 3 + 2 + 2, '逐題 CSV 列數：每題一列（共 7 題）', csv.split('\r\n').length);
+    await go(page, '#/game/bei/scores'); await page.waitForSelector('#bookCard table');
+    t = await text(page, '#bookCard'); ok(t.includes('杯子被他打破了') && !t.includes('我把書放在桌子上'), '被成績頁：只有被的紀錄');
+    ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { q: '?dev=ba' });
+    await go(page, '#/game/ba/scores'); await page.waitForSelector('#bookCard table');
+    ok((await text(page, '#bookCard')).includes('還沒有逐題紀錄'), '沒有逐題紀錄時顯示說明（只有訂閱老師的班級連結才記）');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
   console.log('\n[H] 句庫設定：題數與題型比例（訂閱老師可選、免費版鎖住）');

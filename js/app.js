@@ -127,7 +127,7 @@ async function onRoute(){
   const prevG = S.route === 'game' ? S.g : null;
   S.route = r.route; S.cur = r.cur;
   if(S.route === 'game'){
-    if(prevG !== r.g){ S.babEdit = null; S.babMsg = ''; S.days = 0; S.tab = 'stu'; S.sel = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
+    if(prevG !== r.g){ S.babEdit = null; S.babMsg = ''; S.days = 0; S.tab = 'stu'; S.sel = null; S.bst = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
     S.g = r.g; S.gt = r.gt; S.game = r.g;
     if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonMsg = ''; S.babEdit = null; S.babMsg = ''; }
     if(S.gt !== 'ranges') S.dragonSetEdit = null;
@@ -158,7 +158,7 @@ async function loadBook(){
   const cid = c.cid;
   await Promise.all([
     DATA.loadScores(cid).then(r => { S.scores = r; S.scoresState = 'ok'; }).catch(e => { console.error(e); S.scores = []; S.scoresState = 'error'; S.msg2 = err(e); }),
-    DATA.loadPlays(cid).then(r => { S.plays = r; S.playsState = 'ok'; }).catch(e => { console.error(e); S.plays = []; S.playsState = 'error'; S.msg2 = err(e); })
+    DATA.loadPlays(cid).then(r => { S.plays = r.filter(x => x.game === 'bbk'); S.bplays = r.filter(x => x.game === 'ba' || x.game === 'bei'); S.playsState = 'ok'; }).catch(e => { console.error(e); S.plays = []; S.playsState = 'error'; S.msg2 = err(e); })
   ]);
   if(S.route === 'game' && S.gt === 'scores' && clsC() && clsC().cid === cid) render();
 }
@@ -394,9 +394,11 @@ function bookHtml(){
     const inRange = plays.filter(r => !S.days || r.ms >= Date.now() - S.days * 86400000);
     h += S.tab === 'stu' ? BOOKS.bbkStudents(plays, S.days, sk, lab) : BOOKS.bbkStats(inRange);
   }else{
+    if(isBaBei(g) && S.bst) return h + BOOKS.babStats(S.bplays || [], g, S.days, sk, S.bst);
     h += '<p class="hint">' + esc(T('students', { n: BOOKS.studentCount(g, S.scores, sk) })) + '</p>' + BOOKS.scoreTable(g, S.scores, S.days, sk, lab);
+    if(isBaBei(g)) h += BOOKS.babStats(S.bplays || [], g, S.days, sk, null);
   }
-  h += '<div class="row"><button class="pill sm" data-act="refresh">🔄 ' + esc(T('refresh')) + '</button><button class="pill sm" data-act="csv">⬇ ' + esc(T('csv')) + '</button>' +
+  h += '<div class="row"><button class="pill sm" data-act="refresh">🔄 ' + esc(T('refresh')) + '</button><button class="pill sm" data-act="csv">⬇ ' + esc(T('csv')) + '</button>' + (isBaBei(g) ? '<button class="pill sm" data-act="csvq">⬇ ' + esc(T('baCsvQ')) + '</button>' : '') +
     '<button class="pill sm" data-act="cleargame">' + esc(T('clearGame')) + '</button></div>';
   return h;
 }
@@ -1833,6 +1835,12 @@ const actions = {
     await DATA.deleteDocs('class_scores', [el.dataset.id]); S.scores = S.scores.filter(r => r.id !== el.dataset.id); render();
   }); },
   refresh(){ return loadBook(); },
+  bstu(el){ S.bst = el.dataset.h; render(); },
+  bstuback(){ S.bst = null; render(); },
+  csvq(){
+    const c = clsC(), g = S.game, sk = curSetK(BOOKS.setKeys(g, S.scores));
+    saveBlob(new Blob([BOOKS.toCsv(BOOKS.csvBab(S.bplays || [], g, S.days, sk, k => setLabel(g, k)))], { type: 'text/csv;charset=utf-8' }), g + '_questions_' + safeName(c.data.name) + '_' + fdate(Date.now()).replace(/\//g, '') + '.csv');
+  },
   csv(){
     const c = clsC(), g = S.game, lab = k => setLabel(g, k);
     const sk = curSetK(BOOKS.setKeys(g, g === 'bbk' ? S.plays : S.scores));
@@ -1842,7 +1850,10 @@ const actions = {
   cleargame(){ return run(async () => {
     const g = S.game; if(!confirm(T('confirmClear', { game: T(GAME_KEY[g]) }))) return;
     if(g === 'bbk'){ await DATA.deleteDocs('class_plays', S.plays.map(r => r.id)); S.plays = []; }
-    else{ await DATA.deleteDocs('class_scores', S.scores.filter(r => r.game === g).map(r => r.id)); S.scores = S.scores.filter(r => r.game !== g); }
+    else{
+      await DATA.deleteDocs('class_scores', S.scores.filter(r => r.game === g).map(r => r.id)); S.scores = S.scores.filter(r => r.game !== g);
+      if(isBaBei(g)){ await DATA.deleteDocs('class_plays', (S.bplays || []).filter(r => r.game === g).map(r => r.id)); S.bplays = (S.bplays || []).filter(r => r.game !== g); }
+    }
     render();
   }); }
 };

@@ -162,7 +162,7 @@ async function loadScores(cid){
 async function loadPlays(cid){
   const snap = await db.collection('class_plays').where('owner', '==', uid()).where('cid', '==', cid).limit(3000).get();
   return snap.docs.map(d => { const x = d.data(); return Object.assign({ id: d.id }, x, { ms: tsMs(x.at) || 0 }); })
-    .filter(r => r.game === 'bbk').sort((a, b) => b.ms - a.ms);
+    .sort((a, b) => b.ms - a.ms);   // 比比看（bbk）與把／被（ba、bei）的逐題紀錄都在這裡，畫面再依遊戲分開
 }
 async function deleteDocs(coll, ids){
   for(let i = 0; i < ids.length; i += 400){

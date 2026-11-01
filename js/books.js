@@ -138,5 +138,35 @@ function toCsv(rows){
   return '﻿' + rows.map(r => r.map(v => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\r\n');
 }
 
-window.BOOKS = { esc, fdate, ftime, pct, setKeyOf, setKeys, scoreTable, studentCount, csvScores, bbkStudents, bbkStats, bbkStudent, csvBbk, toCsv, students };
+// ---- 把／被：逐題紀錄（class_plays，game = ba／bei；qs 每題 { s 句子, t 題型 A／L／P, f 第一次就答對, ok 最後答對, w 選錯的句子[] }）----
+const bPlays = (plays, game, days, sk) => plays.filter(r => r.game === game && inDays(r.ms, days) && (!sk || r.k === sk));
+const bType = t => ({ A: T('baTypeA'), L: T('baTypeL'), P: T('baTypeP') }[t] || esc(t));
+function babStats(plays, game, days, sk, sel){
+  const ps = bPlays(plays, game, days, sk);
+  if(!ps.length) return '<p class="hint">' + esc(T('baErrNone')) + '</p>';
+  if(sel){
+    const mine = ps.filter(r => r.h === sel), nick = mine.length ? mine[0].nick : '';
+    const rows = [];
+    mine.forEach(r => (r.qs || []).forEach(q => { if(!q.f) rows.push('<tr><td>' + esc(q.s) + '</td><td>' + bType(q.t) + '</td><td>' + (q.w && q.w.length ? esc(q.w.join('、')) : '—') + '</td><td>' + (q.ok ? '✓' : '✗') + '</td><td>' + esc(ftime(r.ms)) + '</td></tr>'); }));
+    return '<div class="row"><button class="pill sm" data-act="bstuback">' + esc(T('back')) + '</button></div><div class="sec">' + esc(T('baErrOf', { nick })) + '</div>' +
+      (rows.length ? '<div class="tablewrap"><table class="t nw"><tr><th>' + [T('baErrSent'), T('baErrType'), T('baErrChose'), T('baErrFinal'), T('thLast')].map(esc).join('</th><th>') + '</th></tr>' + rows.slice(0, 200).join('') + '</table></div>' : '<p class="hint">' + esc(T('baErrNoMiss')) + '</p>');
+  }
+  const g = {};
+  ps.forEach(r => (r.qs || []).forEach(q => { const x = g[q.s] || (g[q.s] = { s: q.s, n: 0, f1: 0 }); x.n++; if(q.f) x.f1++; }));
+  const bad = Object.values(g).filter(x => x.f1 < x.n).sort((a, b) => a.f1 / a.n - b.f1 / b.n || b.n - a.n).slice(0, 30);
+  let h = '<div class="sec">' + esc(T('baErrBySent')) + '</div>' + (bad.length ? '<div class="tablewrap"><table class="t"><tr><th>' + [T('baErrSent'), T('thQs'), T('thFirst')].map(esc).join('</th><th>') + '</th></tr>' +
+    bad.map(x => { const p = pct(x.f1, x.n); return '<tr><td>' + esc(x.s) + '</td><td>' + x.n + '</td><td>' + p + '%</td></tr>'; }).join('') + '</table></div>' : '<p class="hint">' + esc(T('baErrNoMiss')) + '</p>');
+  const st = {};
+  ps.forEach(r => { const x = st[r.h] || (st[r.h] = { h: r.h, nick: r.nick, n: 0, q: 0, f1: 0, last: 0 }); x.n++; if(r.ms > x.last){ x.last = r.ms; x.nick = r.nick; } (r.qs || []).forEach(q => { x.q++; if(q.f) x.f1++; }); });
+  h += '<div class="sec">' + esc(T('baErrByStu')) + '</div><div class="tablewrap"><table class="t click nw"><tr><th>' + [T('thNick'), T('thPlays'), T('thFirst')].map(esc).join('</th><th>') + '</th></tr>' +
+    Object.values(st).sort((a, b) => a.nick.localeCompare(b.nick)).map(x => '<tr data-act="bstu" data-h="' + esc(x.h) + '"><td><b>' + esc(x.nick) + '</b></td><td>' + x.n + '</td><td>' + pct(x.f1, x.q) + '%</td></tr>').join('') + '</table></div><p class="hint">' + esc(T('tapStudent')) + '</p>';
+  return h;
+}
+function csvBab(plays, game, days, sk, lab){
+  const out = [['time', 'nick', 'setting', 'q', 'sentence', 'type', 'first_try', 'correct', 'wrong_choices']];
+  bPlays(plays, game, days, sk).slice().reverse().forEach(r => (r.qs || []).forEach((q, i) => out.push([ftime(r.ms), r.nick, lab ? lab(r.k) : r.k, i + 1, q.s, q.t, q.f ? 1 : 0, q.ok ? 1 : 0, (q.w || []).join(' / ')])));
+  return out;
+}
+
+window.BOOKS = { babStats, csvBab, esc, fdate, ftime, pct, setKeyOf, setKeys, scoreTable, studentCount, csvScores, bbkStudents, bbkStats, bbkStudent, csvBbk, toCsv, students };
 })();

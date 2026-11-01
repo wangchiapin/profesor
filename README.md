@@ -30,7 +30,7 @@
 | `site_members/{uid}`、`site_plans/{uid}` | 會員、方案（`month`／`year`／`trial`／`pro` 且 `expiresAt` 還沒到才算訂閱） |
 | `teacher_classes/{uid}`、`classes/{cid}` | 班級（三款共用，最多 3 班） |
 | `class_scores/{cid}_{game}_{k}_{h}` | 跑吧（`corre`）、色數（`colores`）每位學生×每個設定一筆；`k`＝設定名稱：跑吧（公開句庫 `pool-A1`／`pool-A2`／`pool-B1`、題包 `pack-<代碼>` 或 `pack-<代碼>-<等級>`、老師句庫＝句庫碼；改版前的舊公開題庫 `pool`）／色數（設定碼；舊式連結 `link`）（步驟 6-2，規則見 game-kit 的 `subscription-48d3c.rules.txt`） |
-| `class_plays/{自動 id}` | 比比看每回合每題的紀錄；`r`＝範圍碼（一般模式 `''`），成績冊依它分開 |
+| `class_plays/{自動 id}` | 比比看每回合每題的紀錄（把／被另有一種：訂閱老師的句庫班級連結玩完一回合寫一筆 `{cid,owner,game,h,nick,at,k,score,qs[{s,t,f,ok,w[]}]}`，成績冊用它做「最常答錯的句子」「各學生」與「逐題明細 CSV」）；`r`＝範圍碼（一般模式 `''`），成績冊依它分開 |
 | `teacher_banks`、`shared_banks` | 跑吧句庫（步驟 4 起在中心編輯） |
 | `teacher_configs`、`shared_configs` | 色數設定組（讀；沒有連結碼時，照色數教師區的做法寫入連結碼） |
 
@@ -113,7 +113,7 @@
 - 成績：`class_scores` 的 `game='ba'`／`'bei'`，`k='lv1'|'lv2'|'lv3'`（第幾關；把有 3 關、被有 4 關，遊戲端被會送 `lv4`；成績冊 `setLabel` 依遊戲認 lv1～lv3（把）／lv1～lv4（被），認不得的代號才顯示「已刪除」。遊戲以後新增關卡時，這裡要一起改），`best`＝該關最高分，`extra = {ok: 答對題數, q: 題數, f: 第一次就對的題數}`。成績冊沿用既有表格，「詳細」欄顯示「答對 ok / q 題」。
 - 遊戲端（`practica-de-ba-oracion`、`practica-de-bei-oracion` 的 `index.html`，「班級模式」區塊）：連結帶 `?class=` 才啟動；成績存到中央專案、不寫原本的公開排行榜；老師開了「班級排行榜」就在結果頁顯示。
 - 遊戲首頁（練習連結才有，班級連結與 `?preview` 不顯示）有「老師管理中心」按鈕，連到 `#/home`。
-- 還沒做：題數與題型比例、每題對錯明細（`class_plays`）、學習單；自訂句庫「上傳自己的圖」「積木組句」（之後做）。
+- 還沒做：學習單；自訂句庫「上傳自己的圖」「積木組句」（之後做）。
 - **自訂句庫（7-47，自己寫句子 7-48）**：可從遊戲現有句子挑（存句子編號 `ids`），也可自己寫句子（存 `custom:[{tk:['繁|簡|拼音|注音',…],es,en}]`，沒有圖，遊戲出文字題）；兩者合計算額度。自己寫的格式「詞 詞 詞｜西文｜英文」，把庫必含把、被庫必含被，≤8 詞／詞≤6 字／句≤25 字、只收漢字，不合格擋存檔；讀音預設用 `js/gtread.js` 讀 corre 的 `gt-readings.json`（GoodTeacher 規則，載入失敗就報錯不用備援），老師可逐詞改拼音，只影響該句庫該句。規則的 `shared_babanks` 要含選填 `custom`（見 game-kit 規則檔）。
 - **句庫題數與題型比例（7-49）**：訂閱老師在句庫「設定」分頁選題數 10／20／30、比例（orig 照原本／even 平均／A／L／P 多哪一種），存在 `shared_babanks` 的選填 `cfg:{n,mix}`（預設 10＋orig 就不存；免費或到期只能預設，規則也擋）。遊戲端 `bankQs()` 照 cfg 出題（原本比例：把 5/3/2、被 4/3/3，按題數放大），句子不夠就重複出現但盡量換題型；星星按答對比例算。
 - **自訂句子的圖片（7-49）**：訂閱老師每句可加 1 張圖（`app.js` `baImgCompress` 裁正方形、壓到 ≤50KB 的 JPEG），每庫最多 20 張，存在 `shared_babimgs/{句庫碼}_{1|2}` = `{owner, imgs:{圖片代號:dataURL}, updatedAt}`（每份最多 10 張，學生匿名可讀、只有訂閱老師本人能寫；規則在 game-kit 規則檔，**要貼進 Firebase**）；句子的 `custom[].im` = 「1或2＋圖片代號」。圖只在圖片有增減時才寫；刪句庫、刪光圖時一起刪。**額度風險**：所有遊戲共用 subscription-48d3c 專案的免費額度（每天讀 5 萬次、每月傳出 10GB），一輪約讀 3 次、下載約 1.3MB，所以遊戲端用 localStorage 記住圖片（版本＝句庫文件的 updatedAt），要定期到 Firebase 後台看用量。資料：`teacher_babanks/{uid}` = `{ ba:{'0'..'4':sid}, bei:{…}, updatedAt }`、`shared_babanks/{sid}` = `{ owner, game, slot, name, ids[], updatedAt }`（學生匿名可讀、本人才能寫；規則在 game-kit `subscription-48d3c.rules.txt`，**要整份貼進 Firebase**）。額度：把、被各自算，免費 1 個／每庫 10～50 句，訂閱 5 個／10～80 句。老師端：遊戲頁「自訂句庫」分頁（`app.js` 的 `baBankCardHtml`／`babEditorHtml`，編輯頁分頁「設定｜挑句子｜句庫內的句子」，只顯示文字、不顯示圖）；句子清單來自遊戲 repo 的 `sentences.json`（`tools/make_sentences.py` 從 `index.html` 的 `DATA` 產生，遊戲測試會檢查有沒有過期；**遊戲句子有增減時要重新執行**）。連結：試玩 `?bank=<句庫碼>&preview=1`（不記成績）；班級連結 `?class=<班級碼>&bank=<句庫碼>`，成績 `class_scores.k` ＝句庫碼，成績冊 `setLabel` 顯示「📚 句庫名」。遊戲端句庫模式見兩個遊戲 README。
