@@ -91,8 +91,8 @@ function parseHash(){
   if(r === 'settings') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/content' };
   if(r === 'print') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/sheet' };
   if(r === 'help') return { route: 'home', cur: null, redirect: '#/game/' + S.g + '/help' };
-  if(r === 'class' && /^[0-2]$/.test(h[1] || '')) return { route: 'class', cur: h[1] };
-  if(r === 'bank' && /^[0-4]$/.test(h[1] || '')) return { route: 'bank', cur: h[1] };
+  if(r === 'class' && /^\d{1,2}$/.test(h[1] || '')) return { route: 'class', cur: h[1] };
+  if(r === 'bank' && /^\d{1,2}$/.test(h[1] || '')) return { route: 'bank', cur: h[1] };
   if(r === 'classes') return { route: 'classes', cur: h[1] === 'new' ? 'new' : null };
   return { route: 'home', cur: null };
 }
@@ -189,6 +189,7 @@ function planNoticeHtml(){
 }
 // 方案名稱：免費／試用（剩 N 天）／月訂閱／年訂閱；到期的顯示「xx（已到期）」
 function planLabel(P){
+  if(P.admin) return T('plan_admin');
   const known = ['month', 'year', 'trial', 'pro'].indexOf(P.plan) >= 0;
   if(!known) return T('planFree');
   const name = T('plan_' + P.plan);
@@ -228,7 +229,7 @@ function homeHtml(){
 }
 // 班級頁最上面的分頁：每班一個（顯示班名），最後是「＋ 建立班級」（還沒滿 3 班才有）
 function classTabsHtml(active){
-  const A = S.a, P = A.plan, slots = Object.keys(A.classes).sort();
+  const A = S.a, P = A.plan, slots = Object.keys(A.classes).sort((x, y) => x - y);
   let h = '<div class="ctabs">' + slots.map(k => '<button class="pill ' + (active === k ? 'on' : '') + '" data-act="openclass" data-slot="' + k + '">🏫 ' + esc(A.classes[k].data.name) + '</button>').join('');
   if(slots.length < DATA.MAX_CLASSES){
     if(P.active && A.clsReady) h += '<button class="pill add ' + (active === 'new' ? 'on' : '') + '" data-act="newclass">＋ ' + esc(T('createClass')) + '</button>';
@@ -550,6 +551,7 @@ function correCardHtml(){
   let h = '<div class="card" id="correCard"><h3 class="ph"><span>' + esc(T('correBanksTitle')) + '</span>' +
     (A.extrasReady ? '<small class="cq">' + esc(T('correQuota', { n: A.banks.length, max: P.active ? CORRE.PRO_SLOTS : CORRE.FREE_SLOTS })) + '</small>' : '') + '</h3>';
   if(!A.extrasReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  let emptyShown = false;   // 管理員有 30 格，只列已有的句庫＋第一個空格，不要一長串空格
   for(let i = 0; i < CORRE.PRO_SLOTS; i++){
     const b = CORRE.bankOf(A, i);
     if(b){
@@ -559,6 +561,7 @@ function correCardHtml(){
         '<a class="pill sm" href="' + esc(DATA.linkCorrePractice(b.sid) + '&preview=1') + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a>' +
         '<button class="pill sm" data-act="bankdel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
     }else if(i < CORRE.FREE_SLOTS || P.active){
+      if(P.admin){ if(emptyShown) continue; emptyShown = true; }
       h += '<div class="slot empty"><span class="mut">' + esc(CORRE.tr('slotN', { n: i + 1 })) + '</span><button class="pill fill sm" data-act="bankedit" data-k="' + i + '">＋ ' + esc(T('correNew')) + '</button></div>';
     }else{
       h += '<div class="slot empty"><span class="mut">🔒 ' + esc(CORRE.tr('slotN', { n: i + 1 })) + ' · ' + esc(T('correLocked')) + '</span>' + lockBtn(T('correNew')) + '</div>';
@@ -671,7 +674,7 @@ function bankRouteHtml(){
 const GT_CONTENT = { corre: 'gtBankCorre', colores: 'gtBankColores', bbk: 'gtBankBbk', dragon: 'gtBankDragon', ba: 'gtBankBa', bei: 'gtBankBa' };
 const GT_LABEL = { links: 'gtLinks', scores: 'gtScores', sheet: 'gtSheet', help: 'gtHelp' };
 function classPickHtml(){
-  const A = S.a, ks = Object.keys(A.classes).sort();
+  const A = S.a, ks = Object.keys(A.classes).sort((x, y) => x - y);
   if(!ks.length) return '<div class="notice">' + esc(T('noClasses')) + '</div><div class="row">' +
     (A.plan.active && A.clsReady ? '<button class="pill fill sm" data-act="newclass">＋ ' + esc(T('createClass')) + '</button>' : lockBtn(T('createClass'))) + '</div>';
   return '<div class="field"><label>' + esc(T('pickClass')) + '</label><div class="ctabs">' +
@@ -737,8 +740,9 @@ function baPracticeHtml(g){
 }
 // ---- 把／被：自訂句庫（只從遊戲現有的句子挑；句庫只存句子編號）----
 const BA_SLOTS = { free: 1, pro: 5 }, BA_MIN = 10, BA_MAX = { free: 50, pro: 80 };
-const baSlotsMax = () => S.a.plan.active ? BA_SLOTS.pro : BA_SLOTS.free;
-const baSentMax = () => S.a.plan.active ? BA_MAX.pro : BA_MAX.free;
+const baSlotsMax = () => S.a.plan.admin ? DATA.ADM.bank : S.a.plan.active ? BA_SLOTS.pro : BA_SLOTS.free;
+const baSlotsShown = () => S.a.plan.admin ? DATA.ADM.bank : BA_SLOTS.pro;   // 句庫卡片列出幾格（管理員比較多）
+const baSentMax = () => S.a.plan.admin ? DATA.ADM.sent : S.a.plan.active ? BA_MAX.pro : BA_MAX.free;
 const baLvCount = g => g === 'bei' ? 4 : 3;
 function baSentences(g){   // 回傳句子陣列；還沒載入就開始載入（載完重畫）
   const st = S.babSent[g];
@@ -754,7 +758,7 @@ const BA_CH = g => g === 'bei' ? '被' : '把';
 const baTot = dr => dr.ids.length + dr.custom.length;
 function baParseEntry(c){   // 資料庫 → 草稿（詞字串格式同遊戲：繁|簡|拼音|注音，簡體空白＝同繁體）
   const tk = (c.tk || []).map(x => { const [tc, sc, py, zy] = String(x).split('|'); return { tc, sc: sc || tc, py: py || '', zy: zy || '', py0: py || '' }; });
-  const im = /^[12][a-z0-9]{3,12}$/.test(String(c.im || '')) ? String(c.im) : '';
+  const im = /^[1-9][a-z0-9]{3,12}$/.test(String(c.im || '')) ? String(c.im) : '';
   const bl = /^([a-z0-9]{1,12}(\.[a-z0-9]{1,12}){2}|[a-z0-9_]{1,24}\.[a-z0-9]{1,12})$/.test(String(c.bl || '')) ? String(c.bl) : '';
   return { tk, es: c.es || '', en: c.en || '', im: im.slice(1), n: im ? +im.charAt(0) : 0, bl };
 }
@@ -763,6 +767,8 @@ const baLineOf = c => c.tk.map(t => t.tc).join(' ') + '｜' + c.es + (c.en ? '�
 const baSimp = () => I18N.getLang() === 'sc';
 const BA_MIXES = ['orig', 'even', 'A', 'L', 'P'];
 const BA_IMG_MAX = 20, BA_IMG_PER_DOC = 10, BA_IMG_KB = 50;
+const baImgDocsN = () => S.a && S.a.plan.admin ? DATA.ADM.imgDocs : 2;          // 圖片放在幾份文件（一般 2 份、管理員最多 9 份；遊戲端用代號第一個數字找文件，所以最多 9）
+const baImgMax = () => baImgDocsN() * BA_IMG_PER_DOC;
 const baImgCount = dr => dr.custom.filter(c => c.im && dr.imgs[c.im]).length;
 function baNewImgKey(){ const a = 'abcdefghijklmnopqrstuvwxyz0123456789'; let s = ''; for(let i = 0; i < 8; i++) s += a.charAt(Math.floor(Math.random() * a.length)); return s; }
 // 圖片：裁成正方形、縮小，壓到 50KB 以下（JPEG）
@@ -894,7 +900,7 @@ function baBankCardHtml(g){
   const A = S.a, P = A.plan, max = baSlotsMax(), list = A.babanks[g];
   let h = '<div class="card" id="babCard">' + phHead(T('baBanksTitle'), A.baReady ? T('baQuota', { n: list.length, max }) : '');
   if(!A.baReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
-  for(let i = 0; i < BA_SLOTS.pro; i++){
+  for(let i = 0; i < baSlotsShown(); i++){
     const b = list.find(x => x.slot === i);
     if(b){
       h += '<div class="setrow"><div><b>📚 ' + esc(b.name || ('#' + (i + 1))) + '</b><small>' + esc(T('baSlotN', { n: i + 1 }) + ' · ' + T('baSummary', { n: b.ids.length + (b.custom || []).length })) + '</small></div><div class="row">' +
@@ -1769,7 +1775,7 @@ const actions = {
     if(!b && S.a.babanks[g].length >= baSlotsMax()){ if(!S.a.plan.active) needSub(); return; }
     S.babEdit = { g, i, sid: b ? b.sid : '', tab: 'set', dr: { name: b ? b.name : '', ids: b ? b.ids.slice() : [], custom: b ? (b.custom || []).map(baParseEntry) : [], text: '', dirty: false, lv: 'all', q: '', imgs: {}, imgDirty: false, imgLoad: '', hadN: [], cfg: (b && b.cfg && [10, 20, 30].indexOf(+b.cfg.n) >= 0 && BA_MIXES.indexOf(b.cfg.mix) >= 0) ? { n: +b.cfg.n, mix: b.cfg.mix } : { n: 10, mix: 'orig' } } };
     const dr0 = S.babEdit.dr; dr0.text = dr0.custom.map(baLineOf).join('\n');
-    dr0.hadN = Array.from(new Set(dr0.custom.filter(c => c.im).map(c => c.n))).filter(n => n === 1 || n === 2);
+    dr0.hadN = Array.from(new Set(dr0.custom.filter(c => c.im).map(c => c.n))).filter(n => n >= 1 && n <= 9);
     if(dr0.hadN.length){
       dr0.imgLoad = 'loading';
       DATA.loadBaImgs(b.sid, (b.custom || [])).then(m => { Object.keys(m).forEach(k => { dr0.imgs[k] = m[k]; }); dr0.imgLoad = 'ok'; if(S.babEdit && S.babEdit.dr === dr0) render(); })
@@ -1843,7 +1849,7 @@ const actions = {
     if(!S.a.plan.active){ needSub(); return; }
     const E = S.babEdit; if(!E) return; const dr = E.dr, i = +el.dataset.k, c = dr.custom[i]; if(!c) return;
     if(dr.imgLoad === 'loading' || dr.imgLoad === 'fail'){ S.babMsg = T(dr.imgLoad === 'fail' ? 'baImgLoadFail' : 'baImgWait'); render(); return; }
-    if(!(c.im && dr.imgs[c.im]) && baImgCount(dr) >= BA_IMG_MAX){ S.babMsg = T('baImgMax', { max: BA_IMG_MAX }); render(); return; }
+    if(!(c.im && dr.imgs[c.im]) && baImgCount(dr) >= baImgMax()){ S.babMsg = T('baImgMax', { max: baImgMax() }); render(); return; }
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.id = 'babFile'; inp.style.display = 'none'; document.body.appendChild(inp);
     inp.addEventListener('change', async () => {
       const f = inp.files && inp.files[0]; inp.remove(); if(!f || S.babEdit !== E) return;
@@ -1879,10 +1885,11 @@ const actions = {
     const ids = dr.ids.filter(id => order.has(id)).sort((a, b) => order.get(a) - order.get(b));
     try{
       // 圖片：每份最多 10 張；原本在哪一份就留在哪一份，新的放進還有空位的那份
-      const withImg = dr.custom.filter(c => c.im && dr.imgs[c.im]), cnt = { 1: 0, 2: 0 };
-      withImg.forEach(c => { if(c.n === 1 || c.n === 2) cnt[c.n]++; else c.n = 0; });
-      withImg.forEach(c => { if(!c.n){ c.n = cnt[1] < BA_IMG_PER_DOC ? 1 : 2; cnt[c.n]++; } });
-      const imgDocs = [{}, {}]; withImg.forEach(c => { imgDocs[c.n - 1][c.im] = dr.imgs[c.im]; });
+      const nDocs = baImgDocsN(), cnt = {}; for(let k = 1; k <= nDocs; k++) cnt[k] = 0;
+      const withImg = dr.custom.filter(c => c.im && dr.imgs[c.im]);
+      withImg.forEach(c => { if(c.n >= 1 && c.n <= nDocs) cnt[c.n]++; else c.n = 0; });
+      withImg.forEach(c => { if(!c.n){ let k = 1; while(k < nDocs && cnt[k] >= BA_IMG_PER_DOC) k++; c.n = k; cnt[k]++; } });
+      const imgDocs = Array.from({ length: nDocs }, () => ({})); withImg.forEach(c => { imgDocs[c.n - 1][c.im] = dr.imgs[c.im]; });
       const custom = dr.custom.map(c => { const o = baEncEntry(c); if(c.im && dr.imgs[c.im]) o.im = c.n + c.im; return o; });
       const r = await DATA.saveBaBank(g, A.babslots, E.i, E.sid, { name, ids, custom, cfg: (A.plan.active && !(dr.cfg.n === 10 && dr.cfg.mix === 'orig')) ? { n: dr.cfg.n, mix: dr.cfg.mix } : null, imgDocs: dr.imgDirty ? imgDocs : null, hadImgDocs: dr.hadN });
       A.babslots = r.slots;

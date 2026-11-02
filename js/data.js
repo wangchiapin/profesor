@@ -23,6 +23,12 @@ const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colo
 const MAX_CLASSES = 3;
 const ADMIN_EMAIL = 'a2224907@gmail.com';   // 管理員（Firestore 規則也是這個信箱）；管理員看得到維修中的遊戲
 const PLAN_OK = ['month', 'year', 'trial', 'pro'];
+// 管理員（ADMIN_EMAIL 已驗證登入）：視為訂閱中，班級、句庫、句數、主題、範圍等數量上限全部放寬到 ADM 的數字
+// （Firestore 規則本來就放行管理員的所有寫入，所以這裡只是畫面與程式端的限制）。
+// 注意：學生端寫成績、讀訂閱句庫時，規則會查「老師自己的 site_plans」，所以管理員帳號也要有一筆長期有效的訂閱資料。
+const ADM = { classes: 30, bank: 30, sent: 300, sets: 100, themes: 30, words: 200, imgDocs: 9 };
+let adminMode = false;
+const isAdminMode = () => adminMode;
 let auth = null, db = null;
 
 const tsMs = v => (v && typeof v.toMillis === 'function') ? v.toMillis() : (typeof v === 'number' ? v : null);
@@ -65,6 +71,8 @@ async function loadAccount(user){
   const plan = { plan: d.plan || 'free', expiresAt: tsMs(d.expiresAt) };
   plan.active = planActive(plan);
   const acct = { admin: !!(user.email === ADMIN_EMAIL && user.emailVerified), maint: {}, plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, babanks: { ba: [], bei: [] }, babslots: { ba: {}, bei: {} }, baReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true };
+  adminMode = acct.admin;
+  if(acct.admin){ plan.plan = 'pro'; plan.admin = true; plan.active = true; plan.expiresAt = null; }   // 管理員：視為訂閱中，不顯示到期日
   try{
     const ix = await db.collection('teacher_classes').doc(user.uid).get();
     acct.cslots = ix.exists ? (ix.data().slots || {}) : {};
@@ -190,7 +198,7 @@ async function ensureColoresSid(items, i){
 // shared_bbk/{sid} = { owner, name, th, lv, d, t, n, updatedAt }          學生連結 ?r=<sid> 讀這份（任何人可讀）
 // 有連結碼（sid）的設定一改，shared_bbk 跟著改，已發出去的連結就會用新的範圍。
 const BBK_FREE = 3, BBK_PRO = 15;
-const bbkMax = plan => plan && plan.active ? BBK_PRO : BBK_FREE;
+const bbkMax = plan => plan && plan.admin ? ADM.sets : plan && plan.active ? BBK_PRO : BBK_FREE;
 function validBbk(x){ return x && typeof x.id === 'string' && [1, 2, 3].indexOf(x.lv) >= 0 && Array.isArray(x.d) && Array.isArray(x.t) && typeof x.n === 'number'; }
 const bbkItem = x => { const o = { id: x.id, name: x.name, th: x.th || 'people', lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n }; if(x.sid) o.sid = x.sid; return o; };
 const bbkShared = x => ({ owner: uid(), name: x.name, th: x.th || 'people', lv: x.lv, d: x.d.slice(), t: x.t.slice(), n: x.n, updatedAt: serverTs() });
@@ -307,7 +315,7 @@ async function coloresLinkOff(items, i){
   return writeColoresList(items.map((x, k) => { if(k !== i) return x; const y = Object.assign({}, x); delete y.sid; return y; }));
 }
 function linkColoresPractice(sid){ return GAME_URL.colores + '?c=' + sid; }
-const coloresMax = plan => plan && plan.active ? 15 : 3;
+const coloresMax = plan => plan && plan.admin ? ADM.sets : plan && plan.active ? 15 : 3;
 
 // ---- 跑吧！漢字：句庫（格式與 corre/teacher/ 完全相同，規則見 game-kit firebase-rules/subscription-48d3c.rules.txt）----
 // teacher_banks/{uid} = { slots: { '0'..'4': sid }, updatedAt }
@@ -343,11 +351,11 @@ async function saveBaBank(game, bslots, slot, sid, data){
   b.set(db.collection('shared_babanks').doc(sid), Object.assign({ owner: uid(), game, slot, name: data.name, ids: data.ids, custom: data.custom || [], updatedAt: ts }, data.cfg ? { cfg: data.cfg } : {}));
   // 圖片：shared_babimgs/{句庫碼}_{1|2}，每份最多 10 張；只有圖片有增減（imgDocs 有值）才寫
   if(data.imgDocs){
-    [1, 2].forEach(n => {
+    for(let n = 1; n <= 9; n++){
       const imgs = data.imgDocs[n - 1] || {}, ref = db.collection('shared_babimgs').doc(sid + '_' + n);
       if(Object.keys(imgs).length) b.set(ref, { owner: uid(), imgs, updatedAt: ts });
       else if(data.hadImgDocs && data.hadImgDocs.indexOf(n) >= 0) b.delete(ref);
-    });
+    }
   }
   await b.commit();
   return { sid, slots };
@@ -357,15 +365,14 @@ async function deleteBaBank(game, bslots, slot, sid){
   const slots = Object.assign({}, bslots, { [game]: g });
   const b = db.batch();
   b.delete(db.collection('shared_babanks').doc(sid));
-  b.delete(db.collection('shared_babimgs').doc(sid + '_1'));
-  b.delete(db.collection('shared_babimgs').doc(sid + '_2'));
+  for(let n = 1; n <= (adminMode ? ADM.imgDocs : 2); n++) b.delete(db.collection('shared_babimgs').doc(sid + '_' + n));
   b.set(db.collection('teacher_babanks').doc(uid()), Object.assign({}, slots, { updatedAt: serverTs() }));
   await b.commit();
   return slots;
 }
 // 讀句庫的圖片：回傳 { 圖片代號: dataURL }；custom[].im = 「1或2」＋圖片代號，數字是圖片在哪一份
 async function loadBaImgs(sid, custom){
-  const need = new Set((custom || []).filter(c => c.im).map(c => String(c.im).charAt(0)).filter(n => n === '1' || n === '2'));
+  const need = new Set((custom || []).filter(c => c.im).map(c => String(c.im).charAt(0)).filter(n => /^[1-9]$/.test(n)));
   const out = {};
   await Promise.all(Array.from(need).map(async n => {
     const s = await db.collection('shared_babimgs').doc(sid + '_' + n).get();
@@ -445,6 +452,6 @@ function sendFeedback(f){
   });
 }
 
-window.DATA = { init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_THEMES_MAX, DRAGON_WORDS_MAX, DRAGON_WORDS_MIN, DRAGON_SETS_MAX, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, loadSentenceTokens, loadBlocks, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, MAX_CLASSES, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+window.DATA = { isAdminMode, ADM, get MAX_CLASSES(){ return adminMode ? ADM.classes : MAX_CLASSES; }, get DRAGON_THEMES_MAX(){ return adminMode ? ADM.themes : DRAGON_THEMES_MAX; }, get DRAGON_WORDS_MAX(){ return adminMode ? ADM.words : DRAGON_WORDS_MAX; }, get DRAGON_SETS_MAX(){ return adminMode ? ADM.sets : DRAGON_SETS_MAX; }, init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_WORDS_MIN, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, loadSentenceTokens, loadBlocks, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

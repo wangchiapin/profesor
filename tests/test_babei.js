@@ -55,7 +55,7 @@ try{
   const rq = m => { for(const d of base){ const f = path.join(d, 'node_modules', m); if(fs.existsSync(f)) return f; } throw new Error('not found: ' + m); };
   LIBS = { opencc: fs.readFileSync(rq('opencc-js/dist/umd/full.js'), 'utf8'), pinyin: fs.readFileSync(rq('pinyin-pro/dist/index.js'), 'utf8') };
 }catch(e){ console.log('（找不到 opencc-js / pinyin-pro，略過「自己寫句子」的測試）'); }
-async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc' } = {}){
+async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc', user = TEACH } = {}){
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, acceptDownloads: true });
   const page = await ctx.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -74,7 +74,7 @@ async function open(browser, { seedOpt, q = '', hash = '', lang = 'tc' } = {}){
       if(m){ const f = path.join(CORRE_DIR, 'bank', m[1]); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: '' }); } }
     return r.abort();
   });
-  await page.addInitScript(`window.__SEED=${JSON.stringify(seed(seedOpt))};window.__USER=${JSON.stringify(TEACH)};window.__GOOGLE=${JSON.stringify(TEACH)};try{localStorage.setItem('profesorLang','${lang}')}catch(e){}`);
+  await page.addInitScript(`window.__SEED=${JSON.stringify(seed(seedOpt))};window.__USER=${JSON.stringify(user)};window.__GOOGLE=${JSON.stringify(user)};try{localStorage.setItem('profesorLang','${lang}')}catch(e){}`);
   await page.addInitScript(MOCK);
   await page.goto(BASE + '/index.html' + q + hash);
   await page.waitForSelector('.brand small');
@@ -380,6 +380,49 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=babdel][data-k="0"]'); await page.waitForTimeout(500);
     d = await db(page); ok(Object.keys(d.shared_babanks || {}).length === 0 && Object.keys(d.shared_babimgs || {}).length === 0, '刪句庫：圖片文件一起刪掉');
     ok(await noOverflow(page), '沒有橫向捲動'); ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[G2] 管理員：圖片最多 9 份（90 張）、句庫格數放寬；一般老師還是 20 張');
+  const ADMIN = Object.assign({}, TEACH, { email: 'a2224907@gmail.com', emailVerified: true });
+  for(const who of ['admin', 'normal']){
+    const isAdm = who === 'admin';
+    const { page, errors, ctx } = await open(browser, { seedOpt: { pro: !isAdm }, user: isAdm ? ADMIN : TEACH, q: '?dev=ba', hash: '#/game/ba/content' });
+    await page.waitForSelector('#babCard');
+    const quota = await text(page, '#babCard');
+    ok(isAdm ? quota.includes('/ 30') : quota.includes('/ 5'), (isAdm ? '管理員（沒有訂閱資料）' : '一般訂閱老師') + '：把的句庫格數 ' + (isAdm ? '30' : '5'), quota.slice(0, 40));
+    await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
+    await page.click('[data-act=edtab][data-k=set]'); await page.fill('#babName', '多圖');
+    await page.click('[data-act=edtab][data-k=write]'); await page.waitForSelector('#babText');
+    const nouns = ['杯子', '包包', '筆', '手機', '鑰匙', '帽子', '外套', '蘋果', '書包', '雨傘', '眼鏡', '錢包', '水瓶', '毛巾', '襪子', '盤子', '書', '信', '鞋子', '報紙', '相機', '電腦', '筷子', '碗', '枕頭'];
+    await page.fill('#babText', nouns.map(n => '她 把 ' + n + ' 放在 桌子上｜Puso ' + n + '.').join('\n')); await page.click('[data-act=babgen]'); await page.waitForTimeout(600);
+    ok((await page.$$('[data-act=babimg]')).length === 25, who + '：25 句都有「加圖片」按鈕');
+    const png = Buffer.from(await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 600; c.height = 400; const x = c.getContext('2d'); const d = x.createImageData(600, 400); for(let i = 0; i < d.data.length; i += 4){ d.data[i] = Math.random() * 255; d.data[i + 1] = Math.random() * 255; d.data[i + 2] = Math.random() * 255; d.data[i + 3] = 255; } x.putImageData(d, 0, 0); return c.toDataURL('image/png').split(',')[1]; }), 'base64');
+    const addImg = async k => { const had = (await page.$$('.bimg')).length; const [fc] = await Promise.all([page.waitForEvent('filechooser'), page.click('[data-act=babimg][data-k="' + k + '"]')]); await fc.setFiles({ name: 'a.png', mimeType: 'image/png', buffer: png }); await page.waitForFunction(n => document.querySelectorAll('.bimg').length >= n, had + 1, { timeout: 8000 }).catch(() => {}); };
+    for(let k = 0; k < 25; k++){
+      if(!isAdm && k === 20){ await page.click('[data-act=babimg][data-k="20"]').catch(() => {}); break; }
+      await addImg(k);
+    }
+    const nImg = (await page.$$('.bimg')).length;
+    ok(nImg === (isAdm ? 25 : 20), who + '：可以加到 ' + (isAdm ? '25' : '20（第 21 張被擋）') + ' 張圖', nImg);
+    if(!isAdm) ok((await text(page, '#babCard')).includes('最多 20'), '一般老師：第 21 張出現「最多 20 張」');
+    await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow', { timeout: 15000 });
+    const d = await db(page), sid = Object.keys(d.shared_babanks)[0], im = d.shared_babimgs || {};
+    const cnt = n => im[sid + '_' + n] ? Object.keys(im[sid + '_' + n].imgs).length : 0;
+    if(isAdm){
+      ok(cnt(1) === 10 && cnt(2) === 10 && cnt(3) === 5 && !im[sid + '_4'], '管理員：25 張圖分成 3 份文件（10＋10＋5）', [cnt(1), cnt(2), cnt(3), cnt(4)]);
+      const b = d.shared_babanks[sid]; const pre = n => b.custom.filter(c => new RegExp('^' + n + '[a-z0-9]{8}$').test(c.im || '')).length;
+      ok(pre(1) === 10 && pre(2) === 10 && pre(3) === 5, '句子的圖片代號第一個數字 = 在第幾份（遊戲端靠這個數字找文件）', [pre(1), pre(2), pre(3)]);
+      // 再編輯：3 份都讀得回來
+      await page.click('[data-act=babedit][data-k="0"]'); await page.waitForSelector('#babName'); await page.click('[data-act=edtab][data-k=write]');
+      await page.waitForFunction(() => document.querySelectorAll('.bimg').length === 25, null, { timeout: 8000 }).catch(() => {});
+      ok((await page.$$('.bimg')).length === 25, '管理員：再編輯，3 份文件的 25 張圖都讀回來');
+      await page.click('[data-act=edtab][data-k=set]'); await page.click('[data-act=babsave]'); await page.waitForSelector('#babCard .setrow');
+      await page.click('[data-act=babdel][data-k="0"]'); await page.waitForTimeout(600);
+      const d2 = await db(page); ok(Object.keys(d2.shared_babanks || {}).length === 0 && Object.keys(d2.shared_babimgs || {}).length === 0, '管理員：刪句庫時 3 份圖片文件一起刪掉');
+    }else{
+      ok(cnt(1) === 10 && cnt(2) === 10 && !im[sid + '_3'], '一般老師：20 張圖分成 2 份文件（10＋10），沒有第 3 份', [cnt(1), cnt(2), cnt(3)]);
+    }
+    ok(errors.length === 0, who + '：沒有頁面錯誤', errors); await ctx.close();
+  }
   { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, q: '?dev=ba', hash: '#/game/ba/content' });
     await page.waitForSelector('#babCard'); await page.click('[data-act=babedit]'); await page.waitForSelector('#babName');
     await page.click('[data-act=edtab][data-k=write]'); await page.fill('#babText', '我 把 書 放在 桌子上｜Puse el libro.'); await page.click('[data-act=babgen]'); await page.waitForTimeout(400);

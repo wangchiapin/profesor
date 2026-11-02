@@ -31,7 +31,7 @@ function serve(dir){
     if(!f.startsWith(dir) || !fs.existsSync(f)){ r.writeHead(404); return r.end(); } r.writeHead(200, { 'Content-Type': f.endsWith('.html') ? 'text/html; charset=utf-8' : 'application/octet-stream' }); fs.createReadStream(f).pipe(r); });
     s.listen(0, 'localhost', () => res(s)); });
 }
-async function open(browser, base, q, seedClass = true, maint = ''){
+async function open(browser, base, q, seedClass = true, maint = '', seedJs = ''){
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage(); const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -43,6 +43,7 @@ async function open(browser, base, q, seedClass = true, maint = ''){
   if(maint === 'on') await page.addInitScript("window.__DB.portalStatus = { 'center-ba': { off: true }, 'center-bei': { off: true } };");
   if(maint === 'none') await page.addInitScript('window.__DB.portalStatus = {};');
   await page.addInitScript(`try{localStorage.setItem('ba_cfg',JSON.stringify({name:'Ana'}))}catch(e){}`);
+  if(seedJs) await page.addInitScript(seedJs);
   await page.goto(base + '/index.html' + q); await page.waitForTimeout(400);
   return { page, errors, ctx };
 }
@@ -70,6 +71,18 @@ const dbOf = (page, c) => page.evaluate(c => window.__DB[c] || {}, c);
       ok(await lab('zh', 'sc') === '老师管理中心', '按鈕文字：簡體');
       { const es = await lab('es', 'tc'); ok(es.includes('老師管理中心') && es.includes('Centro para profesores'), '按鈕文字：中文＋西文', es); }
       { const en = await lab('en', 'tc'); ok(en.includes('老師管理中心') && en.includes('Teacher center'), '按鈕文字：中文＋英文', en); }
+      ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+    console.log('\n[' + g + '-IMG] 自訂句庫的圖片：放在第 1～9 份文件（管理員超過 20 張時用到第 3 份以後）');
+    { const JPG = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==';
+      const mk = n => ({ tk: ['我||wǒ|ㄨㄛˇ', (g === 'ba' ? '把' : '被') + '||bǎ|ㄅㄚˇ', '書||shū|ㄕㄨ'], es: 'Frase ' + n, en: 'Sentence ' + n, im: n + 'abcd123' + n });
+      const seedJs = `window.__DB.shared_babanks={bankSID0001:{owner:'u1',game:'${g}',slot:0,name:'多圖',ids:[],custom:${JSON.stringify([1, 2, 3, 9].map(mk))},updatedAt:1}};` +
+        `window.__DB.shared_babimgs={bankSID0001_1:{owner:'u1',imgs:{abcd1231:'${JPG}'}},bankSID0001_3:{owner:'u1',imgs:{abcd1233:'${JPG}'}},bankSID0001_9:{owner:'u1',imgs:{abcd1239:'${JPG}'}}};`;
+      const { page, errors, ctx } = await open(browser, base, '?bank=bankSID0001&preview=1', true, 'none', seedJs);
+      await page.waitForTimeout(600);
+      const r = await page.evaluate(() => ({ fatal: BANK.fatal, im: BANK.cust.map(x => x.im), img: BANK.cust.map(x => !!x.img) }));
+      ok(!r.fatal && r.im.join() === '1abcd1231,2abcd1232,3abcd1233,9abcd1239', '句庫的 4 句都讀進來，圖片代號 1／2／3／9 都認得', r);
+      ok(JSON.stringify(r.img) === JSON.stringify([true, false, true, true]), '第 1、3、9 份文件有圖 → 有圖；第 2 份文件不存在 → 沒圖（照出文字題）', r.img);
       ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
     console.log('\n[' + g + '-C] ?class=…：成績回傳老師（開不開放由老師中心開關決定，遊戲本身不再擋）');

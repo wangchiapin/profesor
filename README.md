@@ -175,3 +175,10 @@ node tests/test_dragon.js [截圖資料夾]   # 墨龍（需 CORRE_LIBS，遊戲
 - 同時到 share-zone 的 `stats.html#sub`「老師管理中心遊戲開關」清單（`CS`）加一列，不然開關裡看不到這款遊戲。
 - 新遊戲還沒做好之前，先在開關勾維修中；做好再取消。
 - 遊戲介面頁要加「老師管理中心」按鈕。
+
+### 管理員（無限制）模式（2026-11-02）
+- 只有 `a2224907@gmail.com` 且信箱已驗證（與 stats.html 的管理員相同）才會啟用：`loadAccount` 設 `adminMode`，方案顯示「管理員（無限制）」，所有訂閱判斷視為有效。
+- 上限放寬（不是真的無限，是寬鬆）：班級 30、每款句庫 30 個、自訂句子 300、色數／比比看組數 100、墨龍主題 30／單字 200、把／被圖片最多 90 張（9 份文件，每份 ≤50KB 的限制不變）。色數自訂顏色仍是 12（遊戲設計限制）。
+- 常數集中在 `data.js` 的 `ADM`；各處用 `DATA.MAX_CLASSES`、`DRAGON.MAX_T/MAX_W/MAX_SETS`、`CORRE.PRO_SLOTS` 等 getter 讀取。
+- Firestore 規則不用改：規則的 `isAdmin()`＋全域 admin 規則本來就讓管理員寫入不受限。學生端寫入（class_scores、class_plays）與讀取付費句庫看的是**老師的 `site_plans/{uid}`**，所以管理員要有一筆長期有效的方案文件（plan `pro`，expiresAt 設很遠，如 2099）。
+- 遊戲端（跑吧、墨龍、把、被）也放寬：自訂句子 300、圖片代碼 1～9、墨龍主題／單字上限。

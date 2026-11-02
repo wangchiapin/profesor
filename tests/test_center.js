@@ -1265,6 +1265,46 @@ server.listen(0, 'localhost', async () => {
     ok(await page.$('#bbkCard') !== null && (await text(page)).includes('只有你看得到'), '管理者：卡片照常、並有「只有你看得到」的提示');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
 
+  console.log('\n[Z] 管理員（a2224907@gmail.com 已驗證）：視為訂閱中、數量上限放寬；一般老師與未驗證的不受影響');
+  { const ADMIN = Object.assign({}, TEACH, { email: 'a2224907@gmail.com', emailVerified: true });
+    const lims = page => page.evaluate(() => { const P = __profesor.S.a.plan; return { admin: DATA.isAdminMode(), cls: DATA.MAX_CLASSES, th: DRAGON.MAX_T, w: DRAGON.MAX_W, sets: DRAGON.MAX_SETS, slots: CORRE.PRO_SLOTS, bbk: DATA.bbkMax(P), col: DATA.coloresMax(P), active: P.active, adminPlan: !!P.admin }; });
+    { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, user: ADMIN, ls: { profesorLang: 'tc' }, hash: '#/home' });
+      await page.waitForSelector('.badge');
+      ok((await page.$eval('.badge', e => e.textContent)).includes('管理員') && await page.$('.badge.pro') !== null, '管理員：方案顯示「管理員（無限制）」（沒有訂閱資料也一樣）');
+      ok((await text(page)).includes('2 / 30'), '管理員：班級用量 2 / 30');
+      const L = await lims(page);
+      ok(JSON.stringify(L) === JSON.stringify({ admin: true, cls: 30, th: 30, w: 200, sets: 100, slots: 30, bbk: 100, col: 100, active: true, adminPlan: true }), '管理員：各項上限（班級 30、墨龍主題 30／字 200／範圍 100、跑吧句庫 30、比比看 100、色數 100）', L);
+      // 班級：連建 3 個，超過一般的 3 班
+      await page.goto(page.url().split('#')[0] + '#/classes/new'); await page.waitForSelector('#newCls2');
+      for(const [i, n] of [[2, '週末班'], [3, '第四班'], [4, '第五班']]){
+        await page.waitForSelector('#newCls' + i); await page.fill('#newCls' + i, n); await page.click('[data-act=createclass]'); await page.waitForSelector('h2:has-text("' + n + '")');
+        if(i < 4){ await page.click('.ctabs [data-act=newclass]'); }
+      }
+      const d = await db(page); const sl = d.teacher_classes.u1.slots;
+      ok(Object.keys(sl).length === 5 && sl['3'] && sl['4'] && d.classes[sl['4']].slot === 4 && d.classes[sl['4']].name === '第五班', '管理員：建到第 5 班（slot 4），一般老師只能 3 班', Object.keys(sl));
+      ok(page.url().endsWith('#/class/4'), '第 5 班的網址 #/class/4 能開');
+      ok(JSON.stringify(await page.$$eval('.ctabs .pill', a => a.map(x => x.textContent.trim()))) === JSON.stringify(['🏫 週三班', '🏫 週五班', '🏫 週末班', '🏫 第四班', '🏫 第五班', '＋ 建立班級']), '班級分頁：5 班＋「＋ 建立班級」仍在');
+      // 跑吧：只列已有句庫＋第一個空格，數量 x / 30
+      await page.goto(page.url().split('#')[0] + '#/game/corre/content'); await page.waitForSelector('#correCard');
+      ok((await page.$$('#correCard .setrow')).length === 1 && (await page.$$('#correCard .slot.empty')).length === 1 && (await text(page, '#correCard')).includes('1 / 30'), '管理員：跑吧句庫卡片 1 個句庫＋1 個空格（已用 1 / 30）');
+      ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+    { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '#/home' });
+      await page.waitForSelector('.badge');
+      const L = await lims(page);
+      ok(JSON.stringify(L) === JSON.stringify({ admin: false, cls: 3, th: 3, w: 40, sets: 15, slots: 5, bbk: 3, col: 3, active: false, adminPlan: false }), '一般免費老師：上限不變（班 3、墨龍主題 3／字 40／範圍 15、跑吧 5 格、比比看 3、色數 3）', L);
+      ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+    { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, user: Object.assign({}, ADMIN, { emailVerified: false }), ls: { profesorLang: 'tc' }, hash: '#/home' });
+      await page.waitForSelector('.badge');
+      const L = await lims(page);
+      ok(L.admin === false && L.cls === 3 && L.active === false && !(await page.$eval('.badge', e => e.textContent)).includes('管理員'), '信箱沒驗證：不算管理員，上限照一般', L);
+      ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+    { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '#/home' });
+      await page.waitForSelector('.badge');
+      const L = await lims(page);
+      ok(L.admin === false && L.active === true && L.cls === 3 && L.slots === 5 && L.bbk === 15 && L.col === 15 && L.th === 3, '一般訂閱老師：上限不變（班 3、跑吧 5、比比看／色數 15）', L);
+      ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+  }
+
 
   await browser.close(); server.close();
   console.log(`\n通過 ${pass}，失敗 ${fail}`); process.exit(fail ? 1 : 0);

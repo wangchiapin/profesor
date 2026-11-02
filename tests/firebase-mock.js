@@ -16,6 +16,8 @@
   const NOW = () => Date.now();
   function stamp(d){ const o = {}; for(const k in d) o[k] = (d[k] && d[k].__ts) ? NOW() : d[k]; return o; }
   function checkWrite(pid, c, id, data, user){
+    // 管理員：規則最上面有「管理員可讀寫全部」（isAdmin：a2224907@gmail.com 且信箱已驗證），所有集合都放行
+    if(user && user.email === 'a2224907@gmail.com' && user.emailVerified === true) return;
     // 比比看範圍：照 game-kit firebase-rules/subscription-48d3c.rules.txt 的規則模擬（額度：免費 3、訂閱 15；到期後只能變少或不變）
     if(c === 'bbk_sets'){
       if(!user || user.uid !== id) deny();

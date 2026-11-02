@@ -427,6 +427,7 @@ const D = {
   plan_year: ['年訂閱', '年订阅', 'Suscripción anual', 'Yearly plan'],
   plan_trial: ['試用', '试用', 'Prueba', 'Trial'],
   plan_pro: ['訂閱', '订阅', 'Suscripción', 'Subscription'],
+  plan_admin: ['管理員（無限制）', '管理员（无限制）', 'Administrador (sin límites)', 'Admin (no limits)'],
   planDaysLeft: ['剩 {n} 天', '剩 {n} 天', 'quedan {n} días', '{n} days left'],
   planWasExpired: ['{plan}（已到期）', '{plan}（已到期）', '{plan} (vencida)', '{plan} (expired)'],
   planUntil: ['到期日 {date}', '到期日 {date}', 'Vence el {date}', 'Valid until {date}'],

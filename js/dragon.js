@@ -21,6 +21,8 @@ const LANG_I = { tc: 1, sc: 2, es: 3, en: 4 };
 const builtinName = id => { const b = BUILTIN.find(x => x[0] === id); return b ? b[LANG_I[I18N.getLang()]] : id; };
 const isFreeId = id => FREE_TEACHER.indexOf(id) >= 0;
 const MAX_T = 3, MAX_W = 40, MIN_W = 6, MAX_SETS = 15;
+const adm = () => !!(window.DATA && window.DATA.isAdminMode && window.DATA.isAdminMode());   // 管理員：數量上限放寬（見 data.js 的 ADM）
+const maxT = () => adm() ? window.DATA.ADM.themes : MAX_T, maxW = () => adm() ? window.DATA.ADM.words : MAX_W, maxSets = () => adm() ? window.DATA.ADM.sets : MAX_SETS;
 
 // ---- 範圍名稱、摘要 ----
 function setSummary(set, themes){
@@ -60,7 +62,7 @@ async function generate(dr){
   const { items, bad } = parseText(dr.text);
   if(bad.length) return { err: T('dragonBadLine', { line: bad[0] }) };
   if(items.length < MIN_W) return { err: T('dragonTooFew', { n: MIN_W }) };
-  if(items.length > MAX_W) return { err: T('dragonTooMany', { n: MAX_W }) };
+  if(items.length > maxW()) return { err: T('dragonTooMany', { n: maxW() }) };
   const old = {}; (dr.rows || []).forEach(r => { old[r.t] = r; });
   const rows = [];
   for(const it of items){
@@ -76,7 +78,7 @@ function draftValid(dr){
   if(!name) return T('dragonNeedName');
   if(!dr.rows) return T('dragonNeedGen');
   if(dr.rows.length < MIN_W) return T('dragonTooFew', { n: MIN_W });
-  if(dr.rows.length > MAX_W) return T('dragonTooMany', { n: MAX_W });
+  if(dr.rows.length > maxW()) return T('dragonTooMany', { n: maxW() });
   if(dr.rows.some(r => !String(r.p || '').trim())) return T('dragonNeedPy');
   return '';
 }
@@ -293,5 +295,5 @@ async function makeWorksheet(themes, opt){
 }
 
 window.DRAGON = { ready, BUILTIN, IDS, FREE_TEACHER, PUBLIC_FREE, builtinName, isFreeId, setSummary, themeLabel, parseText, rowsToText, draftFrom, generate, draftValid, toTheme,
-  loadBuiltin, makeWorksheet, MAX_T, MAX_W, MIN_W, MAX_SETS };
+  loadBuiltin, makeWorksheet, get MAX_T(){ return maxT(); }, get MAX_W(){ return maxW(); }, MIN_W, get MAX_SETS(){ return maxSets(); } };
 })();

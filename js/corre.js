@@ -132,8 +132,10 @@ let ED = null;         // 編輯中的句庫 { slot, sid, name, speed, script, b
 let FORM = null;       // 畫面重畫（例如切換語言）時暫存還沒加入的輸入
 let editingIdx = -1, bulkReady = [];
 const planOn = () => !!(ACC && ACC.plan && ACC.plan.active);
-const maxSent = () => planOn() ? PRO_SENT : FREE_SENT;
-const cap = () => ED && ED.slot === 0 ? maxSent() : PRO_SENT;
+const adm = () => !!(window.DATA && window.DATA.isAdminMode && window.DATA.isAdminMode());   // 管理員：句庫數與句數上限放寬（見 data.js 的 ADM）
+const proSent = () => adm() ? window.DATA.ADM.sent : PRO_SENT;
+const maxSent = () => planOn() ? proSent() : FREE_SENT;
+const cap = () => ED && ED.slot === 0 ? maxSent() : proSent();
 const bankOf = (acct, slot) => (acct.banks || []).find(b => b.slot === slot);
 
 // 打開某個位置。回傳 null = 可以編輯；否則回傳原因（i18n 的 key）
@@ -651,7 +653,7 @@ function mount(el, onBack){
 // ================= 句庫卡片用的小工具 =================
 function summary(b, plan){
   const d = b.data || {}, n = (d.sentences || []).length, on = !!(plan && plan.active);
-  const max = b.slot === 0 ? (on ? PRO_SENT : FREE_SENT) : PRO_SENT;
+  const max = b.slot === 0 ? (on ? proSent() : FREE_SENT) : proSent();
   return tr('count', { n, max }) + ' · ' + tr(d.speed || 'normal') + ' · ' + tr(d.script === 'simp' ? 'simp' : 'trad') + (d.pro ? ' · ' + tr('planPro') : '');
 }
 const paused = (b, plan) => !!(b.data && b.data.pro) && !(plan && plan.active);
@@ -924,5 +926,5 @@ async function makeWorksheet(data, opt){
 async function simpOf(text){ await loadLibs(); return toSimplified(String(text || '')); }
 async function pinyinOf(text){ await loadLibs(); const t = String(text || '').trim(); return t ? toPinyinTW(t, toSimplified(t)).trim() : ''; }
 window.CORRE = { simpOf, buildPdf, pinyinOf, tr, open, close, mount, capture, isDirty, summary, paused, remove, bankName, bankOf, qrCanvas, makeWorksheet,
-  FREE_SLOTS, PRO_SLOTS, MAX_CHARS, ZY, _toneFix: fixYiBu, ready: loadLibs, makeTokens };
+  FREE_SLOTS, get PRO_SLOTS(){ return adm() ? window.DATA.ADM.bank : PRO_SLOTS; }, MAX_CHARS, ZY, _toneFix: fixYiBu, ready: loadLibs, makeTokens };
 })();
