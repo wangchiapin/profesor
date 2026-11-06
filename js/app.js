@@ -5,9 +5,9 @@ const T = (k, p) => I18N.t(k, p);
 const esc = BOOKS.esc;
 const app = document.getElementById('app');
 const GAMES = ['corre', 'colores', 'bbk'];
-const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon', ba: 'gameBa', bei: 'gameBei' };
-const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc', ba: 'gameBaDesc', bei: 'gameBeiDesc' };
-const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon', 'ba', 'bei'];
+const GAME_KEY = { corre: 'gameCorre', colores: 'gameColores', bbk: 'gameBbk', dragon: 'gameDragon', ba: 'gameBa', bei: 'gameBei', rayo: 'gameRayo' };
+const GAME_DESC = { corre: 'gameCorreDesc', colores: 'gameColoresDesc', bbk: 'gameBbkDesc', dragon: 'gameDragonDesc', ba: 'gameBaDesc', bei: 'gameBeiDesc', rayo: 'gameRayoDesc' };
+const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon', 'ba', 'bei', 'rayo'];
 const isBaBei = g => g === 'ba' || g === 'bei';
 const GAME_TABS = ['content', 'ranges', 'links', 'scores', 'sheet', 'help'];
 const DR = window.DRAGON;
@@ -205,7 +205,7 @@ function usageOf(g){
   if(g === 'corre') return T('usageCorre') + '　' + (A.extrasReady ? A.banks.length + ' / ' + banksMax : '–');
   if(g === 'colores') return T('usageColores') + '　' + (A.extrasReady ? A.configs.length + ' / ' + cfgMax : '–');
   if(g === 'bbk') return T('usageBbk') + '　' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–');
-  if(isBaBei(g)) return '';
+  if(isBaBei(g) || g === 'rayo') return '';
   return T('usageDragonThemes') + '　' + (A.dragonReady ? A.dragon.themes.length + ' / ' + DATA.DRAGON_THEMES_MAX : '–') + '　·　' + T('usageDragonSets') + '　' + (A.dragonReady ? A.dragon.sets.length + ' / ' + DATA.DRAGON_SETS_MAX : '–');
 }
 function homeHtml(){
@@ -671,7 +671,7 @@ function bankRouteHtml(){
     esc(why === 'locked' ? CORRE.tr('slotLockedEd') : T('bbkUnavailable')) + '</div>';
 }
 // ---- 遊戲頁：每款遊戲一頁，分頁＝題庫／連結／成績／學習單／說明 ----
-const GT_CONTENT = { corre: 'gtBankCorre', colores: 'gtBankColores', bbk: 'gtBankBbk', dragon: 'gtBankDragon', ba: 'gtBankBa', bei: 'gtBankBa' };
+const GT_CONTENT = { corre: 'gtBankCorre', colores: 'gtBankColores', bbk: 'gtBankBbk', dragon: 'gtBankDragon', ba: 'gtBankBa', bei: 'gtBankBa', rayo: 'gtBankRayo' };
 const GT_LABEL = { links: 'gtLinks', scores: 'gtScores', sheet: 'gtSheet', help: 'gtHelp' };
 function classPickHtml(){
   const A = S.a, ks = Object.keys(A.classes).sort((x, y) => x - y);
@@ -965,6 +965,7 @@ function babEditorHtml(){
 }
 function baSoonHtml(what){ return '<div class="card"><div class="notice">🚧 ' + esc(T(what)) + '</div></div>'; }
 function gameLinksHtml(g){
+  if(g === 'rayo') return baPracticeHtml(g) + baSoonHtml('rayoSoon');   // 班級連結第 3 步才做
   if(isBaBei(g)) return baPracticeHtml(g) + classLinksHtml(g);
   if(g === 'corre') return pubCardHtml() + classLinksHtml(g);
   if(g === 'dragon') return dragonQuickHtml() + classLinksHtml(g);
@@ -982,18 +983,18 @@ function gameHtml(){
   if(gameMaint(g)) h += maintAdminBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]]].concat(g === 'dragon' ? [['ranges', 'gtRangesDragon']] : []).concat([['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]]).map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
-  if(S.gt === 'content') return h + (isBaBei(g) ? baBankCardHtml(g) : g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
+  if(S.gt === 'content') return h + (g === 'rayo' ? baSoonHtml('rayoSoon') : isBaBei(g) ? baBankCardHtml(g) : g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
   if(S.gt === 'ranges') return h + (g === 'dragon' ? dragonRangesHtml() : '');
   if(S.gt === 'links') return h + gameLinksHtml(g);
   if(S.gt === 'scores') return h + gameScoresHtml();
-  if(S.gt === 'sheet') return h + (isBaBei(g) ? bawFormHtml() : g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
+  if(S.gt === 'sheet') return h + (g === 'rayo' ? baSoonHtml('rayoSoon') : isBaBei(g) ? bawFormHtml() : g === 'corre' ? cwsFormHtml() : g === 'colores' ? wsFormHtml() : g === 'bbk' ? bwsFormHtml() : dwsFormHtml());
   return h + helpHtml(g);
 }
 // ---- 遊戲設定說明（#/help）：內容在 js/help.js（靜態文字，四種語言）----
 function helpLang(){ const H = window.HELP || {}; return H[I18N.getLang()] || H.tc || { btn: '', sections: [], jump: [] }; }
 function helpHtml(game){
   const H = helpLang();
-  const mine = { corre: 'hCorre', colores: 'hCol', bbk: 'hBbk', dragon: 'hDragon', ba: 'hBa', bei: 'hBa' }[game];
+  const mine = { corre: 'hCorre', colores: 'hCol', bbk: 'hBbk', dragon: 'hDragon', ba: 'hBa', bei: 'hBa', rayo: 'hRayo' }[game];
   const list = a => '<ul class="hlist">' + a.map(x => '<li>' + x + '</li>').join('') + '</ul>';
   const sec = x => (x.id === mine ? '<div class="card hsec" id="' + x.id + '"><h3>' + esc(x.h) + '</h3>' : '<details class="card hsec" id="' + x.id + '"><summary><b>' + esc(x.h) + '</b></summary>') +
     (x.intro ? '<p>' + x.intro + '</p>' : '') +

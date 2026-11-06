@@ -17,9 +17,10 @@ const GAME_URL = {
   bbk: 'https://wangchiapin.github.io/compara-y-adivina/',
   dragon: 'https://wangchiapin.github.io/el-dragon-de-tinta/',
   ba: 'https://wangchiapin.github.io/practica-de-ba-oracion/',
-  bei: 'https://wangchiapin.github.io/practica-de-bei-oracion/'
+  bei: 'https://wangchiapin.github.io/practica-de-bei-oracion/',
+  rayo: 'https://wangchiapin.github.io/cuidado-con-el-rayo/'
 };
-const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colores, bbk: GAME_URL.bbk, dragon: GAME_URL.dragon, ba: GAME_URL.ba, bei: GAME_URL.bei };
+const TEACHER_URL = { corre: GAME_URL.corre + 'teacher/', colores: GAME_URL.colores, bbk: GAME_URL.bbk, dragon: GAME_URL.dragon, ba: GAME_URL.ba, bei: GAME_URL.bei, rayo: GAME_URL.rayo };
 const MAX_CLASSES = 3;
 const ADMIN_EMAIL = 'a2224907@gmail.com';   // 管理員（Firestore 規則也是這個信箱）；管理員看得到維修中的遊戲
 const PLAN_OK = ['month', 'year', 'trial', 'pro'];
@@ -82,8 +83,8 @@ async function loadAccount(user){
     }));
   }catch(e){ console.warn('classes unavailable', e); acct.clsReady = false; }
   // 遊戲開關：portalStatus 裡 center-<遊戲代號>，off:true＝維修中、off:false＝開放（在 stats.html「老師管理中心遊戲開關」設定）。
-  // 沒有文件時：把、被預設維修中（要 Ben 在後台打開才開放），其他遊戲預設開放；讀不到開關資料時照預設
-  ['ba', 'bei'].forEach(g => { acct.maint[g] = true; });
+  // 沒有文件時：把、被、天打雷劈預設維修中（要 Ben 在後台打開才開放），其他遊戲預設開放；讀不到開關資料時照預設
+  ['ba', 'bei', 'rayo'].forEach(g => { acct.maint[g] = true; });
   try{
     const ps = await db.collection('portalStatus').get();
     ps.docs.forEach(d => {
