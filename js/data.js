@@ -71,7 +71,7 @@ async function loadAccount(user){
   const d = p.exists ? p.data() : {};
   const plan = { plan: d.plan || 'free', expiresAt: tsMs(d.expiresAt) };
   plan.active = planActive(plan);
-  const acct = { admin: !!(user.email === ADMIN_EMAIL && user.emailVerified), maint: {}, plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, babanks: { ba: [], bei: [] }, babslots: { ba: {}, bei: {} }, baReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true };
+  const acct = { admin: !!(user.email === ADMIN_EMAIL && user.emailVerified), maint: {}, plan, cslots: {}, classes: {}, clsReady: true, banks: [], bslots: {}, configs: [], extrasReady: true, babanks: { ba: [], bei: [] }, babslots: { ba: {}, bei: {} }, baReady: true, bbk: [], bbkReady: true, dragon: { themes: [], sets: [] }, dragonReady: true, rayo: { banks: [] }, rayoReady: true };
   adminMode = acct.admin;
   if(acct.admin){ plan.plan = 'pro'; plan.admin = true; plan.active = true; plan.expiresAt = null; }   // 管理員：視為訂閱中，不顯示到期日
   try{
@@ -130,6 +130,10 @@ async function loadAccount(user){
     const dx = await db.collection('dragon_sets').doc(user.uid).get();
     if(dx.exists){ const d = dx.data(); acct.dragon = { themes: Array.isArray(d.themes) ? dragonThemesDec(d.themes.filter(validDragonTheme)) : [], sets: Array.isArray(d.sets) ? d.sets.filter(validDragonSet) : [] }; }
   }catch(e){ console.warn('dragon sets unavailable', e); acct.dragonReady = false; }
+  try{
+    const rx = await db.collection('rayo_sets').doc(user.uid).get();
+    if(rx.exists){ const d = rx.data(); acct.rayo = { banks: Array.isArray(d.banks) ? d.banks.filter(validRayoBank).map(rayoDec) : [] }; }
+  }catch(e){ console.warn('rayo sets unavailable', e); acct.rayoReady = false; }
   return acct;
 }
 
@@ -287,6 +291,56 @@ async function ensureDragonSid(cur, i){
 const linkDragonQuick = ids => GAME_URL.dragon + '?th=' + ids.join('-');
 const linkDragonSet = sid => GAME_URL.dragon + '?d=' + sid;
 const linkDragon = (cid, sid) => GAME_URL.dragon + '?class=' + cid + (sid ? '&d=' + sid : '');
+
+// ---- 天打雷劈：自訂字庫 ----
+// rayo_sets/{uid} = { banks:[{id,name,chars:["繁\t簡\t讀音代碼(逗號隔開)\t內建以外=1"],sid?}], updatedAt }   免費 1 個（70 字）、訂閱 5 個（150 字）
+// shared_rayo/{sid} = { owner, name, chars, updatedAt }    學生連結 ?b=<sid> 讀這份（任何人可讀單筆）；字庫一改，已發出去的連結用新內容。
+// Firestore 不收「陣列裡再放陣列」，所以每個字存成一個字串（四欄用 Tab 隔開）。
+function validRayoBank(x){ return x && typeof x.id === 'string' && /^b[a-z0-9]{1,31}$/.test(x.id) && typeof x.name === 'string' && Array.isArray(x.chars); }
+const rayoCharEnc = c => [c.c, c.s || c.c, (c.r || []).join(','), c.x ? '1' : '0'].join('\t');
+function rayoCharDec(str){
+  const p = String(str == null ? '' : str).split('\t');
+  return { c: p[0] || '', s: p[1] || p[0] || '', r: (p[2] || '').split(',').filter(Boolean), x: p[3] === '1' ? 1 : 0 };
+}
+const rayoDec = b => ({ id: b.id, name: b.name, chars: b.chars.map(rayoCharDec).filter(x => x.c && x.r.length), sid: b.sid });
+const rayoBankClean = b => { const o = { id: b.id, name: b.name, chars: b.chars.map(rayoCharEnc) }; if(b.sid) o.sid = b.sid; return o; };
+const rayoShared = b => ({ owner: uid(), name: b.name, chars: b.chars.map(rayoCharEnc), updatedAt: serverTs() });
+async function writeRayo(banks){
+  const clean = banks.map(rayoBankClean);
+  await db.collection('rayo_sets').doc(uid()).set({ banks: clean, updatedAt: serverTs() });
+  await Promise.all(banks.filter(x => x.sid).map(x =>
+    db.collection('shared_rayo').doc(x.sid).set(rayoShared(x)).catch(e => console.warn('shared_rayo update failed', e))));
+  return { banks };
+}
+async function saveRayoBank(cur, i, bank){
+  const banks = cur.banks.slice();
+  if(i < 0) banks.push(Object.assign({ id: 'b' + newId(10) }, bank)); else banks[i] = Object.assign({}, banks[i], bank, { id: banks[i].id, sid: banks[i].sid });
+  return writeRayo(banks);
+}
+async function deleteRayoBank(cur, i){
+  const it = cur.banks[i]; if(!it) return cur;
+  if(it.sid){ try{ await db.collection('shared_rayo').doc(it.sid).delete(); }catch(e){ console.warn('shared_rayo delete failed', e); } }
+  return writeRayo(cur.banks.filter((_, k) => k !== i));
+}
+// 字庫要有連結碼（sid）才能做連結；第一次做連結時產生
+async function ensureRayoSid(cur, i){
+  const it = cur.banks[i]; if(!it) return cur;
+  if(it.sid) return cur;
+  const sid = newId(12);
+  const banks = cur.banks.map((x, k) => k === i ? Object.assign({}, x, { sid }) : x);
+  await db.collection('shared_rayo').doc(sid).set(rayoShared(banks[i]));
+  return writeRayo(banks);
+}
+// 練習連結（?b=）；班級連結（?class=，可再帶 &b=字庫碼，和鎖定的設定 lv／n／kb；空的不帶＝學生自己選）
+const linkRayoPractice = sid => GAME_URL.rayo + '?b=' + sid;
+function linkRayo(cid, sid, o){
+  o = o || {};
+  let u = GAME_URL.rayo + '?class=' + cid + (sid ? '&b=' + sid : '');
+  if(o.lv) u += '&lv=' + o.lv;
+  if(o.n) u += '&n=' + o.n;
+  if(o.kb) u += '&kb=' + o.kb;
+  return u;
+}
 
 // ---- 色數：設定組（teacher_configs/{uid}.items[{id,cfg,sid?}]），格式與遊戲教師區完全相同 ----
 async function writeColoresList(items){
@@ -454,5 +508,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { isAdminMode, ADM, get MAX_CLASSES(){ return adminMode ? ADM.classes : MAX_CLASSES; }, get DRAGON_THEMES_MAX(){ return adminMode ? ADM.themes : DRAGON_THEMES_MAX; }, get DRAGON_WORDS_MAX(){ return adminMode ? ADM.words : DRAGON_WORDS_MAX; }, get DRAGON_SETS_MAX(){ return adminMode ? ADM.sets : DRAGON_SETS_MAX; }, init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_WORDS_MIN, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, loadSentenceTokens, loadBlocks, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveRayoBank, deleteRayoBank, ensureRayoSid, linkRayoPractice, linkRayo, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_WORDS_MIN, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, loadSentenceTokens, loadBlocks, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

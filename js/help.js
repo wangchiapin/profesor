@@ -159,11 +159,23 @@ window.HELP = {
    },
    {
     "id": "hRayo",
-    "h": "⚡ 天打雷劈（準備中）",
-    "intro": "天打雷劈是打讀音的遊戲：看到字，在時間內打出它的拼音或注音，答對往上走一階，答錯被雷劈。這款遊戲目前準備中。",
+    "h": "⚡ 天打雷劈：自訂字庫、班級連結與成績冊",
+    "intro": "天打雷劈是打讀音的遊戲：看到字，在時間內打出它的拼音或注音，答對往上走一階，答錯被雷劈。你可以準備自己的字庫，再用連結傳給學生。",
     "items": [
-     "<b>練習連結</b>：到「連結」分頁，複製遊戲網址給學生就能玩，不回傳成績。",
-     "<b>之後會開放</b>：自訂字庫（免費 1 個、70 字；訂閱 5 個、每個 150 字）、班級連結與成績冊、老師開連線房間時用自訂字庫和自訂題數。"
+     "<b>自訂字庫</b>：到「內容」分頁建立。可以從內建的 1384 個字依級別（N1、N2、L1～L5）挑字，也可以貼一段課文，讓系統找出裡面的字；內建沒有的字可以自己加，讀音自己輸入（wo3 或 wǒ 都可以，多音字用逗號隔開）。",
+     "<b>字數與個數</b>：每個字庫最少 10 字。免費 1 個字庫、最多 70 字；訂閱 5 個字庫、每個最多 150 字。",
+     "<b>讀音</b>：內建字的讀音預設照 GoodTeacher，可以在每個字庫裡改，只影響那個字庫。",
+     "<b>練習連結</b>（免費）：到「連結」分頁，選字庫後複製連結。學生玩你的字庫，不回傳成績、不上公開排行榜。自訂字庫只有簡單、普通兩種難度。",
+     "<b>班級連結</b>（訂閱）：選班級、字庫（也可以不選，用內建字庫），還可以鎖定難度、題數（10～30，每 5 題一檔）和鍵盤；鎖定的學生不能改，不鎖就讓學生自己選。學生輸入暱稱後，成績自動回到成績冊。",
+     "<b>成績冊</b>（訂閱）：在「成績」分頁，可以依「設定」篩選；每位學生看最好成績（被劈次數、答對題數）、用時、星星、玩了幾次、最近一次，以及常錯的字；整班常錯的字也有排名。可以匯出 CSV。",
+     "<b>班級排行榜</b>（訂閱）：班級設定裡開啟後，學生玩完會看到同設定的班級前 10 名（被劈少的在前，一樣再比誰快）。",
+     "<b>連線房間</b>：在遊戲裡按「連線」開房。從你的練習連結進去開房，就能用自訂字庫，題數可以選到 30 題（免費老師也可以）；學生用房號或邀請連結加入，不需要有你的字庫。",
+     "<b>老師中心按鈕</b>：公開的遊戲頁有一顆「老師中心」鈕，可以直接回到這裡；學生用的班級連結和練習連結看不到它。"
+    ],
+    "note": "字庫碼建立後不會換，你之後改字或改讀音，已經發出去的連結會自動跟著變。學習單之後開放。",
+    "plan": [
+     "免費：1 個字庫（70 字）、練習連結、連線對戰（含自訂字庫、30 題）",
+     "訂閱：5 個字庫（每個 150 字）、班級連結與自動回傳成績、成績冊、班級排行榜、鎖定設定、匯出 CSV"
     ]
    },
    {
@@ -335,11 +347,23 @@ window.HELP = {
    },
    {
     "id": "hRayo",
-    "h": "⚡ 天打雷劈（准备中）",
-    "intro": "天打雷劈是打读音的游戏：看到字，在时间内打出它的拼音或注音，答对往上走一阶，答错被雷劈。这款游戏目前准备中。",
+    "h": "⚡ 天打雷劈：自订字库、班级连结与成绩册",
+    "intro": "天打雷劈是打读音的游戏：看到字，在时间内打出它的拼音或注音，答对往上走一阶，答错被雷劈。你可以准备自己的字库，再用连结传给学生。",
     "items": [
-     "<b>练习连结</b>：到「连结」分页，复制游戏网址给学生就能玩，不回传成绩。",
-     "<b>之后会开放</b>：自订字库（免费 1 个、70 字；订阅 5 个、每个 150 字）、班级连结与成绩册、老师开连线房间时用自订字库和自订题数。"
+     "<b>自订字库</b>：到“内容”分页建立。可以从内建的 1384 个字依级别（N1、N2、L1～L5）挑字，也可以贴一段课文，让系统找出里面的字；内建没有的字可以自己加，读音自己输入（wo3 或 wǒ 都可以，多音字用逗号隔开）。",
+     "<b>字数与个数</b>：每个字库最少 10 字。免费 1 个字库、最多 70 字；订阅 5 个字库、每个最多 150 字。",
+     "<b>读音</b>：内建字的读音预设照 GoodTeacher，可以在每个字库里改，只影响那个字库。",
+     "<b>练习连结</b>（免费）：到“连结”分页，选字库后复制连结。学生玩你的字库，不回传成绩、不上公开排行榜。自订字库只有简单、普通两种难度。",
+     "<b>班级连结</b>（订阅）：选班级、字库（也可以不选，用内建字库），还可以锁定难度、题数（10～30，每 5 题一档）和键盘；锁定的学生不能改，不锁就让学生自己选。学生输入昵称后，成绩自动回到成绩册。",
+     "<b>成绩册</b>（订阅）：在“成绩”分页，可以依“设定”筛选；每位学生看最好成绩（被劈次数、答对题数）、用时、星星、玩了几次、最近一次，以及常错的字；整班常错的字也有排名。可以汇出 CSV。",
+     "<b>班级排行榜</b>（订阅）：班级设定里开启后，学生玩完会看到同设定的班级前 10 名（被劈少的在前，一样再比谁快）。",
+     "<b>连线房间</b>：在游戏里按“连线”开房。从你的练习连结进去开房，就能用自订字库，题数可以选到 30 题（免费老师也可以）；学生用房号或邀请连结加入，不需要有你的字库。",
+     "<b>老师中心按钮</b>：公开的游戏页有一颗“老师中心”钮，可以直接回到这里；学生用的班级连结和练习连结看不到它。"
+    ],
+    "note": "字库码建立后不会换，你之后改字或改读音，已经发出去的连结会自动跟着变。学习单之后开放。",
+    "plan": [
+     "免费：1 个字库（70 字）、练习连结、连线对战（含自订字库、30 题）",
+     "订阅：5 个字库（每个 150 字）、班级连结与自动回传成绩、成绩册、班级排行榜、锁定设定、汇出 CSV"
     ]
    },
    {
@@ -511,11 +535,23 @@ window.HELP = {
    },
    {
     "id": "hRayo",
-    "h": "⚡ 天打雷劈 (en preparación)",
-    "intro": "天打雷劈 es un juego de escribir la pronunciación: ves un carácter y escribes su pinyin o zhuyin a tiempo; si aciertas subes un escalón, si fallas te cae un rayo. Por ahora está en preparación.",
+    "h": "⚡ 天打雷劈: bancos propios, enlaces de clase y libro de notas",
+    "intro": "天打雷劈 es un juego de escribir la pronunciación: ves un carácter y escribes su pinyin o zhuyin a tiempo; si aciertas subes un escalón, si fallas te cae un rayo. Puedes preparar tu propio banco y enviarlo a tus alumnos con un enlace.",
     "items": [
-     "<b>Enlace de práctica</b>: en la pestaña «Enlaces» copia la dirección del juego para tus alumnos; no envía notas.",
-     "<b>Próximamente</b>: bancos propios (gratis 1 banco de 70 caracteres; con suscripción 5 bancos de 150), enlaces de clase y libro de notas, y salas en línea con tu banco y número de preguntas."
+     "<b>Banco propio</b>: créalo en la pestaña «Contenido». Elige caracteres de los 1384 incluidos por nivel (N1, N2, L1–L5), o pega un texto y el sistema encuentra los caracteres; puedes añadir caracteres que no estén incluidos y escribir tú la lectura (wo3 o wǒ; varias lecturas separadas por comas).",
+     "<b>Tamaño y cantidad</b>: mínimo 10 caracteres por banco. Gratis: 1 banco de hasta 70 caracteres; con suscripción: 5 bancos de hasta 150 cada uno.",
+     "<b>Lecturas</b>: las de los caracteres incluidos siguen GoodTeacher; puedes cambiarlas en cada banco y solo afecta a ese banco.",
+     "<b>Enlace de práctica</b> (gratis): en la pestaña «Enlaces» elige el banco y copia el enlace. Tus alumnos juegan con tu banco; no se guardan notas ni entran en el ranking público. Con un banco propio solo hay niveles fácil y normal.",
+     "<b>Enlace de clase</b> (suscripción): elige la clase y el banco (o ninguno, para usar el incluido); también puedes fijar dificultad, número de preguntas (10–30, de 5 en 5) y teclado. Lo fijado el alumno no lo puede cambiar; lo que no fijes lo elige el alumno. Al escribir su apodo, su resultado llega solo al libro de notas.",
+     "<b>Libro de notas</b> (suscripción): en la pestaña «Notas», con filtro por «configuración». De cada alumno: mejor resultado (rayos y aciertos), tiempo, estrellas, partidas, última vez y caracteres que falla; también el ranking de caracteres más difíciles de la clase. Se puede exportar a CSV.",
+     "<b>Ranking de la clase</b> (suscripción): si lo activas en los ajustes de la clase, al terminar el alumno ve los 10 mejores con la misma configuración (menos rayos primero; en empate, el más rápido).",
+     "<b>Salas en línea</b>: en el juego pulsa «連線» para crear una sala. Si entras desde tu enlace de práctica puedes usar tu banco y elegir hasta 30 preguntas (también con cuenta gratis); los alumnos entran con el código o el enlace, sin necesidad de tener tu banco.",
+     "<b>Botón del centro del profesor</b>: la página pública del juego tiene un botón «老師中心» para volver aquí; los enlaces de clase y de práctica que ven los alumnos no lo muestran."
+    ],
+    "note": "El código del banco no cambia: si luego modificas caracteres o lecturas, los enlaces ya enviados se actualizan solos. Las fichas llegarán pronto.",
+    "plan": [
+     "Gratis: 1 banco (70 caracteres), enlace de práctica, salas en línea (con banco propio y 30 preguntas)",
+     "Suscripción: 5 bancos (150 caracteres cada uno), enlaces de clase con notas automáticas, libro de notas, ranking de la clase, ajustes fijados y CSV"
     ]
    },
    {
@@ -687,11 +723,23 @@ window.HELP = {
    },
    {
     "id": "hRayo",
-    "h": "⚡ 天打雷劈 (in preparation)",
-    "intro": "天打雷劈 is a typing game: you see a character and type its pinyin or zhuyin in time; a correct answer climbs one step, a wrong one gets you struck by lightning. It is still in preparation.",
+    "h": "⚡ 天打雷劈: custom word banks, class links and gradebook",
+    "intro": "天打雷劈 is a typing game: you see a character and type its pinyin or zhuyin in time; a correct answer climbs one step, a wrong one gets you struck by lightning. You can prepare your own word bank and send it to students with a link.",
     "items": [
-     "<b>Practice link</b>: on the Links tab, copy the game address for your students; it does not report scores.",
-     "<b>Coming soon</b>: custom word banks (free: 1 bank of 70 characters; subscription: 5 banks of 150), class links and a gradebook, and online rooms with your bank and question count."
+     "<b>Custom bank</b>: create it on the Content tab. Pick characters from the 1384 built-in ones by level (N1, N2, L1–L5), or paste a text and the system finds the characters; you can add characters that aren’t built in and type their readings yourself (wo3 or wǒ; separate several readings with commas).",
+     "<b>Size and count</b>: at least 10 characters per bank. Free: 1 bank of up to 70 characters; subscription: 5 banks of up to 150 each.",
+     "<b>Readings</b>: built-in characters follow GoodTeacher by default; you can change them in each bank, and it only affects that bank.",
+     "<b>Practice link</b> (free): on the Links tab choose a bank and copy the link. Students play with your bank; no scores are saved and nothing goes to the public leaderboard. Custom banks have only Easy and Normal.",
+     "<b>Class link</b> (subscription): choose the class and a bank (or none, to use the built-in bank); you can also lock difficulty, number of questions (10–30, in steps of 5) and keyboard. Locked settings can’t be changed by students; anything you leave open the student chooses. After typing a nickname, the result goes to the gradebook automatically.",
+     "<b>Gradebook</b> (subscription): on the Scores tab, filter by “setting”. For each student: best result (strikes and correct answers), time, stars, plays, last play and the characters they miss; there is also a ranking of the class’s most-missed characters. You can export CSV.",
+     "<b>Class leaderboard</b> (subscription): if you turn it on in the class settings, students see the top 10 with the same settings after playing (fewer strikes first; ties go to the faster one).",
+     "<b>Online rooms</b>: press “連線” in the game to open a room. Open it from your practice link to use your bank and choose up to 30 questions (free teachers too); students join with the code or invite link and don’t need your bank.",
+     "<b>Teacher center button</b>: the public game page has a “老師中心” button that brings you back here; students on class and practice links don’t see it."
+    ],
+    "note": "The bank code never changes: if you later edit characters or readings, links you already sent update by themselves. Worksheets are coming soon.",
+    "plan": [
+     "Free: 1 bank (70 characters), practice link, online rooms (with your bank and 30 questions)",
+     "Subscription: 5 banks (150 characters each), class links with automatic scores, gradebook, class leaderboard, locked settings and CSV"
     ]
    },
    {

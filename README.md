@@ -104,11 +104,17 @@
 - 規則在 game-kit 的 `subscription-48d3c.rules.txt`（已貼到 subscription-48d3c）：`class_scores` 加 `'dragon'`、新增 `dragon_sets`、`shared_dragon`。
 - 開放時做過：① 貼規則 ② 遊戲 `RELEASE=true` ③ 中心 `READY=true` ④ 分享區卡片與訂閱比較表換成正式文字。
 
-## 天打雷劈（2026-11-06 步驟 1：入口與空殼分頁）
+## 天打雷劈：自訂字庫、練習連結、班級連結、成績冊（2026-11-06）
 
-- 遊戲代號 `rayo`（網址在 `data.js` 的 `GAME_URL`：`cuidado-con-el-rayo`），預設維修中（`data.js` 預設 `acct.maint.rayo = true`，開關在分享區 `stats.html#sub`，清單 `CS` 已加一列）。
-- 目前只有入口：首頁卡片、遊戲頁分頁（⚡ 自訂字庫｜連結｜成績｜學習單｜說明）。自訂字庫、班級連結、學習單顯示「之後開放」；「連結」分頁只有練習連結（遊戲網址）；「說明」有一小段。
-- 之後要做（已決定）：自訂字庫（免費 1 個、70 字；訂閱 5 個、每個 150 字；可加內建以外的字、讀音可自己改）、班級連結＋成績回傳＋排行榜＋成績簿＋CSV、老師開連線房間用自訂字庫與自訂題數（免費老師也可以）；學習單排最後。
+- 遊戲代號 `rayo`（網址在 `data.js` 的 `GAME_URL`：`cuidado-con-el-rayo`），預設維修中（`data.js` 預設 `acct.maint.rayo = true`，開關在分享區 `stats.html#sub`，清單 `CS` 有一列；遊戲端 `portalStatus/center-rayo`：沒有文件＝維修中、`off:false`＝開放）。
+- 程式：`js/rayo.js`（`window.RAYO`：字庫整理、讀音轉換、連結設定、成績冊表格／CSV）＋ `app.js`（分頁畫面）＋ `data.js`（資料讀寫）。分頁：⚡ 自訂字庫｜連結｜成績｜學習單（之後開放）｜說明。
+- 資料：`rayo_sets/{uid}` = `{ banks:[{id,name,chars:["繁\t簡\t讀音碼逗號\t內建以外1/0"],sid?}], updatedAt }`（免費 1 個 70 字、訂閱 5 個 150 字、管理員放寬）；`shared_rayo/{sid}` = `{ owner,name,chars,updatedAt }`（任何人讀單筆；字庫一改，已發出去的連結自動換新內容）。Firestore 不收「陣列裡再放陣列」，所以每個字存成一個字串。
+- 字庫：從內建 1384 字（`words.json`，由遊戲 repo 讀來）依級別挑、貼課文找字、加內建以外的字（讀音老師自己輸入，`wo3` 或 `wǒ` 都可以，多音字逗號隔開，最多 3 個）；內建字的讀音預設照 GoodTeacher，每個字庫可以改（只影響那個字庫）。每個字庫至少 10 字。
+- 連結：練習連結 `?b=字庫碼`（免費）；班級連結 `?class=班級碼[&b=][&lv=][&n=][&kb=]`（訂閱）。班級連結可鎖定難度（自訂字庫只有簡單／普通）、題數（10～30，每 5 一檔，不能超過字庫字數）、鍵盤；沒鎖＝學生自己選。
+- 成績：`class_scores` 的 `game='rayo'`，`k＝難度_題數_鍵盤[_字庫碼前 8 碼]`，`best＝(題數−被劈)×100000＋(99999−秒數)`，`extra＝{s 被劈,c 答對,t 秒,st 星,n 題數}`；逐題紀錄 `class_plays`（`game='rayo'`，`qs=[{c,ok}]`、`score`＝答對題數）。成績冊：可依「設定」篩選；欄位＝暱稱、班級、設定、最好成績（被劈／答對）、用時、星、次數、最近一次、常錯的字（學生與整班排名）；同設定才比排名；匯出 CSV 欄位相同。
+- 還沒做：學習單（分頁顯示「學習單之後開放」）。
+- 規則：game-kit 的 `subscription-48d3c.rules.txt`（`class_scores`／`class_plays` 加 rayo、新增 `rayo_sets`、`shared_rayo`）與 `memorma-24dab.rules.txt`（連線房間 30 題、`bn`／`bk`）；**改完要整份貼進 Firebase**。
+- 遊戲端細節在遊戲 repo 的 README「老師連結」一節。
 
 ## 把／被（2026-10-29 步驟 1：入口、班級連結、成績）
 
@@ -150,7 +156,7 @@ tests/            Playwright 測試（模擬 Firebase，不會碰真的資料庫
 
 ```
 npm i -D playwright && npx playwright install chromium   # 第一次
-node tests/test_center.js [截圖資料夾]
+node tests/test_center.js [截圖資料夾]   # 需要旁邊有 corre、compara-y-adivina、cuidado-con-el-rayo 三個 repo（天打雷劈用 RAYO_DIR 指定）
 node tests/test_dragon.js [截圖資料夾]   # 墨龍（需 CORRE_LIBS，遊戲 repo 在旁邊的 el-dragon-de-tinta）
 ```
 

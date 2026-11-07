@@ -9,6 +9,7 @@ function ok(c, name, extra){ if(c){ pass++; console.log('  ✓', name); } else {
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript; charset=utf-8', '.css': 'text/css', '.webp': 'image/webp' };
 // 比比看的學習單會讀遊戲那邊的 engine.js／worksheet.js／人物圖：/compara-y-adivina/ 對到旁邊的資料夾（或用 BBK_DIR 指定）
 const CORRE_DIR = process.env.CORRE_DIR || path.join(ROOT, '..', 'corre');
+const RAYO_DIR = process.env.RAYO_DIR || path.join(ROOT, '..', 'cuidado-con-el-rayo');
 const BBK_DIR = process.env.BBK_DIR || path.join(ROOT, '..', 'compara-y-adivina');
 const server = http.createServer((req, res) => {
   const url = decodeURIComponent(req.url.split('?')[0]);
@@ -78,6 +79,7 @@ async function open(browser, { seedOpt, user = TEACH, ls = {}, hash = '' } = {})
     if(u.includes('api.mymemory.translated.net')){ const q = new URL(u).searchParams; return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ responseData: { translatedText: '[' + q.get('langpair').slice(-2) + '] ' + q.get('q') } }) }); }
     { const m = u.match(/^https:\/\/wangchiapin\.github\.io\/corre\/bank\/([A-Za-z0-9]+\.json)$/);   // 公開句庫：讀本機 corre 資料夾（CORRE_DIR 可指定）
       if(m){ const f = path.join(CORRE_DIR, 'bank', m[1]); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: 'no' }); } }
+    { if(u === 'https://wangchiapin.github.io/cuidado-con-el-rayo/data/words.json'){ const f = path.join(RAYO_DIR, 'data', 'words.json'); return fs.existsSync(f) ? r.fulfill({ status: 200, contentType: 'application/json', body: fs.readFileSync(f) }) : r.fulfill({ status: 404, body: 'no' }); } }   // 天打雷劈內建字庫：讀本機 cuidado-con-el-rayo 資料夾（RAYO_DIR 可指定）
     return r.abort();
   });
   await page.addInitScript(`window.__SEED=${JSON.stringify(seed(seedOpt))};window.__USER=${JSON.stringify(user)};window.__GOOGLE=${JSON.stringify(TEACH)};` +
@@ -1130,7 +1132,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39|7-40|7-41|7-42|7-43|7-44|7-45|7-46|7-47|7-48|7-49|7-50|7-51|7-52|7-53|7-54)\b/.test(ix) && (ix.match(/\?v=7-55/g) || []).length >= 11 && ix.includes('js/help.js?v=7-55') && ix.includes('js/pubbank.js?v=7-55'), 'index.html 的 css／js 都改成 ?v=7-55（含 help.js、pubbank.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39|7-40|7-41|7-42|7-43|7-44|7-45|7-46|7-47|7-48|7-49|7-50|7-51|7-52|7-53|7-54|7-55)\b/.test(ix) && (ix.match(/\?v=7-56/g) || []).length >= 12 && ix.includes('js/help.js?v=7-56') && ix.includes('js/pubbank.js?v=7-56') && ix.includes('js/rayo.js?v=7-56'), 'index.html 的 css／js 都改成 ?v=7-56（含 help.js、pubbank.js、rayo.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1279,10 +1281,10 @@ server.listen(0, 'localhost', async () => {
     const tabs = await page.$$eval('.gtabs [data-act=gtab]', b => b.map(x => x.dataset.t + ':' + x.innerText));
     ok(tabs.join('|') === 'content:⚡ 自訂字庫|links:連結|scores:成績|sheet:學習單|help:說明', '管理者：天打雷劈分頁＝自訂字庫｜連結｜成績｜學習單｜說明', tabs);
     const t2 = await text(page);
-    ok(t2.includes('只有你看得到') && t2.includes('之後開放') && !(await page.$('#dragonCard')), '管理者：自訂字庫分頁先顯示「之後開放」，不會跑出墨龍的卡片');
+    ok(t2.includes('只有你看得到') && !!(await page.$('#rayoCard')) && !(await page.$('#dragonCard')), '管理者：自訂字庫分頁是天打雷劈自己的字庫卡片，不會跑出墨龍的卡片');
     await page.click('[data-act=gtab][data-t=links]'); await page.waitForSelector('#pracCard');
     const t3 = await text(page);
-    ok(t3.includes('cuidado-con-el-rayo') && t3.includes('之後開放') && !(await page.$('#linksCard')), '連結：只有練習連結（遊戲網址），班級連結先顯示「之後開放」');
+    ok(t3.includes('cuidado-con-el-rayo') && !!(await page.$('#linksCard')) && !(await page.$('#dragonQuick')), '連結：有練習連結（遊戲網址）和班級連結');
     await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForTimeout(150);
     ok((await text(page)).includes('之後開放') && !(await page.$('#wsCard')), '學習單：先顯示「之後開放」');
     await page.click('[data-act=gtab][data-t=scores]'); await page.waitForSelector('#bookCard');
@@ -1290,6 +1292,159 @@ server.listen(0, 'localhost', async () => {
     await page.click('[data-act=gtab][data-t=help]'); await page.waitForSelector('#hRayo');
     ok((await text(page, '#hRayo')).includes('天打雷劈') && (await text(page, '#hRayo')).includes('練習連結'), '說明：有天打雷劈這一段');
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[R2] 天打雷劈：自訂字庫（免費 1 個 70 字、訂閱 5 個 150 字；挑字、貼文字、加內建以外的字、改讀音）');
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '?dev=rayo#/game/rayo/content' });
+    await page.waitForSelector('#rayoCard');
+    ok((await text(page, '#rayoCard')).includes('0 / 1') && (await text(page, '#rayoCard')).includes('70 字'), '免費：字庫卡片 0 / 1、說明寫 70 字');
+    await page.click('[data-act=rynew]'); await page.waitForSelector('.rygrid');
+    ok((await page.$$eval('[data-act=rylv]', b => b.map(x => x.dataset.k))).join(',') === 'N1,N2,L1,L2,L3,L4,L5', '編輯：等級 N1～L5 都有');
+    const n1 = await page.$$eval('.rygrid .rych', b => b.length);
+    ok(n1 > 50, '編輯：N1 列出內建的字', n1);
+    for(let i = 0; i < 12; i++) await page.click('.rygrid .rych >> nth=' + i);
+    ok((await text(page, '.editor')).includes('12 個字 / 70'), '點字：加入 12 個，計數 12 / 70');
+    await page.click('.rygrid .rych >> nth=0');
+    ok((await text(page, '.editor')).includes('11 個字 / 70'), '再點一次：取消，剩 11 個');
+    // 貼文字：內建有的加入，沒有的列出
+    await page.fill('#ryText', '你好嗎？魑魅魍魎'); await page.click('[data-act=rypaste]');
+    const miss = await page.$$eval('[data-act=rypickmiss]', b => b.map(x => x.dataset.c));
+    ok(miss.length >= 3 && miss.includes('魑'), '貼文字：內建沒有的字列出來', miss);
+    ok(await page.$('.ryr[data-ryr="好"]') !== null, '貼文字：內建有的字（好）直接加入');
+    // 加內建以外的字：要讀音
+    await page.click('[data-act=rypickmiss][data-c="魑"]');
+    ok(await page.$eval('#ryOutC', e => e.value) === '魑', '點「魑」：帶進輸入欄');
+    await page.click('[data-act=ryout]');
+    ok((await text(page, '.err')).includes('讀音'), '沒填讀音：不能加（讀音要自己輸入，不自動猜）');
+    await page.fill('#ryOutR', 'xyz9'); await page.click('[data-act=ryout]');
+    ok((await text(page, '.err')).includes('xyz9'), '讀音亂打：顯示看不懂');
+    await page.fill('#ryOutR', 'chī'); await page.click('[data-act=ryout]'); await page.waitForSelector('.ryr[data-ryr="魑"]');
+    const rowC = await page.$eval('.ryr[data-ryr="魑"]', e => e.value);
+    ok(rowC === 'chi1' && !(await page.$('.err')), '加內建以外的字：讀音 chī 轉成 chi1', rowC);
+    ok((await page.$$eval('[data-act=rypickmiss]', b => b.map(x => x.dataset.c))).indexOf('魑') < 0, '加好之後，從「找不到的字」清單拿掉');
+    ok((await text(page, '.editor')).includes('ㄔ') && (await text(page, '.editor')).includes('自己加的'), '加進去的字：顯示注音、標「自己加的」');
+    // 改內建字的讀音
+    const old = await page.$eval('.ryr[data-ryr="好"]', e => e.value);
+    await page.fill('.ryr[data-ryr="好"]', 'hao4'); await page.press('.ryr[data-ryr="好"]', 'Tab'); await page.waitForTimeout(100);
+    ok(await page.$eval('.ryr[data-ryr="好"]', e => e.value) === 'hao4' && (await text(page, '.editor')).includes('✎') && !!(await page.$('[data-act=ryreset][data-c="好"]')), '改讀音：好 → hao4，標 ✎，出現「還原」', old);
+    await page.fill('.ryr[data-ryr="好"]', 'hxo4'); await page.press('.ryr[data-ryr="好"]', 'Tab'); await page.waitForTimeout(100);
+    ok((await text(page, '.err')).includes('hxo4'), '改成不合法的拼音（hxo4）：擋住並顯示看不懂');
+    await page.fill('.ryr[data-ryr="好"]', 'hao4'); await page.press('.ryr[data-ryr="好"]', 'Tab'); await page.waitForTimeout(50);
+    await page.click('[data-act=ryreset][data-c="好"]');
+    ok(await page.$eval('.ryr[data-ryr="好"]', e => e.value) === old && !(await page.$('[data-act=ryreset]')), '按「還原」：回到內建讀音');
+    // 存檔：先不夠 10 個字
+    await page.fill('#ryName', '第一課');
+    // 現在字數：11 + 好(新) + 嗎 + 你 + 魑 ... 先刪到 9 個以下測試
+    const cnt = await page.$$eval('.ryr', a => a.length);
+    for(let i = 0; i < cnt - 9; i++) await page.click('[data-act=ryrm] >> nth=0');
+    await page.click('[data-act=rysave]');
+    ok((await text(page, '.err')).includes('至少要 10'), '少於 10 個字：不能存', await text(page, '.err'));
+    // 補到 70 個以上：測上限
+    const lv = ['N1', 'N2', 'L1'];
+    for(const l of lv){ await page.click('[data-act=rylv][data-k=' + l + ']'); const k = await page.$$eval('.rygrid .rych', b => b.length); for(let i = 0; i < k; i++){ const b = await page.$('.rygrid .rych:not(.on) >> nth=0'); if(!b) break; await b.click(); if((await page.$('.err'))) break; } if(await page.$('.err')) break; }
+    ok((await text(page, '.err')).includes('最多 70'), '超過 70 字：擋住，顯示「最多 70 個字」', await page.$eval('.editor', e => e.innerText.slice(0, 80)));
+    ok((await text(page, '.editor')).includes('70 個字 / 70'), '免費上限：停在 70 / 70');
+    // 刪掉多的，剩 20 個存檔
+    await page.evaluate(() => {});
+    let c2 = await page.$$eval('.ryr', a => a.length); while(c2 > 20){ await page.click('[data-act=ryrm] >> nth=0'); c2--; }
+    await page.click('[data-act=rysave]'); await page.waitForSelector('#rayoCard .setrow');
+    const d1 = await db(page);
+    const bk = d1.rayo_sets.u1.banks[0];
+    ok(d1.rayo_sets.u1.banks.length === 1 && bk.name === '第一課' && bk.chars.length === 20 && /^b[a-z0-9]{10}$/.test(bk.id), '存檔：rayo_sets 一個字庫、20 個字', bk && bk.chars.length);
+    ok(bk.chars.every(c => c.split('\t').length === 4 && /^[1-5a-z,]+$/.test(c.split('\t')[2])), '存檔格式：每個字一個字串「繁\\t簡\\t讀音\\t內建以外」，沒有巢狀陣列', bk.chars[0]);
+    ok(!(await page.$('[data-act=rynew]')) && (await text(page, '#rayoCard')).includes('訂閱'), '免費：只能 1 個字庫，滿了顯示「訂閱後可以有 5 個」');
+    ok((await text(page, '#rayoCard')).includes('1 / 1'), '免費：用量 1 / 1');
+    // 練習連結
+    await page.click('[data-act=gtab][data-t=links]'); await page.waitForSelector('#pracCard');
+    ok(await page.$eval('#pracCard .url', e => e.textContent) === 'https://wangchiapin.github.io/cuidado-con-el-rayo/', '練習連結：預設是遊戲網址');
+    await page.selectOption('[data-sel=rayoprac]', '0'); await page.waitForSelector('[data-act=ryprmake]');
+    await page.click('[data-act=ryprmake]'); await page.waitForSelector('#pracCard .url');
+    const sid = await page.$eval('#pracCard .url', e => e.textContent.split('?b=')[1]);
+    const d2 = await db(page);
+    ok(/^[a-z0-9]{12}$/.test(sid) && d2.shared_rayo[sid].owner === 'u1' && d2.shared_rayo[sid].chars.length === 20 && d2.rayo_sets.u1.banks[0].sid === sid, '練習連結：產生連結碼，shared_rayo 存一份（免費也能）', sid);
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '?dev=rayo#/game/rayo/content' });
+    await page.waitForSelector('#rayoCard');
+    ok((await text(page, '#rayoCard')).includes('0 / 5') && (await text(page, '#rayoCard')).includes('150 字'), '訂閱：字庫卡片 0 / 5、每個 150 字');
+    // 做一個 12 字的字庫存起來，再做班級連結
+    await page.click('[data-act=rynew]'); await page.waitForSelector('.rygrid');
+    for(let i = 0; i < 12; i++) await page.click('.rygrid .rych >> nth=' + i);
+    await page.fill('#ryName', '十二字'); await page.click('[data-act=rysave]'); await page.waitForSelector('#rayoCard .setrow');
+    await page.click('[data-act=rynew]'); await page.waitForSelector('.rygrid');
+    for(let i = 0; i < 12; i++) await page.click('.rygrid .rych >> nth=' + i);
+    await page.fill('#ryName', '另一個'); await page.click('[data-act=rysave]'); await page.waitForSelector('#rayoCard .setrow >> nth=1');
+    ok((await text(page, '#rayoCard')).includes('2 / 5') && !!(await page.$('[data-act=rynew]')), '訂閱：2 / 5，還能新增');
+    // 班級連結
+    await page.click('[data-act=gtab][data-t=links]'); await page.waitForSelector('#linksCard');
+    const url = () => page.$eval('#linksCard .url', e => e.textContent);
+    await page.click('#linksCard [data-act=pickcls] >> nth=0'); await page.waitForSelector('#linksCard .url');
+    ok(await url() === 'https://wangchiapin.github.io/cuidado-con-el-rayo/?class=' + CID, '班級連結：預設內建字庫、不鎖設定 → ?class=班級碼', await url());
+    await page.selectOption('[data-sel=rayolv]', 'hard'); await page.selectOption('[data-sel=rayon]', '30'); await page.selectOption('[data-sel=rayokb]', 'zhuyin');
+    ok(await url() === 'https://wangchiapin.github.io/cuidado-con-el-rayo/?class=' + CID + '&lv=hard&n=30&kb=zhuyin', '鎖定設定：&lv=hard&n=30&kb=zhuyin', await url());
+    await page.selectOption('[data-sel=rayobank]', '0'); await page.waitForSelector('[data-act=rymake]');
+    ok(!(await page.$('#linksCard .url')), '選了還沒連結碼的字庫：先出現「產生連結」');
+    await page.click('[data-act=rymake]'); await page.waitForSelector('#linksCard .url');
+    const sid2 = (await db(page)).rayo_sets.u1.banks[0].sid;
+    ok(/^[a-z0-9]{12}$/.test(sid2), '產生字庫連結碼', sid2);
+    // 12 字的字庫：題數 15 以上選不了、難度只有簡單／普通
+    const dis = await page.$$eval('[data-sel=rayon] option', o => o.filter(x => x.disabled).map(x => x.value));
+    ok(dis.join(',') === '15,20,25,30', '字庫只有 12 字：15／20／25／30 題選項關掉', dis);
+    const lvs = await page.$$eval('[data-sel=rayolv] option', o => o.map(x => x.value));
+    ok(lvs.join(',') === ',easy,normal', '自訂字庫：難度只有簡單、普通', lvs);
+    ok(await url() === 'https://wangchiapin.github.io/cuidado-con-el-rayo/?class=' + CID + '&b=' + sid2 + '&kb=zhuyin', '選字庫後：不適用的鎖定值被清掉（hard、30 題），鍵盤留著 → &b=字庫碼&kb=zhuyin', await url());
+    await page.selectOption('[data-sel=rayolv]', 'easy'); await page.selectOption('[data-sel=rayon]', '10');
+    ok(await url() === 'https://wangchiapin.github.io/cuidado-con-el-rayo/?class=' + CID + '&b=' + sid2 + '&lv=easy&n=10&kb=zhuyin', '字庫＋鎖定：&b=碼&lv=easy&n=10&kb=zhuyin', await url());
+    // 改字庫 → shared_rayo 跟著改
+    await page.click('[data-act=gtab][data-t=content]'); await page.waitForSelector('#rayoCard');
+    await page.click('[data-act=ryedit][data-k="0"]'); await page.waitForSelector('.rygrid');
+    await page.click('[data-act=ryrm] >> nth=0'); await page.click('[data-act=rysave]'); await page.waitForSelector('#rayoCard .setrow');
+    ok((await db(page)).shared_rayo[sid2].chars.length === 11, '字庫一改，已發出去的連結跟著用新內容（shared_rayo 11 字）');
+    // 刪除字庫：shared_rayo 也刪
+    await page.click('[data-act=rydel][data-k="0"]'); await page.waitForTimeout(200);
+    const d3 = await db(page);
+    ok(d3.rayo_sets.u1.banks.length === 1 && !d3.shared_rayo[sid2], '刪字庫：連結碼那份也刪掉');
+    ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
+
+  console.log('\n[R3] 天打雷劈：成績冊、排行、常錯字、CSV（用 RAYO 的函式直接算）');
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '?dev=rayo#/game/rayo/content' });
+    await page.waitForSelector('#rayoCard');
+    const R = await page.evaluate(() => {
+      const now = Date.now();
+      const sc = [
+        { id: 'a', game: 'rayo', k: 'normal_10_pinyin', h: 'h1', nick: '小明', best: (10 - 2) * 100000 + (99999 - 60), plays: 3, ms: now, extra: { s: 2, c: 8, t: 60, st: 2, n: 10 } },
+        { id: 'b', game: 'rayo', k: 'normal_10_pinyin', h: 'h2', nick: '小華', best: (10 - 0) * 100000 + (99999 - 80), plays: 1, ms: now, extra: { s: 0, c: 10, t: 80, st: 3, n: 10 } },
+        { id: 'c', game: 'rayo', k: 'normal_10_pinyin', h: 'h3', nick: '阿美', best: (10 - 0) * 100000 + (99999 - 50), plays: 2, ms: now, extra: { s: 0, c: 10, t: 50, st: 3, n: 10 } },
+        { id: 'd', game: 'rayo', k: 'easy_15_zhuyin_bank1234', h: 'h1', nick: '小明', best: (15 - 1) * 100000 + (99999 - 90), plays: 1, ms: now, extra: { s: 1, c: 14, t: 90, st: 2, n: 15 } },
+        { id: 'e', game: 'dragon', k: 'x', h: 'h9', nick: '別的遊戲', best: 5, plays: 1, ms: now }
+      ];
+      const pl = [
+        { game: 'rayo', k: 'normal_10_pinyin', h: 'h1', ms: now, qs: [{ c: '我', ok: 0 }, { c: '你', ok: 1 }, { c: '他', ok: 0 }] },
+        { game: 'rayo', k: 'normal_10_pinyin', h: 'h2', ms: now, qs: [{ c: '我', ok: 0 }, { c: '好', ok: 1 }] },
+        { game: 'rayo', k: 'normal_10_pinyin', h: 'h1', ms: now, qs: [{ c: '我', ok: 0 }] }
+      ];
+      const banks = [{ name: '期中', sid: 'bank1234abcdef' }];
+      const RY = window.RAYO;
+      return {
+        keys: RY.setKeys(sc), cnt: RY.studentCount(sc, 'normal_10_pinyin'),
+        order: RY.tableRows(sc, pl, 0, 'normal_10_pinyin').map(x => x.r.nick),
+        wrong: RY.wrongStats(pl, 0, 'normal_10_pinyin', '').map(o => o.c + o.bad),
+        wrongMe: RY.wrongStats(pl, 0, 'normal_10_pinyin', 'h1').map(o => o.c + o.bad),
+        csv: RY.csvRows(sc, pl, 0, '', banks), parse: RY.parseK('easy_15_zhuyin_bank1234'), bad: RY.parseK('hard_10_x'),
+        label: RY.kLabel('easy_15_zhuyin_bank1234', banks), html: RY.bookHtml(sc, pl, 0, 'normal_10_pinyin', banks, false)
+      };
+    });
+    ok(JSON.stringify(R.keys) === JSON.stringify(['normal_10_pinyin', 'easy_15_zhuyin_bank1234']), '設定清單只收天打雷劈的成績（不含別的遊戲）', R.keys);
+    ok(R.cnt === 3, '同設定的學生數＝3', R.cnt);
+    ok(JSON.stringify(R.order) === JSON.stringify(['阿美', '小華', '小明']), '排行：被劈少的在前，一樣比快（阿美 0 劈 50 秒 → 小華 0 劈 80 秒 → 小明 2 劈）', R.order);
+    ok(R.wrong[0] === '我3' && R.wrong.includes('他1') && !R.wrong.some(x => x.startsWith('你') || x.startsWith('好')), '整班常錯的字：我×3、他×1（答對的不算）', R.wrong);
+    ok(JSON.stringify(R.wrongMe) === JSON.stringify(['我2', '他1']), '個別學生的常錯字只算自己的', R.wrongMe);
+    ok(R.csv.length === 5 && R.csv[0].length === 9, 'CSV：1 列標題＋4 位學生設定列，共 9 欄', [R.csv.length, R.csv[0].length]);
+    const mine = R.csv.find(r => r[0] === '小明' && String(r[1]).includes('期中'));
+    ok(mine && mine[3] === '14/15' && mine[4] === '1:30' && mine[5] === 2, 'CSV：字庫設定顯示字庫名稱、答對 14/15、用時 1:30、2 星', mine);
+    ok(R.parse && R.parse.lv === 'easy' && R.parse.n === 15 && R.parse.kb === 'zhuyin' && R.parse.b === 'bank1234' && R.bad === null, '設定代碼解析；亂碼回傳 null', [R.parse, R.bad]);
+    ok(R.html.includes('阿美') && R.html.includes('⚡0') && R.html.includes('我×3') && R.html.includes('data-act="rowdel"'), '成績冊表格有名次、被劈、常錯的字、刪除鈕');
+    ok(errors.length === 0, 'R3 沒有 JS 錯誤', errors); await ctx.close();
+  }
 
   console.log('\n[Z] 管理員（a2224907@gmail.com 已驗證）：視為訂閱中、數量上限放寬；一般老師與未驗證的不受影響');
   { const ADMIN = Object.assign({}, TEACH, { email: 'a2224907@gmail.com', emailVerified: true });

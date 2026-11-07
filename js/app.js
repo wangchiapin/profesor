@@ -11,6 +11,7 @@ const GAME_IDS = ['corre', 'colores', 'bbk', 'dragon', 'ba', 'bei', 'rayo'];
 const isBaBei = g => g === 'ba' || g === 'bei';
 const GAME_TABS = ['content', 'ranges', 'links', 'scores', 'sheet', 'help'];
 const DR = window.DRAGON;
+const RY = window.RAYO;
 // 遊戲開關：維修中的遊戲，一般老師只看到「維修中」；管理員（或網址加 ?dev=遊戲代號，例如 ?dev=dragon）照常能用
 function devOn(g){
   try{ const m = /[?&]dev=([a-z,]+)/.exec(location.search); if(m) sessionStorage.setItem('gameDev', m[1]); return (sessionStorage.getItem('gameDev') || '').split(',').indexOf(g) >= 0; }
@@ -34,6 +35,7 @@ const S = {
   colEdit: null, colMsg: '',                                       // colEdit = { i, dr }（色數設定組）
   ws: null, wsSheet: null, wsKind: '', bws: null,                                         // 色數學習單選項與產生好的學習單
   babEdit: null, babMsg: '', babBlk: {}, baw: {}, babSent: {}, baSrc: { ba: '', bei: '' },   // 把／被自訂句庫：babEdit = { g, i（-1 新增）, dr }、babSent = 各遊戲句子清單狀態、baSrc = 班級連結選的句庫
+  rayoEdit: null, rayoMsg: '', rayoLk: { b: '', lv: '', n: '', kb: '' }, rayoPrac: '', rplays: [],   // 天打雷劈：字庫編輯 { i, dr }、班級連結選的字庫與鎖定設定、練習連結選的字庫、逐題紀錄
   bankMsg: '', cws: null                                           // 跑吧句庫卡片的錯誤訊息、跑吧學習單選項
 };
 
@@ -127,9 +129,9 @@ async function onRoute(){
   const prevG = S.route === 'game' ? S.g : null;
   S.route = r.route; S.cur = r.cur;
   if(S.route === 'game'){
-    if(prevG !== r.g){ S.babEdit = null; S.babMsg = ''; S.days = 0; S.tab = 'stu'; S.sel = null; S.bst = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
+    if(prevG !== r.g){ S.rayoLk = { b: '', lv: '', n: '', kb: '' }; S.rayoPrac = ''; S.babEdit = null; S.babMsg = ''; S.days = 0; S.tab = 'stu'; S.sel = null; S.bst = null; S.setK = ''; S.msg2 = ''; S.correSrc = 'L:A1'; S.correLv = ''; S.colCfg = ''; S.bbkSel = ''; S.dragonSel = ''; }
     S.g = r.g; S.gt = r.gt; S.game = r.g;
-    if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonMsg = ''; S.babEdit = null; S.babMsg = ''; }
+    if(S.gt !== 'content'){ S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonMsg = ''; S.babEdit = null; S.babMsg = ''; S.rayoEdit = null; S.rayoMsg = ''; }
     if(S.gt !== 'ranges') S.dragonSetEdit = null;
     if(S.gt !== 'sheet') S.wsSheet = null;
     render(); window.scrollTo(0, 0);
@@ -138,7 +140,7 @@ async function onRoute(){
   }
   if(S.route === 'class'){ if(classOf(S.cur)) setCls(S.cur); render(); window.scrollTo(0, 0); return; }
   if(classesRedirect()) return;
-  S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = ''; S.babEdit = null; S.babMsg = '';
+  S.bankMsg = ''; S.bbkEdit = null; S.bbkMsg = ''; S.colEdit = null; S.colMsg = ''; S.dragonEdit = null; S.dragonSetEdit = null; S.dragonMsg = ''; S.babEdit = null; S.babMsg = ''; S.rayoEdit = null; S.rayoMsg = '';
   S.wsSheet = null;
   render(); window.scrollTo(0, 0);
 }
@@ -158,7 +160,7 @@ async function loadBook(){
   const cid = c.cid;
   await Promise.all([
     DATA.loadScores(cid).then(r => { S.scores = r; S.scoresState = 'ok'; }).catch(e => { console.error(e); S.scores = []; S.scoresState = 'error'; S.msg2 = err(e); }),
-    DATA.loadPlays(cid).then(r => { S.plays = r.filter(x => x.game === 'bbk'); S.bplays = r.filter(x => x.game === 'ba' || x.game === 'bei'); S.playsState = 'ok'; }).catch(e => { console.error(e); S.plays = []; S.playsState = 'error'; S.msg2 = err(e); })
+    DATA.loadPlays(cid).then(r => { S.plays = r.filter(x => x.game === 'bbk'); S.bplays = r.filter(x => x.game === 'ba' || x.game === 'bei'); S.rplays = r.filter(x => x.game === 'rayo'); S.playsState = 'ok'; }).catch(e => { console.error(e); S.plays = []; S.playsState = 'error'; S.msg2 = err(e); })
   ]);
   if(S.route === 'game' && S.gt === 'scores' && clsC() && clsC().cid === cid) render();
 }
@@ -205,7 +207,8 @@ function usageOf(g){
   if(g === 'corre') return T('usageCorre') + '　' + (A.extrasReady ? A.banks.length + ' / ' + banksMax : '–');
   if(g === 'colores') return T('usageColores') + '　' + (A.extrasReady ? A.configs.length + ' / ' + cfgMax : '–');
   if(g === 'bbk') return T('usageBbk') + '　' + (A.bbkReady ? A.bbk.length + ' / ' + DATA.bbkMax(P) : '–');
-  if(isBaBei(g) || g === 'rayo') return '';
+  if(g === 'rayo') return T('usageRayo') + '　' + (A.rayoReady ? A.rayo.banks.length + ' / ' + RY.maxBanks(P.active) : '–');
+  if(isBaBei(g)) return '';
   return T('usageDragonThemes') + '　' + (A.dragonReady ? A.dragon.themes.length + ' / ' + DATA.DRAGON_THEMES_MAX : '–') + '　·　' + T('usageDragonSets') + '　' + (A.dragonReady ? A.dragon.sets.length + ' / ' + DATA.DRAGON_SETS_MAX : '–');
 }
 function homeHtml(){
@@ -305,6 +308,8 @@ function linkCardHtml(game){
         banks.map(b => '<option value="' + esc(b.sid) + '" ' + (S.baSrc[game] === b.sid ? 'selected' : '') + '>📚 ' + esc(b.name || ('#' + (b.slot + 1))) + '</option>').join('') + '</select></div>';
     }
     url = DATA.linkBaBei(game, c.cid, S.baSrc[game]);
+  }else if(game === 'rayo'){
+    const r = rayoClassLink(h, c); if(r.done) return r.h; h = r.h; url = r.url;
   }else if(game === 'dragon'){
     if(!DR.ready()) return h + maintBox() + '</div>';
     if(!A.dragonReady) return h + '<p class="hint">' + esc(T('bbkUnavailable')) + '</p></div>';
@@ -368,6 +373,7 @@ function setLabel(game, k){
     const it = (A.configs || []).find(x => x.sid === k); return it ? '🎨 ' + ((it.cfg && it.cfg.name) || '#') : T('setDeleted');
   }
   if(isBaBei(game)){ const bk = ((A.babanks || {})[game] || []).find(x => x.sid === k); if(bk) return '📚 ' + (bk.name || '#'); const m = new RegExp('^lv([1-' + (game === 'bei' ? 4 : 3) + '])$').exec(k); return m ? T('levelN', { n: m[1] }) : (k === 'old' ? T('setOther') : T('setDeleted')); }   // 把有 3 關、被有 4 關（遊戲端送 lv1～lv3／lv1～lv4）
+  if(game === 'rayo') return RY.kLabel(k, ((A.rayo || {}).banks) || []);
   if(game === 'dragon'){ const l = DR.themeLabel(k, (A.dragon || {}).themes); return l ? '🐉 ' + l : T('setDeleted'); }
   if(k === 'normal') return T('rangeNormal');
   if(k === 'other') return T('setOther');
@@ -394,6 +400,8 @@ function bookHtml(){
     h += '<div class="row">' + [['stu', 'tabStudents'], ['err', 'tabErrors']].map(x => '<button class="pill sm ' + (S.tab === x[0] ? 'on' : '') + '" data-act="tab" data-tab="' + x[0] + '">' + esc(T(x[1])) + '</button>').join('') + '</div>';
     const inRange = plays.filter(r => !S.days || r.ms >= Date.now() - S.days * 86400000);
     h += S.tab === 'stu' ? BOOKS.bbkStudents(plays, S.days, sk, lab) : BOOKS.bbkStats(inRange);
+  }else if(g === 'rayo'){
+    h += '<p class="hint">' + esc(T('students', { n: RY.studentCount(S.scores, sk) })) + '</p>' + RY.bookHtml(S.scores, S.rplays || [], S.days, sk, (S.a.rayo || {}).banks || []);
   }else{
     if(isBaBei(g) && S.bst) return h + BOOKS.babStats(S.bplays || [], g, S.days, sk, S.bst);
     h += '<p class="hint">' + esc(T('students', { n: BOOKS.studentCount(g, S.scores, sk) })) + '</p>' + BOOKS.scoreTable(g, S.scores, S.days, sk, lab);
@@ -671,6 +679,92 @@ function bankRouteHtml(){
     esc(why === 'locked' ? CORRE.tr('slotLockedEd') : T('bbkUnavailable')) + '</div>';
 }
 // ---- 遊戲頁：每款遊戲一頁，分頁＝題庫／連結／成績／學習單／說明 ----
+// ---- 天打雷劈：自訂字庫（內建 1384 字挑字、貼文字找字、加內建以外的字、改讀音）、練習連結、班級連結 ----
+function rayoWordsReady(){
+  if(RY.loaded()) return true;
+  if(!S.rayoLoading){ S.rayoLoading = true; RY.loadWords().then(() => { S.rayoLoading = false; S.rayoLoadErr = false; render(); }).catch(e => { console.error(e); S.rayoLoading = false; S.rayoLoadErr = true; render(); }); }
+  return false;
+}
+function rayoEditorHtml(){
+  const E = S.rayoEdit, dr = E.dr, P = S.a.plan, max = RY.maxChars(P.active);
+  let h = '<div class="editor"><div class="field"><label>' + esc(T('rayoBankName')) + '</label><input type="text" id="ryName" maxlength="12" placeholder="' + esc(T('rayoBankNamePh')) + '" value="' + esc(dr.name) + '"></div>' +
+    '<p class="hint"><b>' + esc(T('rayoCount', { n: dr.chars.length })) + ' / ' + max + '</b>　' + esc(T('rayoMinHint', { n: RY.MIN_C })) + '</p>';
+  if(!rayoWordsReady()){
+    h += S.rayoLoadErr ? '<div class="err">' + esc(T('rayoWordsFail')) + '</div><div class="row"><button class="pill sm" data-act="ryreload">' + esc(T('retry')) + '</button></div>' : '<p class="hint">' + esc(T('loading')) + '</p>';
+  }else{
+    // 1. 內建字庫：選等級，點字加入／移除
+    h += '<div class="field"><label>' + esc(T('rayoPickLv')) + '</label><div class="row" style="margin-top:0">' +
+      RY.LEVELS.map(l => '<button class="pill sm chip ' + (dr.lv === l ? 'on' : '') + '" data-act="rylv" data-k="' + l + '">' + l + '（' + RY.wordsOfLevel(l).length + '）</button>').join('') + '</div>' +
+      '<p class="hint">' + esc(T('rayoPickHint')) + '</p><div class="rygrid">' +
+      RY.wordsOfLevel(dr.lv).map(w => { const on = dr.chars.some(x => x.c === w.c); return '<button class="rych ' + (on ? 'on' : '') + '" data-act="rytog" data-c="' + esc(w.c) + '">' + esc(S.a && I18N.getLang() === 'sc' ? (w.s || w.c) : w.c) + '</button>'; }).join('') + '</div></div>';
+    // 2. 貼一段文字
+    h += '<div class="field"><label>' + esc(T('rayoPasteLabel')) + '</label><textarea id="ryText" rows="3" placeholder="' + esc(T('rayoPastePh')) + '">' + esc(dr.text) + '</textarea></div>' +
+      '<div class="row"><button class="pill sm" data-act="rypaste">⚙️ ' + esc(T('rayoPasteBtn')) + '</button></div>';
+    if(dr.missing && dr.missing.length) h += '<p class="hint">' + esc(T('rayoMissing')) + '</p><div class="row" style="margin-top:0">' + dr.missing.map(c => '<button class="pill sm chip" data-act="rypickmiss" data-c="' + esc(c) + '">' + esc(c) + '</button>').join('') + '</div>';
+    // 3. 加內建以外的字
+    h += '<div class="field"><label>' + esc(T('rayoOutLabel')) + '</label><p class="hint">' + esc(T('rayoOutHint')) + '</p><div class="inline">' +
+      '<input type="text" id="ryOutC" maxlength="2" style="max-width:5em" placeholder="' + esc(T('rayoOutCPh')) + '" value="' + esc(dr.outC || '') + '"><input type="text" id="ryOutR" placeholder="' + esc(T('rayoOutRPh')) + '" value="' + esc(dr.outR || '') + '">' +
+      '<button class="pill sm" data-act="ryout">＋ ' + esc(T('rayoOutAdd')) + '</button></div></div>';
+    // 4. 已選的字：可改讀音
+    h += '<div class="field"><label>' + esc(T('rayoListLabel')) + '</label><p class="hint">' + esc(T('rayoReadHint')) + '</p>' +
+      (dr.chars.length ? '<div class="tablewrap"><table class="t nw"><tr><th>' + [T('rayoColChar'), T('rayoColRead'), ''].map(esc).join('</th><th>') + '</th></tr>' +
+        dr.chars.map(x => '<tr><td><b>' + esc(I18N.getLang() === 'sc' ? x.s : x.c) + '</b>' + (x.x ? '<small class="setk">' + esc(T('rayoOutTag')) + '</small>' : '') + '</td><td><input type="text" class="ryr" data-ryr="' + esc(x.c) + '" value="' + esc(x.r.join(', ')) + '"><small class="mut">' + esc(RY.readingLabel(x.r)) + (RY.edited(x) ? ' ✎' : '') + '</small></td>' +
+          '<td>' + (RY.edited(x) ? '<button class="pill sm" data-act="ryreset" data-c="' + esc(x.c) + '">' + esc(T('rayoReset')) + '</button>' : '') + '<button class="x" data-act="ryrm" data-c="' + esc(x.c) + '" aria-label="' + esc(T('del')) + '">✕</button></td></tr>').join('') + '</table></div>'
+        : '<p class="hint">' + esc(T('rayoListEmpty')) + '</p>') + '</div>';
+  }
+  if(S.rayoMsg) h += '<div class="err">' + esc(S.rayoMsg) + '</div>';
+  return h + '<div class="row"><button class="pill fill sm" data-act="rysave">' + esc(T('save')) + '</button><button class="pill sm" data-act="rycancel">' + esc(T('cancel')) + '</button></div></div>';
+}
+function rayoCardHtml(){
+  const A = S.a, P = A.plan, E = S.rayoEdit, max = RY.maxBanks(P.active);
+  if(!A.rayoReady) return '<div class="card" id="rayoCard">' + phHead('⚡ ' + T('rayoTitle')) + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  if(E) return '<div class="card" id="rayoCard">' + rayoEditorHtml() + '</div>';
+  let h = '<div class="card" id="rayoCard">' + phHead('⚡ ' + T('rayoTitle'), T('bbkQuota', { n: A.rayo.banks.length, max }));
+  h += '<p class="hint">' + esc(T(P.active ? 'rayoHintPro' : 'rayoHintFree', { n: RY.maxChars(P.active) })) + '</p>';
+  A.rayo.banks.forEach((b, i) => {
+    h += '<div class="setrow"><div><b>⚡ ' + esc(b.name) + '</b><small>' + esc(RY.summary(b)) + '</small></div><div class="row">' +
+      '<button class="pill sm" data-act="ryedit" data-k="' + i + '">' + esc(T('edit')) + '</button><button class="pill sm" data-act="rydel" data-k="' + i + '">🗑 ' + esc(T('del')) + '</button></div></div>';
+  });
+  if(A.rayo.banks.length < max) h += '<div class="row"><button class="pill fill sm" data-act="rynew">＋ ' + esc(T('rayoNew')) + '</button></div>';
+  else h += '<div class="notice">' + esc(T(P.active ? 'rayoFullPro' : 'rayoFullFree', { n: max })) + (P.active ? '' : ' <a href="' + DATA.PORTAL_URL + '" target="_blank" rel="noopener">' + esc(T('subscribe')) + '</a>') + '</div>';
+  if(S.rayoMsg) h += '<div class="err">' + esc(S.rayoMsg) + '</div>';
+  return h + '</div>';
+}
+// 練習連結（不回傳成績，免費也能用）：遊戲網址，或帶自己的字庫（?b=字庫碼）
+function rayoPracticeHtml(){
+  const A = S.a;
+  let h = '<div class="card" id="pracCard"><h3>🔗 ' + esc(T('pracTitle')) + '</h3><p class="hint">' + esc(T('pracHintRayo')) + '</p>';
+  if(!A.rayoReady) return h + '<div class="notice">' + esc(T('bbkUnavailable')) + '</div></div>';
+  const k = S.rayoPrac, it = k !== '' ? A.rayo.banks[+k] : null;
+  h += '<div class="field"><label>' + esc(T('rayoBankPick')) + '</label><select data-sel="rayoprac"><option value="">' + esc(T('rayoBankAll')) + '</option>' +
+    A.rayo.banks.map((b, i) => '<option value="' + i + '" ' + (k === String(i) ? 'selected' : '') + '>⚡ ' + esc(b.name) + '</option>').join('') + '</select></div>';
+  if(it && !it.sid) return h + '<div class="row"><button class="pill fill sm" data-act="ryprmake">🔗 ' + esc(T('makeLink')) + '</button></div>' + (S.rayoMsg ? '<div class="err">' + esc(S.rayoMsg) + '</div>' : '') + '</div>';
+  const url = it ? DATA.linkRayoPractice(it.sid) : DATA.GAME_URL.rayo;
+  h += '<div class="url" data-url="rayoprac">' + esc(url) + '</div><div class="row">' +
+    '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
+    '<button class="pill sm" data-act="qr" data-url="' + esc(url) + '" data-game="rayo">' + esc(T('qr')) + '</button>' +
+    '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
+  return h + '</div>';
+}
+// 班級連結：選字庫、鎖定設定（難度、題數、鍵盤；不鎖＝學生自己選）。自訂字庫只有簡單（15 秒）和普通（10 秒）兩種難度
+function rayoClassLink(h, c){
+  const A = S.a, L = S.rayoLk;
+  if(!A.rayoReady) return { done: true, h: h + '<p class="hint">' + esc(T('bbkUnavailable')) + '</p></div>' };
+  const bank = L.b !== '' ? A.rayo.banks[+L.b] : null;
+  if(!bank) L.b = '';
+  const lvs = bank ? ['easy', 'normal'] : RY.LV_OPTS;
+  if(L.lv && lvs.indexOf(L.lv) < 0) L.lv = '';
+  if(L.n && !RY.nAllowed(+L.n, bank)) L.n = '';
+  h += '<div class="field"><label>' + esc(T('rayoBankPick')) + '</label><select data-sel="rayobank"><option value="">' + esc(T('rayoBankAll')) + '</option>' +
+    A.rayo.banks.map((b, i) => '<option value="' + i + '" ' + (L.b === String(i) ? 'selected' : '') + '>⚡ ' + esc(b.name) + '</option>').join('') + '</select></div>';
+  if(bank && !bank.sid) return { done: true, h: h + '<div class="row"><button class="pill fill sm" data-act="rymake">🔗 ' + esc(T('makeLink')) + '</button></div>' + (S.rayoMsg ? '<div class="err">' + esc(S.rayoMsg) + '</div>' : '') + '</div>' };
+  const sel = (key, label, opts) => '<div class="field"><label>' + esc(T(label)) + '</label><select data-sel="rayo' + key + '"><option value="">' + esc(T('rayoLockFree')) + '</option>' + opts + '</select></div>';
+  h += '<p class="hint">' + esc(T('rayoLockHint')) + '</p>' +
+    sel('lv', 'rayoLockLv', lvs.map(k => '<option value="' + k + '" ' + (L.lv === k ? 'selected' : '') + '>' + esc(RY.lvName(k)) + '</option>').join('')) +
+    sel('n', 'rayoLockN', RY.N_OPTS.map(n => '<option value="' + n + '" ' + (String(L.n) === String(n) ? 'selected' : '') + (RY.nAllowed(n, bank) ? '' : ' disabled') + '>' + esc(T('rayoNQ', { n })) + '</option>').join('')) +
+    sel('kb', 'rayoLockKb', RY.KB_OPTS.map(k => '<option value="' + k + '" ' + (L.kb === k ? 'selected' : '') + '>' + esc(RY.kbName(k)) + '</option>').join(''));
+  return { done: false, h, url: DATA.linkRayo(c.cid, bank ? bank.sid : '', { lv: L.lv, n: L.n, kb: L.kb }) };
+}
 const GT_CONTENT = { corre: 'gtBankCorre', colores: 'gtBankColores', bbk: 'gtBankBbk', dragon: 'gtBankDragon', ba: 'gtBankBa', bei: 'gtBankBa', rayo: 'gtBankRayo' };
 const GT_LABEL = { links: 'gtLinks', scores: 'gtScores', sheet: 'gtSheet', help: 'gtHelp' };
 function classPickHtml(){
@@ -681,7 +775,7 @@ function classPickHtml(){
     ks.map(k => '<button class="pill ' + (S.cls === k ? 'on' : '') + '" data-act="pickcls" data-slot="' + k + '">🏫 ' + esc(A.classes[k].data.name) + '</button>').join('') + '</div></div>';
 }
 function classLinksHtml(g){
-  return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T({ corre: 'linksHintCorre', colores: 'linksHintColores', bbk: 'linksHintBbk', dragon: 'linksHintDragon', ba: 'linksHintBa', bei: 'linksHintBa' }[g])) + '</p>' + classPickHtml() +
+  return '<div class="card" id="linksCard"><h3>🔗 ' + esc(T('linksTitle')) + '</h3><p class="hint">' + esc(T({ corre: 'linksHintCorre', colores: 'linksHintColores', bbk: 'linksHintBbk', dragon: 'linksHintDragon', ba: 'linksHintBa', bei: 'linksHintBa', rayo: 'linksHintRayo' }[g])) + '</p>' + classPickHtml() +
     (clsC() ? linkCardHtml(g) : '') + '</div>';
 }
 // 色數的預設色：遊戲本來就支援 ?t=（把設定編進網址），不用建連結碼、不寫資料庫
@@ -965,7 +1059,7 @@ function babEditorHtml(){
 }
 function baSoonHtml(what){ return '<div class="card"><div class="notice">🚧 ' + esc(T(what)) + '</div></div>'; }
 function gameLinksHtml(g){
-  if(g === 'rayo') return baPracticeHtml(g) + baSoonHtml('rayoSoon');   // 班級連結第 3 步才做
+  if(g === 'rayo') return rayoPracticeHtml() + classLinksHtml(g);
   if(isBaBei(g)) return baPracticeHtml(g) + classLinksHtml(g);
   if(g === 'corre') return pubCardHtml() + classLinksHtml(g);
   if(g === 'dragon') return dragonQuickHtml() + classLinksHtml(g);
@@ -983,7 +1077,7 @@ function gameHtml(){
   if(gameMaint(g)) h += maintAdminBox();
   h += '<div class="gtabs">' + [['content', GT_CONTENT[g]]].concat(g === 'dragon' ? [['ranges', 'gtRangesDragon']] : []).concat([['links', GT_LABEL.links], ['scores', GT_LABEL.scores], ['sheet', GT_LABEL.sheet], ['help', GT_LABEL.help]]).map(t =>
     '<button class="pill sm ' + (S.gt === t[0] ? 'on' : '') + '" data-act="gtab" data-t="' + t[0] + '">' + esc(T(t[1])) + '</button>').join('') + '</div>';
-  if(S.gt === 'content') return h + (g === 'rayo' ? baSoonHtml('rayoSoon') : isBaBei(g) ? baBankCardHtml(g) : g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
+  if(S.gt === 'content') return h + (g === 'rayo' ? rayoCardHtml() : isBaBei(g) ? baBankCardHtml(g) : g === 'corre' ? correCardHtml() : g === 'colores' ? colCardHtml() : g === 'bbk' ? bbkCardHtml() : dragonCardHtml());
   if(S.gt === 'ranges') return h + (g === 'dragon' ? dragonRangesHtml() : '');
   if(S.gt === 'links') return h + gameLinksHtml(g);
   if(S.gt === 'scores') return h + gameScoresHtml();
@@ -2101,6 +2195,57 @@ const actions = {
     if(!confirm(T('confirmRow', { nick: el.dataset.nick }))) return;
     await DATA.deleteDocs('class_scores', [el.dataset.id]); S.scores = S.scores.filter(r => r.id !== el.dataset.id); render();
   }); },
+  // ---- 天打雷劈：自訂字庫 ----
+  rynew(){ const A = S.a; if(A.rayo.banks.length >= RY.maxBanks(A.plan.active)) return; S.rayoEdit = { i: -1, dr: RY.draftFrom(null) }; S.rayoMsg = ''; render(); },
+  ryedit(el){ const b = S.a.rayo.banks[+el.dataset.k]; if(!b) return; S.rayoEdit = { i: +el.dataset.k, dr: RY.draftFrom(b) }; S.rayoMsg = ''; render(); },
+  rycancel(){ S.rayoEdit = null; S.rayoMsg = ''; render(); },
+  ryreload(){ S.rayoLoadErr = false; render(); },
+  rylv(el){ S.rayoEdit.dr.lv = el.dataset.k; render(); },
+  rytog(el){
+    const dr = S.rayoEdit.dr, c = el.dataset.c, max = RY.maxChars(S.a.plan.active), w = RY.builtinOf(c);
+    if(dr.chars.some(x => x.c === c)) RY.removeChar(dr, c);
+    else if(dr.chars.length >= max){ S.rayoMsg = T('rayoBankFull', { n: max }); render(); return; }
+    else if(w) RY.addBuiltin(dr, w);
+    S.rayoMsg = ''; render();
+  },
+  rypaste(){
+    const dr = S.rayoEdit.dr, max = RY.maxChars(S.a.plan.active);
+    const r = RY.pickFromText(dr, dr.text, max); dr.missing = r.missing;
+    S.rayoMsg = r.full ? T('rayoBankFull', { n: max }) : ''; if(!r.added.length && !r.missing.length && !r.full) S.rayoMsg = T('rayoPasteNone');
+    render();
+  },
+  rypickmiss(el){ const dr = S.rayoEdit.dr; dr.outC = el.dataset.c; dr.outR = ''; render(); const i = document.getElementById('ryOutR'); if(i) i.focus(); },
+  ryout(){ return run(async () => {
+    const dr = S.rayoEdit.dr, msg = await RY.addOutside(dr, dr.outC, dr.outR, RY.maxChars(S.a.plan.active));
+    S.rayoMsg = msg;
+    if(!msg){ dr.missing = (dr.missing || []).filter(c => c !== dr.outC); dr.outC = ''; dr.outR = ''; }
+    render();
+  }); },
+  ryrm(el){ RY.removeChar(S.rayoEdit.dr, el.dataset.c); render(); },
+  ryreset(el){ RY.resetReading(S.rayoEdit.dr, el.dataset.c); S.rayoMsg = ''; render(); },
+  rysave(){ return run(async () => {
+    const E = S.rayoEdit; if(!E) return;
+    const bad = RY.draftValid(E.dr, S.a.plan.active); if(bad){ S.rayoMsg = bad; render(); return; }
+    if(E.i < 0 && S.a.rayo.banks.length >= RY.maxBanks(S.a.plan.active)){ S.rayoMsg = T('rayoFullFree', { n: RY.maxBanks(S.a.plan.active) }); render(); return; }
+    try{ S.a.rayo = await DATA.saveRayoBank(S.a.rayo, E.i, RY.toBank(E.dr)); S.rayoEdit = null; S.rayoMsg = ''; render(); toast(T('saved')); }
+    catch(e){ console.error(e); S.rayoMsg = err(e); render(); }
+  }); },
+  rydel(el){ return run(async () => {
+    const i = +el.dataset.k, b = S.a.rayo.banks[i]; if(!b || !confirm(T('rayoConfirmDel', { name: b.name }))) return;
+    try{ S.a.rayo = await DATA.deleteRayoBank(S.a.rayo, i); S.rayoMsg = ''; if(S.rayoLk.b !== '') S.rayoLk.b = ''; S.rayoPrac = ''; }
+    catch(e){ console.error(e); S.rayoMsg = err(e); }
+    render();
+  }); },
+  rymake(){ return run(async () => {
+    const i = +S.rayoLk.b;
+    try{ S.a.rayo = await DATA.ensureRayoSid(S.a.rayo, i); S.rayoMsg = ''; }catch(e){ console.error(e); S.rayoMsg = T('configFail', { m: err(e) }); }
+    render();
+  }); },
+  ryprmake(){ return run(async () => {
+    const i = +S.rayoPrac;
+    try{ S.a.rayo = await DATA.ensureRayoSid(S.a.rayo, i); S.rayoMsg = ''; }catch(e){ console.error(e); S.rayoMsg = T('configFail', { m: err(e) }); }
+    render();
+  }); },
   refresh(){ return loadBook(); },
   bstu(el){ S.bst = el.dataset.h; render(); },
   bstuback(){ S.bst = null; render(); },
@@ -2111,6 +2256,7 @@ const actions = {
   csv(){
     const c = clsC(), g = S.game, lab = k => setLabel(g, k);
     const sk = curSetK(BOOKS.setKeys(g, g === 'bbk' ? S.plays : S.scores));
+    if(g === 'rayo'){ saveBlob(new Blob([BOOKS.toCsv(RY.csvRows(S.scores, S.rplays || [], S.days, sk, S.a.rayo.banks))], { type: 'text/csv;charset=utf-8' }), g + '_' + safeName(c.data.name) + '_' + fdate(Date.now()).replace(/\//g, '') + '.csv'); return; }
     const rows = g === 'bbk' ? BOOKS.csvBbk(sk ? S.plays.filter(r => BOOKS.setKeyOf('bbk', r) === sk) : S.plays, S.days, lab) : BOOKS.csvScores(g, S.scores, S.days, sk, lab);
     saveBlob(new Blob([BOOKS.toCsv(rows)], { type: 'text/csv;charset=utf-8' }), g + '_' + safeName(c.data.name) + '_' + fdate(Date.now()).replace(/\//g, '') + '.csv');
   },
@@ -2119,6 +2265,7 @@ const actions = {
     if(g === 'bbk'){ await DATA.deleteDocs('class_plays', S.plays.map(r => r.id)); S.plays = []; }
     else{
       await DATA.deleteDocs('class_scores', S.scores.filter(r => r.game === g).map(r => r.id)); S.scores = S.scores.filter(r => r.game !== g);
+      if(g === 'rayo'){ await DATA.deleteDocs('class_plays', (S.rplays || []).map(r => r.id)); S.rplays = []; }
       if(isBaBei(g)){ await DATA.deleteDocs('class_plays', (S.bplays || []).filter(r => r.game === g).map(r => r.id)); S.bplays = (S.bplays || []).filter(r => r.game !== g); }
     }
     render();
@@ -2145,6 +2292,11 @@ document.addEventListener('change', e => {
   if(s.dataset.sel === 'colcfg') S.colCfg = s.value;
   if(s.dataset.sel === 'basrc') S.baSrc[S.g] = s.value;
   if(s.dataset.sel === 'babblk' && S.babEdit && S.babEdit.blk){ S.babEdit.blk[s.dataset.f] = s.value; render(); return; }
+  if(s.dataset.sel === 'rayoprac'){ S.rayoPrac = s.value; S.rayoMsg = ''; }
+  if(s.dataset.sel === 'rayobank'){ S.rayoLk.b = s.value; S.rayoMsg = ''; }
+  if(s.dataset.sel === 'rayolv') S.rayoLk.lv = s.value;
+  if(s.dataset.sel === 'rayon') S.rayoLk.n = s.value;
+  if(s.dataset.sel === 'rayokb') S.rayoLk.kb = s.value;
   if(s.dataset.sel === 'colprac') S.colPrac = s.value;
   if(s.dataset.sel === 'bbkprac') S.bbkPrac = s.value;
   if(s.dataset.sel === 'bbksel'){ S.bbkSel = s.value; S.msg = ''; }
@@ -2167,6 +2319,13 @@ document.addEventListener('input', e => {
     if(e.target.id === 'dgName') dr.name = e.target.value;
     if(e.target.id === 'dgText') dr.text = e.target.value;
     if(e.target.dataset && e.target.dataset.dgr != null && dr.rows && dr.rows[+e.target.dataset.dgr]) { dr.rows[+e.target.dataset.dgr][e.target.dataset.f] = e.target.value; dr.text = DR.rowsToText(dr.rows); }
+  }
+  if(S.rayoEdit){
+    const dr = S.rayoEdit.dr;
+    if(e.target.id === 'ryName') dr.name = e.target.value;
+    if(e.target.id === 'ryText') dr.text = e.target.value;
+    if(e.target.id === 'ryOutC') dr.outC = e.target.value;
+    if(e.target.id === 'ryOutR') dr.outR = e.target.value;
   }
   if(e.target.id === 'dsName' && S.dragonSetEdit) S.dragonSetEdit.dr.name = e.target.value;
   if(S.babEdit){
@@ -2191,6 +2350,11 @@ document.addEventListener('input', e => {
     if(e.target.id === 'colList') S.colEdit.dr.list = e.target.value;
     if(e.target.dataset && e.target.dataset.cc != null){ const c = S.colEdit.dr.custom[+e.target.dataset.cc]; if(c) c[e.target.dataset.f] = e.target.value; }
   }
+});
+// 天打雷劈：改讀音（離開欄位時檢查；不合法就退回原本的）
+document.addEventListener('change', e => {
+  const d = e.target.dataset; if(!S.rayoEdit || !d || d.ryr == null) return;
+  S.rayoMsg = RY.setReading(S.rayoEdit.dr, d.ryr, e.target.value); render();
 });
 // 自訂顏色：打完名稱（離開欄位）就自動帶出台灣讀音拼音；老師改過的拼音不會被蓋掉
 document.addEventListener('change', async e => {

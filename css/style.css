@@ -388,3 +388,9 @@ details.hsec[open]>summary{margin-bottom:8px}
 
 .bimgrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
 .bimg{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+
+/* 天打雷劈：自訂字庫 */
+.rygrid{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0;max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:6px;background:#fff}
+.rych{min-width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:1.15rem;cursor:pointer;padding:0 4px}
+.rych.on{background:var(--brown);color:#fff;border-color:var(--brown)}
+.ryr{width:9em;max-width:100%}
