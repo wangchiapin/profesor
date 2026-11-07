@@ -170,12 +170,13 @@ window.HELP = {
      "<b>成績冊</b>（訂閱）：在「成績」分頁，可以依「設定」篩選；每位學生看最好成績（被劈次數、答對題數）、用時、星星、玩了幾次、最近一次，以及常錯的字；整班常錯的字也有排名。可以匯出 CSV。",
      "<b>班級排行榜</b>（訂閱）：班級設定裡開啟後，學生玩完會看到同設定的班級前 10 名（被劈少的在前，一樣再比誰快）。",
      "<b>連線房間</b>：在遊戲裡按「連線」開房。從你的練習連結進去開房，就能用自訂字庫，題數可以選到 30 題（免費老師也可以）；學生用房號或邀請連結加入，不需要有你的字庫。",
+     "<b>班級連線房間（訂閱）</b>：在「連結」分頁的班級連結下面，複製「開房連結」給自己用，開出來的房間最多 35 人（一般房間 15 人），每位學生玩完，成績會自動記進這個班的成績冊（設定名稱前有 👥）。可以設定「固定房號」，每次開房都用同一組號碼；學生輸入房號或用「加入連結」進來，不需要班級連結。",
      "<b>老師中心按鈕</b>：公開的遊戲頁有一顆「老師中心」鈕，可以直接回到這裡；學生用的班級連結和練習連結看不到它。"
     ],
     "note": "字庫碼建立後不會換，你之後改字或改讀音，已經發出去的連結會自動跟著變。學習單之後開放。",
     "plan": [
      "免費：1 個字庫（70 字）、練習連結、連線對戰（含自訂字庫、30 題）",
-     "訂閱：5 個字庫（每個 150 字）、班級連結與自動回傳成績、成績冊、班級排行榜、鎖定設定、匯出 CSV"
+     "訂閱：5 個字庫（每個 150 字）、班級連結與自動回傳成績、成績冊、班級排行榜、鎖定設定、匯出 CSV、班級連線房間（35 人、成績自動記錄、固定房號）"
     ]
    },
    {
@@ -358,12 +359,13 @@ window.HELP = {
      "<b>成绩册</b>（订阅）：在“成绩”分页，可以依“设定”筛选；每位学生看最好成绩（被劈次数、答对题数）、用时、星星、玩了几次、最近一次，以及常错的字；整班常错的字也有排名。可以汇出 CSV。",
      "<b>班级排行榜</b>（订阅）：班级设定里开启后，学生玩完会看到同设定的班级前 10 名（被劈少的在前，一样再比谁快）。",
      "<b>连线房间</b>：在游戏里按“连线”开房。从你的练习连结进去开房，就能用自订字库，题数可以选到 30 题（免费老师也可以）；学生用房号或邀请连结加入，不需要有你的字库。",
+     "<b>班级连线房间（订阅）</b>：在「连结」分页的班级连结下面，复制「开房连结」给自己用，开出来的房间最多 35 人（一般房间 15 人），每位学生玩完，成绩会自动记进这个班的成绩册（设定名称前有 👥）。可以设定「固定房号」，每次开房都用同一组号码；学生输入房号或用「加入连结」进来，不需要班级连结。",
      "<b>老师中心按钮</b>：公开的游戏页有一颗“老师中心”钮，可以直接回到这里；学生用的班级连结和练习连结看不到它。"
     ],
     "note": "字库码建立后不会换，你之后改字或改读音，已经发出去的连结会自动跟着变。学习单之后开放。",
     "plan": [
      "免费：1 个字库（70 字）、练习连结、连线对战（含自订字库、30 题）",
-     "订阅：5 个字库（每个 150 字）、班级连结与自动回传成绩、成绩册、班级排行榜、锁定设定、汇出 CSV"
+     "订阅：5 个字库（每个 150 字）、班级连结与自动回传成绩、成绩册、班级排行榜、锁定设定、汇出 CSV、班级连线房间（35 人、成绩自动记录、固定房号）"
     ]
    },
    {
@@ -546,12 +548,13 @@ window.HELP = {
      "<b>Libro de notas</b> (suscripción): en la pestaña «Notas», con filtro por «configuración». De cada alumno: mejor resultado (rayos y aciertos), tiempo, estrellas, partidas, última vez y caracteres que falla; también el ranking de caracteres más difíciles de la clase. Se puede exportar a CSV.",
      "<b>Ranking de la clase</b> (suscripción): si lo activas en los ajustes de la clase, al terminar el alumno ve los 10 mejores con la misma configuración (menos rayos primero; en empate, el más rápido).",
      "<b>Salas en línea</b>: en el juego pulsa «連線» para crear una sala. Si entras desde tu enlace de práctica puedes usar tu banco y elegir hasta 30 preguntas (también con cuenta gratis); los alumnos entran con el código o el enlace, sin necesidad de tener tu banco.",
+     "<b>Sala en línea de la clase (suscripción)</b>: bajo el enlace de clase, copia el «enlace de anfitrión» para abrir la sala (hasta 35 personas; las salas normales, 15). Al terminar, la nota de cada alumno se guarda en el libro de notas de la clase (marcada con 👥). Puedes fijar un código de sala para usar siempre el mismo; los alumnos entran con el código o el enlace para unirse, sin enlace de clase.",
      "<b>Botón del centro del profesor</b>: la página pública del juego tiene un botón «老師中心» para volver aquí; los enlaces de clase y de práctica que ven los alumnos no lo muestran."
     ],
     "note": "El código del banco no cambia: si luego modificas caracteres o lecturas, los enlaces ya enviados se actualizan solos. Las fichas llegarán pronto.",
     "plan": [
      "Gratis: 1 banco (70 caracteres), enlace de práctica, salas en línea (con banco propio y 30 preguntas)",
-     "Suscripción: 5 bancos (150 caracteres cada uno), enlaces de clase con notas automáticas, libro de notas, ranking de la clase, ajustes fijados y CSV"
+     "Suscripción: 5 bancos (150 caracteres cada uno), enlaces de clase con notas automáticas, libro de notas, ranking de la clase, ajustes fijados, CSV y sala en línea de la clase (35 personas, notas automáticas, código fijo)"
     ]
    },
    {
@@ -734,12 +737,13 @@ window.HELP = {
      "<b>Gradebook</b> (subscription): on the Scores tab, filter by “setting”. For each student: best result (strikes and correct answers), time, stars, plays, last play and the characters they miss; there is also a ranking of the class’s most-missed characters. You can export CSV.",
      "<b>Class leaderboard</b> (subscription): if you turn it on in the class settings, students see the top 10 with the same settings after playing (fewer strikes first; ties go to the faster one).",
      "<b>Online rooms</b>: press “連線” in the game to open a room. Open it from your practice link to use your bank and choose up to 30 questions (free teachers too); students join with the code or invite link and don’t need your bank.",
+     "<b>Class online room (subscription)</b>: under the class link, copy the “host link” to open the room (up to 35 people; normal rooms 15). When a round ends, each student’s result is saved to the class gradebook (marked 👥). You can set a fixed room code so you always open the same one; students join with the code or the join link, no class link needed.",
      "<b>Teacher center button</b>: the public game page has a “老師中心” button that brings you back here; students on class and practice links don’t see it."
     ],
     "note": "The bank code never changes: if you later edit characters or readings, links you already sent update by themselves. Worksheets are coming soon.",
     "plan": [
      "Free: 1 bank (70 characters), practice link, online rooms (with your bank and 30 questions)",
-     "Subscription: 5 banks (150 characters each), class links with automatic scores, gradebook, class leaderboard, locked settings and CSV"
+     "Subscription: 5 banks (150 characters each), class links with automatic scores, gradebook, class leaderboard, locked settings, CSV and class online room (35 people, automatic scores, fixed code)"
     ]
    },
    {

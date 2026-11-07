@@ -355,7 +355,21 @@ function linkCardHtml(game){
     '<button class="pill fill sm" data-act="copy" data-url="' + esc(url) + '">' + esc(T('copyLink')) + '</button>' +
     '<button class="pill sm" data-act="qr" data-url="' + esc(url) + '" data-game="' + game + '">' + esc(T('qr')) + '</button>' +
     '<a class="pill sm" href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
-  return h + '</div>';
+  return h + (game === 'rayo' ? rayoRoomHtml(c, url) : '') + '</div>';
+}
+// 天打雷劈的班級連線房間：開房連結（班級連結＋host=1）、固定房號、加入連結
+function rayoRoomHtml(c, url){
+  const rc = c.data.rc, host = url + '&host=1', join = rc ? DATA.linkRayoJoin(rc) : '';
+  const row = (u, g) => '<div class="url">' + esc(u) + '</div><div class="row"><button class="pill fill sm" data-act="copy" data-url="' + esc(u) + '">' + esc(T('copyLink')) + '</button>' +
+    '<button class="pill sm" data-act="qr" data-url="' + esc(u) + '" data-game="' + g + '">' + esc(T('qr')) + '</button>' +
+    '<a class="pill sm" href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(T('test')) + '</a></div>';
+  let h = '<div id="roomBox" style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line,#ccc)"><h4>👥 ' + esc(T('roomTitle')) + '</h4><p class="hint">' + esc(T('roomHint')) + '</p>' +
+    '<div class="field"><label>' + esc(T('roomHostLink')) + '</label>' + row(host, 'rayo') + '</div>' +
+    '<div class="field"><label>' + esc(T('roomFixed')) + (rc ? '：<b id="roomRc">' + esc(rc) + '</b>' : '') + '</label>';
+  if(!rc) h += '<p class="hint">' + esc(T('roomFixedNone')) + '</p><div class="row"><button class="pill fill sm" data-act="roomcode">' + esc(T('roomFixedSet')) + '</button></div>';
+  else h += '<div class="row"><button class="pill sm" data-act="roomcode">' + esc(T('roomFixedNew')) + '</button><button class="pill sm" data-act="roomclear">' + esc(T('roomFixedClear')) + '</button></div>' +
+    '<label style="margin-top:8px">' + esc(T('roomJoinLink')) + '</label>' + row(join, 'rayo') + '<p class="hint">' + esc(T('roomFixedNote')) + '</p>';
+  return h + '</div></div>';
 }
 // ---- 步驟 6-2：成績冊依設定分開 ----
 // 設定的名稱：跑吧＝句庫、色數＝設定組、比比看＝範圍；刪掉的顯示「（已刪除的設定）」
@@ -1682,6 +1696,13 @@ const actions = {
     const c = classOf(S.cur), name = (document.getElementById('clsName').value || '').trim();
     if(!name){ S.msg = T('needName'); render(); return; }
     S.msg = ''; await DATA.saveClass(c, { name }); c.data.name = name; render(); toast(T('renamed'));
+  }); },
+  roomcode(){ return run(async () => {
+    const c = clsC(), rc = String(5000 + Math.floor(Math.random() * 5000));
+    await DATA.saveClass(c, { rc }); c.data.rc = rc; S.msg = ''; render();
+  }); },
+  roomclear(){ return run(async () => {
+    const c = clsC(); await DATA.saveClass(c, { rc: "" }); delete c.data.rc; S.msg = ''; render();
   }); },
   board(el){ return run(async () => {
     const c = classOf(S.cur), v = el.dataset.v === '1'; if(!!c.data.showBoard === v) return;

@@ -147,7 +147,7 @@ async function createClass(slot, name, cslots){
 }
 async function saveClass(cls, patch){
   const data = Object.assign({}, cls.data, patch, { updatedAt: serverTs() });
-  await db.collection('classes').doc(cls.cid).set({ owner: data.owner, slot: data.slot, name: data.name, showBoard: !!data.showBoard, updatedAt: data.updatedAt });
+  await db.collection('classes').doc(cls.cid).set({ owner: data.owner, slot: data.slot, name: data.name, showBoard: !!data.showBoard, ...(data.rc ? { rc: data.rc } : {}), updatedAt: data.updatedAt });
 }
 async function deleteAllOf(coll, cid){
   for(let i = 0; i < 30; i++){
@@ -333,6 +333,7 @@ async function ensureRayoSid(cur, i){
 }
 // 練習連結（?b=）；班級連結（?class=，可再帶 &b=字庫碼，和鎖定的設定 lv／n／kb；空的不帶＝學生自己選）
 const linkRayoPractice = sid => GAME_URL.rayo + '?b=' + sid;
+const linkRayoJoin = code => GAME_URL.rayo + '?room=' + code;
 function linkRayo(cid, sid, o){
   o = o || {};
   let u = GAME_URL.rayo + '?class=' + cid + (sid ? '&b=' + sid : '');
@@ -508,5 +509,5 @@ function sendFeedback(f){
 }
 
 window.DATA = { isAdminMode, ADM, get MAX_CLASSES(){ return adminMode ? ADM.classes : MAX_CLASSES; }, get DRAGON_THEMES_MAX(){ return adminMode ? ADM.themes : DRAGON_THEMES_MAX; }, get DRAGON_WORDS_MAX(){ return adminMode ? ADM.words : DRAGON_WORDS_MAX; }, get DRAGON_SETS_MAX(){ return adminMode ? ADM.sets : DRAGON_SETS_MAX; }, init, onUser, login, logout, loadAccount, createClass, saveClass, deleteClass, loadScores, loadPlays, deleteDocs, sendFeedback,
-  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveRayoBank, deleteRayoBank, ensureRayoSid, linkRayoPractice, linkRayo, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_WORDS_MIN, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, loadSentenceTokens, loadBlocks, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
+  ensureColoresSid, saveColoresCfg, deleteColoresCfg, coloresLinkOff, linkColoresPractice, coloresMax, saveBbkSet, deleteBbkSet, ensureBbkSid, bbkMax, saveRayoBank, deleteRayoBank, ensureRayoSid, linkRayoPractice, linkRayoJoin, linkRayo, saveDragonTheme, deleteDragonTheme, saveDragonSet, deleteDragonSet, ensureDragonSid, linkDragonQuick, linkDragonSet, linkDragon, DRAGON_WORDS_MIN, saveCorreBank, deleteCorreBank, saveBaBank, loadBaImgs, deleteBaBank, loadSentences, loadSentenceTokens, loadBlocks, linkBaBankPractice, linkCorrePractice, linkCorre, linkCorrePublic, linkColores, linkBbk, linkBbkPractice, linkBaBei, explain, isRealUser, PORTAL_URL, GAME_URL, TEACHER_URL, tsMs };
 })();

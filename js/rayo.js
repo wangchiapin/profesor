@@ -162,13 +162,13 @@ const nAllowed = (n, bank) => !bank || bank.chars.length >= n;
 const lvName = k => T('rayoLv_' + k), kbName = k => T('rayoKb_' + k);
 // 成績的設定代碼 k（遊戲寫進 class_scores）：難度_題數_鍵盤，自訂字庫再加 _字庫碼前 8 碼
 function parseK(k){
-  const m = /^(easy|normal|hard)_(\d+)_(pinyin|zhuyin)(?:_([a-z0-9]{1,16}))?$/.exec(k || ''); if(!m) return null;
-  return { lv: m[1], n: +m[2], kb: m[3], b: m[4] || '' };
+  const room = /^room-/.test(k || ''), m = /^(easy|normal|hard)_(\d+)_(pinyin|zhuyin)(?:_([a-z0-9]{1,16}))?$/.exec(room ? k.slice(5) : (k || '')); if(!m) return null;
+  return { lv: m[1], n: +m[2], kb: m[3], b: m[4] || '', room };
 }
 // 設定的顯示名稱：難度 · 題數 · 鍵盤（· 字庫名）
 function kLabel(k, banks){
   const p = parseK(k); if(!p) return T('setOther');
-  let s = lvName(p.lv) + ' · ' + T('rayoNQ', { n: p.n }) + ' · ' + kbName(p.kb);
+  let s = (p.room ? '👥 ' : '') + lvName(p.lv) + ' · ' + T('rayoNQ', { n: p.n }) + ' · ' + kbName(p.kb);
   if(p.b){ const b = (banks || []).find(x => x.sid && x.sid.slice(0, 8) === p.b); s += ' · ' + (b ? '⚡ ' + b.name : T('setDeleted')); }
   return s;
 }

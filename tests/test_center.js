@@ -1446,6 +1446,31 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, 'R3 沒有 JS 錯誤', errors); await ctx.close();
   }
 
+  console.log('\n[R4] 天打雷劈：班級連線房間（開房連結、固定房號、加入連結、成績冊標 👥）');
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'tc' }, hash: '?dev=rayo#/game/rayo/links' });
+    await page.waitForSelector('#linksCard'); await page.waitForSelector('.ctabs');
+    if(!(await page.$('#roomBox'))){ await page.click('.ctabs [data-act=pickcls]'); }
+    await page.waitForSelector('#roomBox');
+    let t = await text(page, '#roomBox');
+    ok(t.includes('最多 35 人') && t.includes('開房連結') && t.includes('還沒有固定房號'), '房間區塊：35 人說明、開房連結、尚未固定房號');
+    const host = await page.$eval('#roomBox .url', e => e.textContent);
+    ok(host.includes('?class=') && host.endsWith('&host=1'), '開房連結＝班級連結＋&host=1', host);
+    await page.click('#roomBox [data-act=roomcode]'); await page.waitForSelector('#roomRc');
+    const rc = await page.$eval('#roomRc', e => e.textContent);
+    let d = await db(page);
+    const cdoc = Object.values(d.classes).find(c => c.rc);
+    ok(/^[5-9][0-9]{3}$/.test(rc) && cdoc && cdoc.rc === rc, '設定固定房號：5000～9999，寫進班級資料', rc);
+    ok(Object.keys(cdoc).sort().join() === 'name,owner,rc,showBoard,slot,updatedAt', '班級欄位剛好符合規則（多一個 rc）', Object.keys(cdoc));
+    const urls = await page.$$eval('#roomBox .url', es => es.map(e => e.textContent));
+    ok(urls[1].endsWith('?room=' + rc), '加入連結＝遊戲網址?room=房號', urls);
+    await page.click('#roomBox [data-act=roomcode]'); await page.waitForTimeout(300);
+    d = await db(page); ok(Object.values(d.classes).filter(c => c.rc).length === 1, '換一組：還是只有一組固定房號');
+    await page.click('#roomBox [data-act=roomclear]'); await page.waitForSelector('#roomBox [data-act=roomcode]');
+    d = await db(page); ok(!Object.values(d.classes).some(c => 'rc' in c), '取消固定：欄位拿掉', Object.values(d.classes));
+    const lab = await page.evaluate(() => [RAYO.kLabel('room-normal_15_zhuyin', []), RAYO.parseK('room-easy_10_pinyin_ab12cd34')]);
+    ok(lab[0].startsWith('👥') && lab[1] && lab[1].room && lab[1].b === 'ab12cd34' && lab[1].n === 10, '成績冊：房間成績的設定名稱有 👥，字庫碼照常解析', lab);
+    ok(errors.length === 0, 'R4 沒有 JS 錯誤', errors); await ctx.close(); }
+
   console.log('\n[Z] 管理員（a2224907@gmail.com 已驗證）：視為訂閱中、數量上限放寬；一般老師與未驗證的不受影響');
   { const ADMIN = Object.assign({}, TEACH, { email: 'a2224907@gmail.com', emailVerified: true });
     const lims = page => page.evaluate(() => { const P = __profesor.S.a.plan; return { admin: DATA.isAdminMode(), cls: DATA.MAX_CLASSES, th: DRAGON.MAX_T, w: DRAGON.MAX_W, sets: DRAGON.MAX_SETS, slots: CORRE.PRO_SLOTS, bbk: DATA.bbkMax(P), col: DATA.coloresMax(P), active: P.active, adminPlan: !!P.admin }; });
