@@ -29,11 +29,12 @@ const TEACH = { uid: 'u1', email: 'teacher@example.com', displayName: 'T', isAno
 const hx = n => ('0000000000000000' + n.toString(16)).slice(-16);
 const day = 86400000;
 function qs(n, firstOk){ return Array.from({ length: n }, (_, i) => ({ t: ['pick', 'tf', 'decode'][i % 3], d: ['height', 'age', 'hair'][i % 3], f: ['BI', 'MEI', 'SAME'][i % 3], p: i % 2 ? -1 : 1, ok: true, f1: i < firstOk, ids: ['P01', 'P02'], tv: i % 2 === 0 })); }
-function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = null, maint = null } = {}){
+function seed({ pro = true, expired = false, nocls = false, bbk = null, plan = null, maint = null, rayo = null } = {}){
   const s = { [T]: {
     classes: nocls ? {} : { [CID]: { owner: 'u1', slot: 0, name: '週三班', showBoard: false, updatedAt: 1 }, [CID2]: { owner: 'u1', slot: 1, name: '週五班', showBoard: true, updatedAt: 1 } },
     teacher_classes: nocls ? {} : { u1: { slots: { '0': CID, '1': CID2 }, updatedAt: 1 } },
     teacher_banks: { u1: { slots: { '0': 'bank00001111' }, updatedAt: 1 } },
+    ...(rayo ? { rayo_sets: { u1: rayo } } : {}),
     shared_banks: { bank00001111: { owner: 'u1', slot: 0, name: '點飲料', speed: 'normal', script: 'trad', boss: true, pro: false, updatedAt: 1,
       sentences: [{ trad: ['你', '好'], simp: ['你', '好'], pinyin: ['nǐ', 'hǎo'], es: 'Hola', en: 'Hello' }, { trad: ['我', '要', '一杯', '紅茶'], simp: ['我', '要', '一杯', '红茶'], pinyin: ['wǒ', 'yào', 'yì bēi', 'hóng chá'], es: 'Quiero un té negro.', en: '' }] } },
     site_content: { corre_pack_food: { kind: 'corre_pack', order: 1, name: { zh: '食物', es: 'Comida' }, desc: { zh: '吃東西', es: 'Comer' },
@@ -1132,7 +1133,7 @@ server.listen(0, 'localhost', async () => {
     ok(errors.length === 0, '沒有頁面錯誤', errors); await ctx.close(); }
   { // 中心的版本號
     const ix = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39|7-40|7-41|7-42|7-43|7-44|7-45|7-46|7-47|7-48|7-49|7-50|7-51|7-52|7-53|7-54|7-55)\b/.test(ix) && (ix.match(/\?v=7-56/g) || []).length >= 12 && ix.includes('js/help.js?v=7-56') && ix.includes('js/pubbank.js?v=7-56') && ix.includes('js/rayo.js?v=7-56'), 'index.html 的 css／js 都改成 ?v=7-56（含 help.js、pubbank.js、rayo.js）'); }
+    ok(!/\?v=(5-4|6-1|6-2|6-3|6-4|6-5|6-6|6-7|6-8|7-1|7-2|7-3|7-4|7-5|7-6|7-7|7-8|7-9|7-10|7-11|7-12|7-13|7-14|7-15|7-16|7-17|7-18|7-19|7-20|7-21|7-22|7-23|7-24|7-25|7-26|7-27|7-28|7-29|7-30|7-31|7-32|7-33|7-34|7-35|7-36|7-37|7-38|7-39|7-40|7-41|7-42|7-43|7-44|7-45|7-46|7-47|7-48|7-49|7-50|7-51|7-52|7-53|7-54|7-55|7-56)\b/.test(ix) && (ix.match(/\?v=7-57/g) || []).length >= 12 && ix.includes('js/help.js?v=7-57') && ix.includes('js/pubbank.js?v=7-57') && ix.includes('js/rayo.js?v=7-57') && ix.includes('js/rayo-ws.js?v=7-57'), 'index.html 的 css／js 都改成 ?v=7-57（含 help.js、pubbank.js、rayo.js）'); }
   { // 第 4 批：說明頁四語都提到 🚩 題目回報
     const hs = fs.readFileSync(path.join(ROOT, 'js/help.js'), 'utf8');
     ok((hs.match(/🚩/g) || []).length === 4 && hs.includes('這題怪怪的') && hs.includes('这题怪怪的') && hs.includes('Algo raro en esta pregunta') && hs.includes("Something's off here"), '說明頁四語都有「🚩 這題怪怪的」'); }
@@ -1286,7 +1287,7 @@ server.listen(0, 'localhost', async () => {
     const t3 = await text(page);
     ok(t3.includes('cuidado-con-el-rayo') && !!(await page.$('#linksCard')) && !(await page.$('#dragonQuick')), '連結：有練習連結（遊戲網址）和班級連結');
     await page.click('[data-act=gtab][data-t=sheet]'); await page.waitForTimeout(150);
-    ok((await text(page)).includes('之後開放') && !(await page.$('#wsCard')), '學習單：先顯示「之後開放」');
+    ok(!!(await page.$('#rayoWsCard')) && !(await page.$('#wsCard')) && !(await text(page)).includes('之後開放'), '學習單：天打雷劈自己的學習單表單（不再是「之後開放」）');
     await page.click('[data-act=gtab][data-t=scores]'); await page.waitForSelector('#bookCard');
     ok(await page.$('#bookCard') !== null, '成績：沿用成績頁');
     await page.click('[data-act=gtab][data-t=help]'); await page.waitForSelector('#hRayo');
@@ -1470,6 +1471,60 @@ server.listen(0, 'localhost', async () => {
     const lab = await page.evaluate(() => [RAYO.kLabel('room-normal_15_zhuyin', []), RAYO.parseK('room-easy_10_pinyin_ab12cd34')]);
     ok(lab[0].startsWith('👥') && lab[1] && lab[1].room && lab[1].b === 'ab12cd34' && lab[1].n === 10, '成績冊：房間成績的設定名稱有 👥，字庫碼照常解析', lab);
     ok(errors.length === 0, 'R4 沒有 JS 錯誤', errors); await ctx.close(); }
+
+  console.log('\n[R5] 天打雷劈：學習單（來源、題型、字表、預覽、PDF）');
+  const RB = { banks: [{ id: 'bkaaaaaaaaa', name: '我的第一課', chars: ['我\t我\two3\t0', '你\t你\tni3\t0', '他\t他\tta1\t0', '好\t好\thao3\t0', '大\t大\tda4\t0', '小\t小\txiao3\t0', '人\t人\tren2\t0', '天\t天\ttian1\t0', '水\t水\tshui3\t0', '火\t火\thuo3\t0', '山\t山\tshan1\t0', '學\t学\txue2\t0'], updatedAt: 1 }], updatedAt: 1 };
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: false }, ls: { profesorLang: 'tc' }, hash: '?dev=rayo#/game/rayo/sheet' });
+    await page.waitForSelector('#rayoWsCard'); const t = await text(page, '#rayoWsCard');
+    ok(t.includes('訂閱') && !(await page.$('[data-act=rwsprev]')), '免費：學習單鎖住，要訂閱');
+    ok(errors.length === 0, 'R5 免費沒有 JS 錯誤', errors); await ctx.close(); }
+  { const { page, errors, ctx } = await open(browser, { seedOpt: { pro: true, rayo: RB }, ls: { profesorLang: 'tc' }, hash: '?dev=rayo#/game/rayo/sheet' });
+    await page.waitForSelector('[data-act=rwsprev]');
+    let t = await text(page, '#rayoWsCard');
+    ok(t.includes('我的字庫') && t.includes('內建字庫（依級別）') && t.includes('自己挑字') && t.includes('看字寫拼音') && t.includes('看字寫注音') && t.includes('拼音補聲調') && t.includes('附字表'), '訂閱：來源三種、題型三種、字表選項都在');
+    await page.click('[data-act=rwsprev]'); await page.waitForSelector('.cws-prev img');
+    const n1 = await page.$$eval('.cws-prev img', e => e.length);
+    ok(n1 >= 2, '預覽：我的字庫 12 字，看字寫拼音＋字表，至少 2 頁（含字表頁）', n1);
+    if(SHOT){ const imgs = await page.$$('.cws-prev img'); for(let i = 0; i < imgs.length; i++) await imgs[i].screenshot({ path: path.join(SHOT, 'rayo-ws-' + (i + 1) + '.png') }); }
+    // 引擎直接算：三種題型、答案頁、字表，繁／簡、三種語言
+    const E = await page.evaluate(async () => {
+      const words = [{ c: '學', s: '学', r: ['xue2'] }, { c: '我', s: '我', r: ['wo3'] }, { c: '他', s: '他', r: ['ta1', 'tuo1'] }, { c: '女', s: '女', r: ['nv3'] }];
+      const out = {};
+      for(const lang of ['zh', 'es', 'en']){
+        const r = await RAYO_WS.makeWorksheet(words, { lang, simp: lang === 'zh', pinyin: true, zhuyin: true, types: { py: true, zy: true, tone: true }, list: true, answers: true, preview: true });
+        out[lang] = { pages: r.pages, err: r.err || '' };
+      }
+      out.none = (await RAYO_WS.makeWorksheet(words, { lang: 'zh', types: {}, list: false, answers: true, preview: true })).err;
+      const b = await RAYO_WS.makeWorksheet(words, { lang: 'zh', types: { py: true }, list: false, answers: false });
+      out.pdf = b.blob ? b.blob.size : 0;
+      out.cmp = [RAYO.toPinyin('xue2'), RAYO.toZhuyin('xue2'), RAYO.toPinyin('nv3')];
+      return out;
+    });
+    ok(E.zh.pages >= 2 && E.es.pages >= 2 && E.en.pages >= 2 && !E.zh.err, '引擎：三種語言都能產出，有題目頁、答案頁、字表頁', E);
+    ok(E.none === 'empty', '什麼題型都沒勾、也沒字表：回傳「沒有內容」', E.none);
+    ok(E.pdf > 2000, '引擎：真的 PDF 檔案', E.pdf);
+    ok(E.cmp.join('|') === 'xué|ㄒㄩㄝˊ|nǚ', '讀音用遊戲的轉換（xué、ㄒㄩㄝˊ、nǚ）', E.cmp);
+    // 切到內建級別
+    await page.click('[data-act=rwssrc][data-k=level]'); await page.waitForSelector('[data-act=rwslv]');
+    await page.click('[data-act=rwsprev]'); await page.waitForSelector('.cws-prev img', { timeout: 15000 });
+    ok(await page.$$eval('.cws-prev img', e => e.length) >= 2, '內建級別 N1：10 個字，預覽出得來');
+    // 自己挑字
+    await page.click('[data-act=rwssrc][data-k=pick]'); await page.waitForSelector('#rwsText');
+    await page.fill('#rwsText', '我你他 好大 abc'); await page.click('[data-act=rwsprev]'); await page.waitForSelector('.cws-prev img', { timeout: 15000 });
+    ok(true, '自己挑字：貼上文字也能預覽');
+    await page.fill('#rwsText', 'abc xyz'); await page.click('[data-act=rwsprev]'); await page.waitForSelector('.err');
+    ok((await text(page, '#rayoWsCard')).includes('沒有可以出題的字'), '自己挑字：貼上的字全找不到 → 提示沒有可以出題的字');
+    // 下載 PDF
+    await page.click('[data-act=rwssrc][data-k=bank]'); await page.waitForSelector('[data-act=rwsbank]');
+    const dl = page.waitForEvent('download', { timeout: 20000 });
+    await page.click('[data-act=rwsmake]'); const d = await dl;
+    ok(/rayo-worksheet\.pdf$/.test(d.suggestedFilename()), '輸出 PDF：下載 rayo-worksheet.pdf', d.suggestedFilename());
+    // 簡體介面
+    ok(errors.filter(e => !/沒有可以出題的字/.test(e)).length === 0, 'R5 沒有 JS 錯誤（「沒有可以出題的字」是預期的提示）', errors); await ctx.close(); }
+  { const { page, ctx } = await open(browser, { seedOpt: { pro: true }, ls: { profesorLang: 'sc' }, hash: '?dev=rayo#/game/rayo/sheet' });
+    await page.waitForSelector('#rayoWsCard'); const t = await text(page, '#rayoWsCard');
+    ok(t.includes('你还没有字库') && !t.includes('設定') && !t.includes('设置') && !t.includes('链接'), '簡體：沒有字庫的提示用台灣用語');
+    await ctx.close(); }
 
   console.log('\n[Z] 管理員（a2224907@gmail.com 已驗證）：視為訂閱中、數量上限放寬；一般老師與未驗證的不受影響');
   { const ADMIN = Object.assign({}, TEACH, { email: 'a2224907@gmail.com', emailVerified: true });

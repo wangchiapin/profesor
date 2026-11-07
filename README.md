@@ -113,7 +113,7 @@
 - 連結：練習連結 `?b=字庫碼`（免費）；班級連結 `?class=班級碼[&b=][&lv=][&n=][&kb=]`（訂閱）。班級連結可鎖定難度（自訂字庫只有簡單／普通）、題數（10～30，每 5 一檔，不能超過字庫字數）、鍵盤；沒鎖＝學生自己選。
 - 成績：`class_scores` 的 `game='rayo'`，`k＝難度_題數_鍵盤[_字庫碼前 8 碼]`，`best＝(題數−被劈)×100000＋(99999−秒數)`，`extra＝{s 被劈,c 答對,t 秒,st 星,n 題數}`；逐題紀錄 `class_plays`（`game='rayo'`，`qs=[{c,ok}]`、`score`＝答對題數）。成績冊：可依「設定」篩選；欄位＝暱稱、班級、設定、最好成績（被劈／答對）、用時、星、次數、最近一次、常錯的字（學生與整班排名）；同設定才比排名；匯出 CSV 欄位相同。
 - **班級連線房間（2026-11-07）**：「連結」分頁的班級連結下面多一塊 `rayoRoomHtml`：開房連結＝班級連結＋`&host=1`；固定房號存在班級資料 `classes/{cid}.rc`（5000～9999 的字串，選填，`saveClass` 有值才寫；規則 `okClass` 已放行）；加入連結＝`GAME_URL.rayo?room=房號`。房間最多 35 人（遊戲端寫 `mx=35`、`cid`、`bs`），學生玩完自己把成績寫進 `class_scores`，設定代碼 `room-難度_題數_鍵盤[_字庫碼]`（`RAYO.parseK` 會認 `room-` 前綴，`kLabel` 前面加 👥）。
-- 還沒做：學習單（分頁顯示「學習單之後開放」）。
+- **學習單（2026-11-07，訂閱限定）**：`js/rayo-ws.js`（`window.RAYO_WS.makeWorksheet(words, opt)`，canvas 畫 A4 圖片頁再包成 PDF，做法同墨龍）＋ `app.js` 的 `rwsFormHtml`／`rwsmake`。字的來源三種：我的字庫（選一個）／內建字庫依級別（N1～L5 可複選，要讀遊戲的 `words.json`）／自己挑字（貼文字，最多 50 個，從內建字庫和老師的字庫裡找）；字數 10／20／30／50；題型可複選：看字寫拼音、看字寫注音、拼音補聲調；另有「附字表」（字、拼音、注音，可選顯示哪種）和「答案頁」；字體繁／簡、輔助語言（只有中文／＋西／＋英）、字大小 14／16／18；預覽有「換一張」。讀音一律用字庫裡的（GoodTeacher）。只用資料、不碰 Firebase 規則。
 - 規則：game-kit 的 `subscription-48d3c.rules.txt`（`class_scores`／`class_plays` 加 rayo、新增 `rayo_sets`、`shared_rayo`）與 `memorma-24dab.rules.txt`（連線房間 30 題、`bn`／`bk`）；**改完要整份貼進 Firebase**。
 - 遊戲端細節在遊戲 repo 的 README「老師連結」一節。
 
